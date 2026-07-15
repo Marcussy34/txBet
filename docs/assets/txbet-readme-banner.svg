@@ -1,0 +1,14 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="320" fill="#0B1110"/>
+  <path d="M0 80H1200M0 160H1200M0 240H1200M200 0V320M400 0V320M600 0V320M800 0V320M1000 0V320" stroke="#26302D" stroke-opacity="0.45"/>
+  <path d="M72 204H170L248 126" stroke="#66DDE7" stroke-width="8" stroke-linecap="square"/>
+  <path d="M466 62H368L290 140" stroke="#B8F15A" stroke-width="8" stroke-linecap="square"/>
+  <path d="M269 102L307 140L269 178L231 140L269 102Z" fill="#F8F4E8"/>
+  <path d="M116 250H422" stroke="#FF8A45" stroke-width="5"/>
+  <circle cx="116" cy="250" r="7" fill="#FF8A45"/>
+  <circle cx="422" cy="250" r="7" fill="#FF8A45"/>
+  <text x="540" y="142" fill="#66DDE7" font-family="Arial, sans-serif" font-size="96" font-weight="800" letter-spacing="-5">tx</text>
+  <text x="636" y="142" fill="#F8F4E8" font-family="Arial, sans-serif" font-size="96" font-weight="800" letter-spacing="-5">Bet</text>
+  <text x="543" y="188" fill="#FF8A45" font-family="monospace" font-size="18" letter-spacing="5">NO EDGE, NO TRADE</text>
+  <text x="543" y="230" fill="#93A29E" font-family="Arial, sans-serif" font-size="24">Event-triggered cross-venue arbitrage powered by TxLINE.</text>
+</svg>
