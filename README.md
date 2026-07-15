@@ -2,36 +2,67 @@
 
 ![txBet — event-triggered prediction-market arbitrage](docs/assets/txbet-readme-banner.svg)
 
-**The match event wakes the agent. Settlement math decides.**
+> **The match event wakes the agent. Settlement math decides.**
 
-txBet is a TxLINE-powered cross-venue arbitrage orchestrator for prediction markets. A confirmed live action—such as a red card, goal, injury, penalty, or pressure window—wakes a selected agent. txBet then compares exact binary complements across approved venues and proceeds only when equal executable depth remains profitable after fees and a safety buffer.
+txBet is a hackathon prototype for a TxLINE-powered arbitrage agent for live sports prediction markets. It is designed so that a major match action—such as a red card, goal, injury, penalty, or pressure window—wakes an immediate scan of the same binary market across approved prediction venues.
 
-> **No edge, no trade.** The bundled app uses synthetic TxLINE-format replay data, simulated venue books, and simulated IOC fills. A return becomes locked only after both complementary legs fill equally and the contracts settle under compatible rules.
+It proceeds only when it can pair exact opposite outcomes for less than their common settlement payout after executable depth, venue fees, and a safety buffer.
 
-## Is this arbitrage?
+**No edge, no trade.**
 
-The event itself is not the arbitrage. Buying one side as soon as a red card or goal occurs is **event-driven latency trading**: it still depends on the prediction being right or on exiting later at a better price.
+> The browser and terminal demonstrations currently use synthetic TxLINE-format events, synthetic venue books, and simulated fills. A separate credentialed client can authenticate to TxLINE, read a score snapshot, and observe its live SSE stream, but that live stream is not yet wired into the strategy loop or browser. The repository does not place real-money orders.
 
-txBet uses the event only as the wake-up signal. It calls a position **arbitrage** only when it can buy exact complementary outcomes on different venues, both contracts resolve under the same rules, and the complete after-cost position is below the fixed settlement payout. Until both legs fill equally, the opportunity is only a candidate and any unequal fill is explicitly `UNHEDGED`.
+## Why txBet exists
 
-## What is working
+Live match events can reach prediction platforms at different times. One venue may already have repriced after a red card while another still displays an older quote.
 
-- Six selectable live-action trigger agents over one shared matcher and optimizer.
-- Exact settlement fingerprints; no fuzzy market-title matching.
-- Cross-venue YES/NO complement checks for fixed-$1 binary contracts.
-- Depth-weighted sizing bounded by capital, exposure, freshness, liquidity, and minimum return.
-- Adapter-specific fee models plus a configurable safety/slippage buffer.
-- Explicit `MATCHED`, `UNHEDGED`, `UNFILLED`, and fail-closed `INVALID` execution states.
-- A deterministic browser replay with profitable, no-trade, and partial-fill scenarios.
-- Clickable referee-style agent profiles with trigger rules and supported market families.
-- A synthetic backtest and latency lab that separates locked replay P&L from unhedged exposure.
-- A terminal replay command using the same strategy core.
-- A server-side TxLINE client for guest auth, score snapshots, and authenticated score SSE.
-- Unit coverage for settlement mismatches, math, trigger routing, freshness, depth, and leg risk.
+That difference is not automatically an arbitrage opportunity. txBet must prove that:
 
-Live venue order placement is intentionally **not** included. [`VenueAdapter`](src/adapters/venue.ts) defines the required `discover → quote → preflight → IOC → reconcile` contract without pretending separate platforms offer atomic execution.
+- the two contracts describe the exact same proposition and settlement rules;
+- one contract pays on `YES` and the other pays on `NO`;
+- both legs have equal executable liquidity;
+- the combined price is below the fixed payout;
+- the edge remains positive after fees, slippage, and the operator's minimum return.
 
-## Run it
+For example:
+
+```text
+Argentina YES on Venue A    $0.54
+Argentina NO on Venue B     $0.40
+Raw paired cost             $0.94
+Settlement payout           $1.00
+Gross edge                  $0.06 per pair
+```
+
+This is not a directional prediction about Argentina. If both complementary legs fill equally and the settlement rules match, either outcome produces the same payout.
+
+## Target product flow
+
+1. **Listen** — TxLINE supplies confirmed live match actions.
+2. **Wake an agent** — the selected red-card, goal, injury, penalty, or pressure agent decides whether the event qualifies.
+3. **Scope the scan** — txBet accepts only quotes for the triggering fixture and the agent's approved market families.
+4. **Match contracts** — exact settlement fingerprints replace fuzzy title matching.
+5. **Price executable depth** — the optimizer walks both books and includes venue-specific fees and a safety buffer.
+6. **Apply risk limits** — capital, exposure, quote freshness, market close time, liquidity, and minimum return must all pass.
+7. **Track both legs** — equal fills become `MATCHED`; unequal fills become `UNHEDGED`; malformed fill data becomes `INVALID` and activates the kill switch.
+
+## What is working today
+
+| Area | Current status |
+|---|---|
+| TxLINE guest auth, score snapshot, and authenticated SSE client | Implemented as a standalone smoke boundary |
+| Live TxLINE events feeding the strategy loop and browser | Not yet wired |
+| Six replay-ready trigger configurations | Implemented and tested; live enrichment remains incomplete for injury and corner pressure |
+| Exact settlement and complementary-outcome matching | Implemented |
+| Depth, fees, capital, exposure, freshness, and return optimizer | Implemented |
+| Browser and terminal walkthroughs | Deterministic synthetic replay |
+| Backtest and latency comparison | Synthetic demonstration data |
+| Prediction-venue books and order fills | Simulated |
+| Live prediction-market order placement | Adapter interface only; not included |
+
+The [`VenueAdapter`](src/adapters/venue.ts) contract defines the future `discover → quote → preflight → IOC → reconcile` integration boundary without pretending separate platforms provide atomic execution.
+
+## Run the demo
 
 Requirements: Node.js 20.9+ and pnpm 10.
 
@@ -42,26 +73,52 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Run the deterministic terminal demo:
+For the clearest first walkthrough:
+
+1. Select **Red card / matched bundle**.
+2. Press **Play Tape**.
+3. Watch the TxLINE action wake the agent.
+4. Inspect the two venue legs and the after-cost calculation.
+5. Open **Settlement** to see that either modeled outcome produces the same P&L.
+6. Try **Corner pressure / no trade** and **Penalty / partial-fill risk** to see the safety gates.
+
+Run the same strategy core in the terminal:
 
 ```bash
 pnpm agent:demo
 ```
 
-Verify a clean clone:
+Run the complete verification gate:
 
 ```bash
 pnpm verify
 ```
 
-## Demo tapes
+## Selectable agents
 
-1. **Red card / matched bundle** — YES at `$0.54` and NO at `$0.40`; the edge survives fees and the safety buffer, then both simulated legs fill.
-2. **Corner pressure / no trade** — `$0.72 + $0.34 = $1.06`; txBet scans and refuses to trade.
-3. **Penalty / partial-fill risk** — one leg fills 100 shares and the other fills 70; txBet marks 30 YES shares unhedged and trips the kill switch.
-4. **Latency recheck** — the same synthetic red-card opportunity is compared at 800 ms and 3,000 ms; the fast route finds a candidate while the delayed books have already closed the gap.
+| Agent | Wakes on | Scans |
+|---|---|---|
+| Red Card Arbitrage | Confirmed dismissal | Binary winner, qualification, next-goal, and totals markets |
+| Injury Arbitrage | High-importance injury or substitution | Binary winner, qualification, and next-goal markets |
+| Penalty & VAR Arbitrage | Penalty and VAR transitions | Binary winner, next-goal, and totals markets |
+| Goal Reaction Arbitrage | Confirmed goal | Binary winner, qualification, next-goal, and totals markets |
+| Corner Pressure | Sustained corners, shots, and possession pressure | Next-goal and totals markets |
+| Dangerous Free-Kick | Dangerous-zone free kick | Next-goal and totals markets |
 
-The successful 100-share tape models:
+The agents are trigger configurations over one shared matcher, optimizer, and execution-state engine. They are not six unrelated trading systems.
+
+The injury gate expects a player-importance metric, while corner pressure expects derived corner, shot, and possession metrics. Those fields exist in the deterministic replay inputs, but the current live TxLINE normalizer does not derive them automatically.
+
+## Demo scenarios and P&L
+
+The bundled replay contains four deliberately small synthetic windows:
+
+1. **Red card / matched bundle** — YES at `$0.54` and NO at `$0.40`; the edge survives modeled costs and both simulated legs fill.
+2. **Corner pressure / no trade** — `$0.72 + $0.34 = $1.06`; txBet refuses to trade.
+3. **Penalty / partial-fill risk** — one leg fills 100 shares and the other fills 70; txBet exposes 30 directional shares and trips the kill switch.
+4. **Latency recheck** — the same synthetic red-card opportunity exists at 800 ms but has disappeared by the 3,000 ms recheck.
+
+The successful 100-pair replay models:
 
 ```text
 Raw complementary cost   $94.00
@@ -73,13 +130,17 @@ Modeled net profit         $4.80
 Modeled net return          5.03%
 ```
 
-Values are calculated in integer microdollars. Displayed totals are rounded to cents.
+Money calculations use integer microdollars. Displayed totals are rounded to cents.
 
-The bundled backtest contains four deliberately small synthetic windows. Its P&L is useful for demonstrating accounting, safety states, and latency sensitivity; it is not historical evidence and does not predict future returns. A credible production study would require timestamped TxLINE events, timestamped executable venue order books, venue-specific fees, real latency measurements, and fill/rejection records.
+This P&L demonstrates accounting, execution states, and latency sensitivity. It is **not historical performance evidence** and does not predict future returns. A production backtest requires timestamped TxLINE events, executable venue books, venue-specific fees, measured routing latency, and actual fill or rejection records.
 
-## TxLINE live-input boundary
+## Is this really arbitrage?
 
-The hackathon track requires TxLINE as a live input. txBet includes the live score boundary separately from the pitch-safe replay so judges can test both without connecting a prediction venue.
+The event alone is not the arbitrage. Buying one side immediately after a red card or goal is event-driven latency trading because the result still depends on direction or a later exit.
+
+txBet uses the event only as the wake-up signal. A position becomes an arbitrage candidate only when exact `YES` and `NO` complements across different venues cost less than their common payout after modeled costs. In the bundled replay, modeled P&L appears as locked only after both simulated legs fill equally. Real P&L cannot be called locked without reconciled live fills.
+
+## Test the live TxLINE boundary
 
 Copy the environment template:
 
@@ -87,11 +148,13 @@ Copy the environment template:
 cp .env.example .env
 ```
 
-Provide an activated token and fixture ID, then run:
+Add an activated TxLINE token and fixture ID, then run:
 
 ```bash
 pnpm txline:smoke -- --fixture YOUR_FIXTURE_ID --seconds 15
 ```
+
+This command authenticates, fetches the score snapshot, listens to the live stream for the requested window, normalizes supported actions, and prints a credential-safe summary. It does not currently send those events into `runPipeline()` or the browser UI.
 
 The smoke command uses:
 
@@ -101,50 +164,51 @@ The smoke command uses:
 | Current score bootstrap | `GET /api/scores/snapshot/{fixtureId}` |
 | Live score actions | `GET /api/scores/stream?fixtureId=…` |
 
-Requests send `Authorization: Bearer <guest JWT>` and `X-Api-Token: <activated token>`. Follow the official [TxLINE quickstart](https://txline.txodds.com/documentation/quickstart) and [World Cup guide](https://txline.txodds.com/documentation/worldcup) to create access. The token is read only from `.env` and is never printed.
+Requests send `Authorization: Bearer <guest JWT>` and `X-Api-Token: <activated token>`. Follow the official [TxLINE quickstart](https://txline.txodds.com/documentation/quickstart) and [World Cup guide](https://txline.txodds.com/documentation/worldcup) for access. Credentials are read from `.env` and are never printed.
 
-## Architecture
+## Target architecture
 
 ```mermaid
 flowchart LR
-  T[TxLINE score action] --> R[Trigger router]
-  R --> A[Selected action agent]
-  A --> V[Approved venue adapters]
+  T[TxLINE match action] --> R[Trigger router]
+  R --> S[Fixture + market scope]
+  S --> V[Approved venue quotes]
   V --> F[Settlement fingerprint matcher]
   F --> D[Depth + fee optimizer]
-  D --> G{No edge, no trade gate}
+  D --> G{No edge, no trade}
   G -->|blocked| N[Reason code]
-  G -->|passes| E[Two-leg bundle executor]
+  G -->|passes| E[Two-leg execution state]
   E --> M[MATCHED]
-  E --> U[UNHEDGED + kill switch]
+  E --> U[UNHEDGED / INVALID + kill switch]
 ```
 
-The important modules are:
+Important modules:
 
 - [`src/lib/txline`](src/lib/txline) — authenticated TxLINE transport and event normalization.
-- [`src/agents`](src/agents) — six trigger configurations over one engine.
+- [`src/agents`](src/agents) — trigger definitions and routing.
+- [`src/core/pipeline.ts`](src/core/pipeline.ts) — event, fixture, and market-family scoping.
 - [`src/core/settlement.ts`](src/core/settlement.ts) — exact settlement compatibility.
-- [`src/core/optimizer.ts`](src/core/optimizer.ts) — depth, fees, capital, exposure, and return gates.
-- [`src/core/executor.ts`](src/core/executor.ts) — deterministic bundle simulation and residual exposure.
+- [`src/core/optimizer.ts`](src/core/optimizer.ts) — depth, fees, capital, exposure, freshness, and return gates.
+- [`src/core/executor.ts`](src/core/executor.ts) — deterministic two-leg execution and residual exposure.
 - [`src/core/backtest.ts`](src/core/backtest.ts) — synthetic replay accounting that counts only fully matched positions as locked P&L.
-- [`src/adapters/venue.ts`](src/adapters/venue.ts) — drop-in contract for future prediction venues.
+- [`src/adapters/venue.ts`](src/adapters/venue.ts) — drop-in interface for future prediction venues.
 - [`src/fixtures/demo-tapes.ts`](src/fixtures/demo-tapes.ts) — pitch-safe deterministic scenarios.
 
-See [architecture notes](docs/architecture.md) and the [demo runbook](docs/demo-runbook.md).
+See the [architecture notes](docs/architecture.md) and [90-second demo runbook](docs/demo-runbook.md).
 
 ## Safety and scope
 
-- v1 supports only exact binary YES/NO complements with the same fixed payout.
-- Three-way winner markets, push-capable lines, differing regulation/extra-time scopes, currencies, void rules, or resolution sources fail closed.
+- v1 supports only exact binary `YES`/`NO` complements with the same fixed payout.
+- Three-way winners, push-capable lines, differing regulation or extra-time scopes, currencies, void rules, and resolution sources fail closed.
 - Separate venue orders are not atomic. A partial fill is `UNHEDGED`, never `MATCHED`.
-- Malformed or impossible fill quantities are `INVALID`, activate the kill switch, and never contribute to P&L.
-- Real platform names/logos are not used in the bundled simulation.
-- This repository is software for a hackathon demonstration, not financial or gambling advice.
-- Operators are responsible for venue terms and applicable gambling, financial, securities, and consumer-protection laws.
+- Invalid execution quantities activate the kill switch and never contribute to P&L.
+- Real platform names and logos are not used in the bundled simulation.
+- This is hackathon software, not financial or gambling advice.
+- Operators are responsible for venue terms and applicable laws.
 
 ## Hackathon handoff
 
-This repository is private during development, as requested. The track rules require a **public GitHub repository**, deployed access, a demo video, endpoint documentation, and TxLINE feedback before final submission. Change visibility only when the repository has been scrubbed of secrets and you are ready to submit.
+The repository is private during development. Before final submission, confirm the current track requirements for repository visibility, deployed access, demo video, endpoint documentation, and TxLINE feedback. Remove all secrets before changing visibility.
 
 ## License
 
