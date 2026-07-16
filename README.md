@@ -73,7 +73,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) for the dedicated landing page, then choose **Launch console**. The replay console is also available directly at [http://localhost:3000/console](http://localhost:3000/console).
 
-The landing page uses native smooth anchor scrolling plus GSAP ScrollTrigger as progressive enhancement for the split-window beam, quote rails, latency corridor, and telemetry traces. Reduced-motion preferences keep every asset static and fully visible.
+The landing page uses native smooth anchor scrolling plus GSAP ScrollTrigger as progressive enhancement for the split-window beam, event-to-edge route, quote rails, execution interlock, and telemetry traces. The synthetic event-to-edge, quote-convergence, and four-gate protocol previews loop only while visible, include independent pause/resume controls, and demonstrate pipeline state without implying a live feed or measured venue latency. Reduced-motion preferences keep every asset static and fully visible.
 
 For the clearest first walkthrough:
 

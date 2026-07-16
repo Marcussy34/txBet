@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   motion,
@@ -12,7 +13,9 @@ import {
 import { AGENTS } from "@/agents/definitions";
 import {
   AgentTelemetry,
-  LatencyCorridor,
+  EventEdgeRoute,
+  ExecutionProtocolGraphic,
+  ExecutionProtocolMobileGraphic,
   QuoteWindowGraphic,
   StatusGlyph,
   TxBetLockup,
@@ -45,25 +48,25 @@ const protocol = [
   {
     index: "01",
     title: "Wake",
-    copy: "A qualifying TxLINE-format match action activates one selected agent.",
+    signal: "TxLINE event",
     tone: "text-primary",
   },
   {
     index: "02",
     title: "Verify",
-    copy: "Fixture, market family, settlement, void rules, payout, and close time must align.",
+    signal: "exact terms",
     tone: "text-signal",
   },
   {
     index: "03",
     title: "Pair",
-    copy: "Equal executable YES and NO depth is priced across different approved venues.",
+    signal: "equal depth",
     tone: "text-success",
   },
   {
     index: "04",
     title: "Guard",
-    copy: "Fees, buffer, capital, exposure, freshness, and minimum return decide the action.",
+    signal: "net edge",
     tone: "text-foreground",
   },
 ] as const;
@@ -132,7 +135,11 @@ function BrandSplash() {
 
   return (
     <section data-brand-splash="true" aria-labelledby="brand-splash-title" className="relative isolate overflow-hidden border-b border-border">
-      <div data-gsap-beam="true" aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div
+        data-gsap-beam="true"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden [mask-image:linear-gradient(to_bottom,#000_0%,#000_8%,transparent_20%,transparent_80%,#000_94%,#000_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_8%,transparent_20%,transparent_80%,#000_94%,#000_100%)]"
+      >
         <motion.div
           initial={false}
           animate={{ scaleY: beamReady ? 1 : 0.58, scaleX: beamReady ? 1 : 0.72 }}
@@ -154,65 +161,62 @@ function BrandSplash() {
       </div>
 
       <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] max-w-[1500px] flex-col px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between border-b border-border/70 py-4">
-          <MicroLabel className="text-foreground">TxLINE smoke boundary / 001</MicroLabel>
-          <MicroLabel className="hidden sm:block">World Cup hackathon</MicroLabel>
-        </div>
+        <div className="flex flex-1 flex-col items-center justify-center py-14 text-center sm:py-20">
+          <div className="relative z-0 flex w-full max-w-5xl flex-col items-center">
+            <div data-gsap-lockup="true" className="inline-flex items-center justify-center gap-[clamp(0.85rem,2vw,1.4rem)]">
+              <motion.div
+                initial={false}
+                animate={{ x: identityReady ? 0 : 14 }}
+                transition={splashTransition}
+                className="flex shrink-0 items-center justify-center"
+              >
+                <TxBetMark className="size-[clamp(4.75rem,7.6vw,7.25rem)]" />
+              </motion.div>
+              <motion.div
+                initial={false}
+                animate={{ x: identityReady ? 0 : -14 }}
+                transition={splashTransition}
+                className="flex items-center justify-center"
+              >
+                <span className="font-sans text-[clamp(3.7rem,7.2vw,7rem)] font-semibold leading-none tracking-[-0.065em]">txBet</span>
+              </motion.div>
+            </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center py-12 text-center sm:py-16">
-          <div data-gsap-lockup="true" className="grid w-full max-w-5xl grid-cols-2 items-center">
             <motion.div
               initial={false}
-              animate={{ x: identityReady ? 0 : 14 }}
+              animate={{ y: detailsReady ? 0 : 10 }}
               transition={splashTransition}
-              className="flex justify-end pr-[clamp(1rem,2vw,2rem)]"
+              className="mt-10 flex max-w-4xl flex-col items-center sm:mt-12"
             >
-              <TxBetMark className="size-[clamp(4.5rem,8vw,7rem)]" />
-            </motion.div>
-            <motion.div
-              initial={false}
-              animate={{ x: identityReady ? 0 : -14 }}
-              transition={splashTransition}
-              className="flex justify-start pl-[clamp(1rem,2vw,2rem)]"
-            >
-              <span className="font-sans text-[clamp(3.4rem,8vw,7.4rem)] font-semibold leading-none tracking-[-0.065em]">txBet</span>
+              <h1 id="brand-splash-title" className="font-serif text-[clamp(3rem,5vw,5.2rem)] font-normal leading-[0.92] tracking-[-0.04em]">
+                The match moves.
+                <span className="block text-muted-foreground">Markets follow.</span>
+              </h1>
+              <p className="mt-6 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+                txBet models the brief gap between a TxLINE-format match event and venue repricing.
+              </p>
+              <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
+                <Link
+                  href="/console"
+                  className={cn(
+                    buttonVariants({ variant: "default" }),
+                    "h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
+                  )}
+                >
+                  Launch replay <span aria-hidden="true">↗</span>
+                </Link>
+                <a
+                  href="#system"
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "h-12 rounded-md px-6 font-mono text-xs uppercase tracking-[0.14em]",
+                  )}
+                >
+                  Explore the system <span aria-hidden="true">↓</span>
+                </a>
+              </div>
             </motion.div>
           </div>
-
-          <motion.div
-            initial={false}
-            animate={{ y: detailsReady ? 0 : 10 }}
-            transition={splashTransition}
-            className="mt-10 flex max-w-4xl flex-col items-center sm:mt-14"
-          >
-            <h1 id="brand-splash-title" className="font-serif text-[clamp(3rem,5vw,5.2rem)] font-normal leading-[0.92] tracking-[-0.04em]">
-              The match moves.
-              <span className="block text-muted-foreground">Markets follow.</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
-              txBet models the brief gap between a TxLINE-format match event and venue repricing.
-            </p>
-            <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
-              <Link
-                href="/console"
-                className={cn(
-                  buttonVariants({ variant: "default" }),
-                  "h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
-                )}
-              >
-                Launch replay <span aria-hidden="true">↗</span>
-              </Link>
-              <a
-                href="#system"
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "h-12 rounded-md px-6 font-mono text-xs uppercase tracking-[0.14em]",
-                )}
-              >
-                Explore the system <span aria-hidden="true">↓</span>
-              </a>
-            </div>
-          </motion.div>
         </div>
 
         <div className="grid grid-cols-2 border-t border-border/70 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:grid-cols-4 sm:text-[0.6875rem]">
@@ -262,90 +266,63 @@ function LandingHeader() {
 
 function MarketSignalPreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[620px] lg:mr-0">
-      <div className="absolute -inset-6 rounded-xl border border-border/50 bg-card/30" />
-      <div className="relative overflow-hidden rounded-xl border border-border bg-card/94 shadow-[0_28px_90px_color-mix(in_oklch,var(--background),black_35%)]">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="size-2 bg-primary" />
-            <MicroLabel className="text-foreground">Action tape / 001</MicroLabel>
-          </div>
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">synthetic replay</span>
+    <div data-gsap-loop="event-edge" className="relative w-full">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-border py-3">
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="size-2 bg-primary" />
+          <MicroLabel className="text-foreground">Live reaction tape</MicroLabel>
+          <span className="hidden h-px w-10 bg-border sm:block" />
+          <MicroLabel className="hidden sm:block">Event → edge</MicroLabel>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.6875rem]">
+          <button
+            type="button"
+            data-gsap-live-toggle
+            aria-label="Pause event loop"
+            className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
+          >
+            <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
+            <Play data-gsap-live-play aria-hidden="true" className="hidden size-4 sm:size-3" />
+          </button>
+          <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
+          <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
+          <span>/ synthetic</span>
+        </div>
+      </div>
+
+      <div className="grid border-b border-border lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="relative min-w-0 overflow-hidden bg-[linear-gradient(to_right,color-mix(in_oklch,var(--foreground),transparent_97%)_1px,transparent_1px)] bg-[size:64px_100%] px-2 py-5 sm:px-5 sm:py-7 lg:border-r lg:border-border lg:px-8">
+          <div aria-hidden="true" className="absolute inset-y-0 left-[22%] w-px bg-border/70" />
+          <EventEdgeRoute className="relative h-auto max-h-[18rem]" />
         </div>
 
-        <div className="border-b border-border bg-background/75 px-4 py-3">
-          <LatencyCorridor className="h-auto max-h-40" />
-          <p className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
-            Illustrative timing · not measured venue latency
-          </p>
-        </div>
-
-        <div className="grid gap-px bg-border sm:grid-cols-[0.88fr_1.12fr]">
-          <div className="bg-background/95 p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <MicroLabel>TxLINE-format event</MicroLabel>
-              <span className="font-mono text-[0.6875rem] text-foreground">63:00</span>
-            </div>
-            <div className="mt-8 flex items-start justify-between gap-4">
-              <div>
-                <div className="font-sans text-3xl font-semibold tracking-[-0.035em]">Red card</div>
-                <div className="mt-2 text-sm text-muted-foreground">Spain · defender dismissed</div>
-              </div>
-              <div className="h-14 w-10 rotate-[-6deg] rounded-sm border border-foreground/35 bg-foreground" />
-            </div>
-            <div className="mt-8 flex items-center gap-2 border-t border-border pt-3">
-              <StatusGlyph state="scan" className="text-signal" />
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-signal">scan awakened</span>
-            </div>
-          </div>
-
-          <div className="bg-card p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <MicroLabel>Cross-venue pair</MicroLabel>
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-success">exact complements</span>
-            </div>
-            <p className="mt-4 border-l border-success/50 pl-3 text-xs text-foreground">
-              Shared proposition · Will Argentina qualify?
-            </p>
-            <div className="mt-3 space-y-2">
-              <div className="grid grid-cols-[1fr_auto] rounded-md border border-border bg-background/55 p-3">
-                <div>
-                  <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">Northstar · YES</div>
-                  <div className="mt-1 text-xs text-muted-foreground">repriced</div>
-                </div>
-                <div className="font-mono text-2xl font-semibold tabular-nums">$0.54</div>
-              </div>
-              <div className="grid grid-cols-[1fr_auto] rounded-md border border-border bg-background/55 p-3">
-                <div>
-                  <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">Coast · NO</div>
-                  <div className="mt-1 text-xs text-warning">older quote</div>
-                </div>
-                <div className="font-mono text-2xl font-semibold tabular-nums">$0.40</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-4">
+        <div className="grid grid-cols-3 divide-x divide-border bg-card/30 lg:grid-cols-1 lg:divide-x-0 lg:divide-y">
           {[
-            ["raw pair", "$0.940"],
-            ["modeled cost", "$0.952"],
-            ["payout", "$1.000"],
-            ["modeled edge", "+$0.048"],
-          ].map(([label, value], index) => (
-            <div key={label} className="bg-background/95 px-3 py-3">
-              <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{label}</div>
-              <div className={cn("mt-1 font-mono text-lg font-semibold tabular-nums", index === 3 && "text-success")}>{value}</div>
+            ["trigger", "red card", "text-foreground"],
+            ["paired cost", "$0.940", "text-foreground"],
+            ["after costs", "+$0.048", "text-success"],
+          ].map(([label, value, tone], index) => (
+            <div
+              key={label}
+              data-gsap-live-metric={index === 0 ? "trigger" : index === 1 ? "pair" : "edge"}
+              className="flex min-h-24 flex-col justify-between px-3 py-4 sm:px-5 lg:min-h-0 lg:flex-row lg:items-end lg:gap-4"
+            >
+              <div className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground sm:text-[0.6875rem]">{label}</div>
+              <div className={cn("mt-2 font-mono text-sm font-semibold uppercase tabular-nums sm:text-lg lg:mt-0", tone)}>{value}</div>
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between border-t border-success/30 bg-success/[0.045] px-4 py-3 text-success">
-          <div className="flex items-center gap-2">
-            <StatusGlyph state="locked" />
-            <span className="font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.13em]">matched in replay</span>
-          </div>
-          <span className="font-mono text-[0.6875rem] uppercase tracking-wider">equal simulated fills</span>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 border-b border-success/30 bg-success/[0.045] py-3 text-success">
+        <div className="flex items-center gap-2">
+          <StatusGlyph state="locked" />
+          <span className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.13em] sm:text-[0.6875rem]">exact pair matched</span>
         </div>
+        <span className="text-right font-mono text-[0.625rem] uppercase tracking-wider sm:text-[0.6875rem]">
+          <span data-gsap-live-clock>synthetic</span>
+          <span className="hidden sm:inline"> / simulated fills</span>
+        </span>
       </div>
     </div>
   );
@@ -353,71 +330,39 @@ function MarketSignalPreview() {
 
 function SystemIntro() {
   return (
-    <section id="system" className="relative isolate overflow-hidden border-b border-border">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-10 top-8 -z-10 font-serif text-[32vw] leading-none tracking-[-0.08em] text-foreground/[0.025] sm:text-[23vw]"
-      >
-        63:00
-      </div>
-      <div className="mx-auto grid min-h-[calc(100svh-4.5rem)] max-w-[1500px] items-center gap-16 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(460px,0.95fr)] lg:px-8 lg:py-20">
-        <div className="relative z-10 max-w-[790px]">
-          <div className="mb-7 flex flex-wrap items-center gap-3">
-            <span className="rounded-sm border border-primary/40 bg-primary/[0.06] px-2.5 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-primary">
-              Event-driven trading infrastructure
-            </span>
-            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">World Cup hackathon · built for TxLINE input</span>
+    <section
+      id="system"
+      data-section-language="reaction-tape"
+      className="relative isolate overflow-hidden border-b border-border"
+    >
+      <div className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-12">
+        <Reveal className="relative z-10 grid items-end gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.58fr)] lg:gap-16">
+          <div>
+            <MicroLabel className="text-primary">How txBet reacts</MicroLabel>
+            <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.5rem)] font-normal leading-[0.84] tracking-[-0.05em]">
+              Event in.
+              <span className="text-muted-foreground"> Edge checked.</span>
+            </h2>
           </div>
-          <h2 className="font-serif text-[clamp(4.25rem,8.5vw,8.7rem)] font-normal leading-[0.82] tracking-[-0.05em]">
-            See the gap
-            <span className="block text-muted-foreground">before the market</span>
-            <span className="block">catches up.</span>
-          </h2>
-          <p className="mt-9 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-            A TxLINE-format match event wakes a cross-venue scan. Exact settlement matching and after-cost execution math decide whether complementary outcomes form a modeled pair.
-          </p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div className="border-l border-border pl-5 sm:pl-7">
+            <p className="max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
+              A TxLINE-format action starts the scan. txBet pairs exact opposites and proceeds only when the modeled edge survives costs.
+            </p>
             <Link
               href="/console"
               className={cn(
                 buttonVariants({ variant: "default" }),
-                "h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
+                "mt-6 h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
               )}
             >
-              Enter replay console <span aria-hidden="true">↗</span>
+              Run the replay <span aria-hidden="true">↗</span>
             </Link>
-            <a
-              href="#protocol"
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "h-12 rounded-md px-6 font-mono text-xs uppercase tracking-[0.14em]",
-              )}
-            >
-              Read the protocol <span aria-hidden="true">↓</span>
-            </a>
           </div>
-          <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-border pt-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
-            <span className="text-signal">TxLINE smoke boundary</span>
-            <span>synthetic venue books</span>
-            <span>simulated fills</span>
-            <span>no live money</span>
-          </div>
-        </div>
+        </Reveal>
 
-        <div className="relative z-10 lg:pt-8">
+        <Reveal className="relative z-10 mt-12 sm:mt-14 lg:mt-8">
           <MarketSignalPreview />
-        </div>
-      </div>
-
-      <div className="border-t border-border bg-background/88">
-        <div className="mx-auto grid max-w-[1500px] grid-cols-2 gap-px bg-border sm:grid-cols-5">
-          {["match action", "scope", "settlement", "cost", "execution state"].map((item, index) => (
-            <div key={item} className="flex items-center gap-3 bg-background px-4 py-3 sm:px-6">
-              <span className="font-mono text-[0.6875rem] text-primary">0{index + 1}</span>
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">{item}</span>
-            </div>
-          ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -425,42 +370,81 @@ function SystemIntro() {
 
 function TensionSection() {
   return (
-    <section className="border-b border-border py-24 sm:py-32">
-      <div className="mx-auto grid max-w-[1500px] gap-14 px-4 sm:px-6 lg:grid-cols-[0.72fr_1.28fr] lg:px-8">
-        <Reveal>
+    <section
+      id="market-window"
+      data-section-language="timing-corridor"
+      className="scroll-mt-[4.5rem] overflow-hidden border-b border-border bg-card/20 lg:flex lg:min-h-[calc(100svh-4.5rem)] lg:items-center"
+    >
+      <div className="mx-auto w-full max-w-[1500px] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-6">
+        <Reveal className="mx-auto max-w-[1280px] text-center">
           <MicroLabel className="text-primary">01 / the market tension</MicroLabel>
-          <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
+          <h2 className="mt-5 font-serif text-[clamp(3.8rem,6.4vw,6.8rem)] font-normal leading-[0.86] tracking-[-0.045em]">
+            One event. <span className="text-muted-foreground">Many clocks.</span> One payout.
+          </h2>
+          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
             Sports truth updates once. Market prices update venue by venue. txBet is designed for the interval between those two moments.
           </p>
         </Reveal>
-        <Reveal>
-          <h2 className="font-serif text-[clamp(3.8rem,7.5vw,8rem)] font-normal leading-[0.86] tracking-[-0.045em]">
-            One event.
-            <span className="block text-muted-foreground">Many clocks.</span>
-            <span className="block">One payout.</span>
-          </h2>
-          <div className="mt-12 overflow-hidden border border-border bg-card/45">
-            <div className="border-b border-border bg-background/65 px-3 py-5 sm:px-6 sm:py-7">
-              <QuoteWindowGraphic className="h-auto max-h-72" />
+
+        <Reveal className="mt-10 min-w-0 lg:mt-5">
+          <div data-gsap-loop="quote-window" className="relative">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-[22rem] -translate-x-1/2 bg-success/[0.025] blur-3xl" />
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-border py-3">
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="size-2 bg-primary" />
+                <MicroLabel className="text-foreground">Venue repricing window</MicroLabel>
+              </div>
+              <div className="flex w-full items-center gap-2 border-t border-border/60 pt-2 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:w-auto sm:border-0 sm:pt-0 sm:text-[0.6875rem]">
+                <button
+                  type="button"
+                  data-gsap-live-toggle
+                  aria-label="Pause quote loop"
+                  className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
+                >
+                  <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
+                  <Play data-gsap-live-play aria-hidden="true" className="hidden size-4 sm:size-3" />
+                </button>
+                <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
+                <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
+                <span className="shrink-0 sm:hidden">/ sim</span>
+                <span className="hidden shrink-0 sm:inline">/ synthetic</span>
+              </div>
             </div>
-            <div className="grid gap-px bg-border sm:grid-cols-3">
-              <div className="bg-card p-5">
-                <MicroLabel>event received</MicroLabel>
-                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums">0 ms</div>
+
+            <div className="relative border-b border-border px-1 py-4 sm:px-5 sm:py-5 lg:py-3">
+              <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--foreground),transparent_96%)_1px,transparent_1px)] bg-[size:12.5%_100%]" />
+              <QuoteWindowGraphic className="relative h-auto max-h-[13rem] lg:max-h-[11rem]" />
+            </div>
+
+            <div className="grid grid-cols-3 border-b border-border">
+              <div data-gsap-live-metric="event" className="border-r border-border py-4 pr-3 sm:py-5 sm:pr-5 lg:py-3">
+                <MicroLabel>
+                  <span className="sm:hidden">event</span>
+                  <span className="hidden sm:inline">T+0 / event received</span>
+                </MicroLabel>
+                <div className="mt-2 whitespace-nowrap font-mono text-base font-semibold tabular-nums sm:text-3xl">0 ms</div>
               </div>
-              <div className="bg-card p-5">
-                <MicroLabel>synthetic capture</MicroLabel>
-                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-success">800 ms</div>
+              <div data-gsap-live-metric="capture" className="border-r border-border px-3 py-4 text-center sm:px-5 sm:py-5 lg:py-3">
+                <MicroLabel>
+                  <span className="sm:hidden">capture</span>
+                  <span className="hidden sm:inline">capture window</span>
+                </MicroLabel>
+                <div className="mt-2 whitespace-nowrap font-mono text-base font-semibold tabular-nums text-success sm:text-3xl">800 ms</div>
               </div>
-              <div className="bg-card p-5">
-                <MicroLabel>synthetic gap gone</MicroLabel>
-                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-warning">3,000 ms</div>
+              <div data-gsap-live-metric="normalized" className="py-4 pl-3 text-right sm:py-5 sm:pl-5 lg:py-3">
+                <MicroLabel>
+                  <span className="sm:hidden">settled</span>
+                  <span className="hidden sm:inline">pair normalized</span>
+                </MicroLabel>
+                <div className="mt-2 whitespace-nowrap font-mono text-base font-semibold tabular-nums text-warning sm:text-3xl">3,000 ms</div>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 pt-3 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground sm:text-[0.6875rem]">
+              <span>demonstration timing only</span>
+              <span className="text-right"><span data-gsap-live-clock>synthetic</span> / not measured venue latency</span>
             </div>
           </div>
-          <p className="mt-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
-            Demonstration timing only · not measured venue latency
-          </p>
         </Reveal>
       </div>
     </section>
@@ -469,35 +453,78 @@ function TensionSection() {
 
 function ProtocolSection() {
   return (
-    <section id="protocol" className="border-b border-border bg-card/25 py-24 sm:py-32">
-      <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
-        <Reveal className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-          <div>
-            <MicroLabel className="text-signal">02 / execution protocol</MicroLabel>
-            <h2 className="mt-5 max-w-5xl font-serif text-[clamp(3.8rem,7.2vw,7.4rem)] font-normal leading-[0.86] tracking-[-0.04em]">
-              Speed finds it.
-              <span className="block text-muted-foreground">Rules decide it.</span>
-            </h2>
-          </div>
-          <p className="max-w-md text-sm leading-7 text-muted-foreground">
-            The event is only a trigger. A candidate must survive contract equivalence, executable depth, cost, and risk checks before the replay can mark it matched.
+    <section
+      id="protocol"
+      data-section-language="execution-interlock"
+      className="scroll-mt-[4.5rem] border-b border-border bg-card/25 lg:flex lg:min-h-[calc(100svh-4.5rem)] lg:items-center"
+    >
+      <div className="mx-auto grid w-full max-w-[1500px] items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,0.72fr)_minmax(580px,1.28fr)] lg:gap-16 lg:px-8 lg:py-12 xl:gap-20">
+        <Reveal className="max-w-[600px]">
+          <MicroLabel className="text-signal">02 / execution protocol</MicroLabel>
+          <h2 className="mt-6 font-serif text-[clamp(4.2rem,6.5vw,7rem)] font-normal leading-[0.84] tracking-[-0.045em]">
+            Speed finds it.
+            <span className="block text-muted-foreground">Rules decide it.</span>
+          </h2>
+          <p className="mt-7 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
+            Equivalent pairs pass only after cost and risk checks.
           </p>
         </Reveal>
 
-        <div className="mt-16 grid gap-px border border-border bg-border md:grid-cols-2 xl:grid-cols-4">
-          {protocol.map((step) => (
-            <Reveal key={step.index} className="h-full bg-background">
-              <article className="group flex h-full min-h-64 flex-col p-5 transition-colors hover:bg-card sm:p-6">
-                <div className="flex items-center justify-between">
-                  <span className={cn("font-mono text-xs", step.tone)}>{step.index}</span>
-                  <span className="h-px w-16 bg-border transition-[width,background-color] group-hover:w-24 group-hover:bg-primary" />
-                </div>
-                <h3 className="mt-12 font-serif text-5xl font-normal tracking-[-0.035em]">{step.title}</h3>
-                <p className="mt-auto pt-8 text-sm leading-6 text-muted-foreground">{step.copy}</p>
-              </article>
-            </Reveal>
-          ))}
-        </div>
+        <Reveal className="min-w-0">
+          <div
+            data-gsap-loop="execution-protocol"
+            className="overflow-hidden rounded-xl border border-border bg-background/82"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3">
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="size-2 bg-primary" />
+                <MicroLabel className="text-foreground">Execution interlock</MicroLabel>
+              </div>
+              <div className="flex w-full items-center gap-2 border-t border-border/60 pt-2 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:w-auto sm:border-0 sm:pt-0 sm:text-[0.6875rem]">
+                <button
+                  type="button"
+                  data-gsap-live-toggle
+                  aria-label="Pause protocol loop"
+                  className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
+                >
+                  <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
+                  <Play data-gsap-live-play aria-hidden="true" className="hidden size-4 sm:size-3" />
+                </button>
+                <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
+                <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
+                <span className="shrink-0 sm:hidden">/ sim</span>
+                <span className="hidden shrink-0 sm:inline">/ synthetic</span>
+              </div>
+            </div>
+
+            <div className="border-b border-border bg-card/45 px-3 py-5 sm:px-5 sm:py-6">
+              <ExecutionProtocolGraphic className="hidden h-auto max-h-60 sm:block" />
+              <ExecutionProtocolMobileGraphic className="mx-auto h-auto max-h-[25rem] sm:hidden" />
+            </div>
+
+            <ol className="hidden grid-cols-4 gap-px bg-border sm:grid">
+              {protocol.map((step) => (
+                <li
+                  key={step.index}
+                  data-gsap-live-metric={step.title.toLowerCase()}
+                  className="bg-background px-3 py-4 sm:px-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn("font-mono text-[0.6875rem]", step.tone)}>{step.index}</span>
+                    <span className="h-px w-8 bg-border" />
+                  </div>
+                  <div className="mt-3 font-serif text-2xl leading-none sm:text-3xl">{step.title}</div>
+                  <MicroLabel className="mt-2 text-[0.625rem] tracking-[0.12em]">{step.signal}</MicroLabel>
+                </li>
+              ))}
+            </ol>
+
+            <div className="flex items-center justify-between gap-4 border-t border-border bg-background/80 px-4 py-3 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground sm:text-[0.6875rem]">
+              <span>synthetic sequence</span>
+              <span className="text-right"><span data-gsap-live-clock>sequence idle</span> / simulated</span>
+            </div>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

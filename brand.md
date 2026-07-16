@@ -97,11 +97,17 @@ The mark combines two ideas:
 
 The mark is always monochrome and uses `currentColor` in product UI. The wordmark is `txBet` in Inter Semibold. Do not add balls, trophies, betting chips, FIFA marks, national crests, real venue logos, or multicolor legs.
 
-The signature landing composition is the Split-Window Gate lockup crossing one full-height silver beam. The beam uses a crisp center rail, a narrow silver band, and one diffuse outer corridor. Keep this opening surface free of cards, telemetry, and extra claims; the product interface starts after the first scroll.
+The signature landing composition is one optically centered Split-Window Gate lockup over a full-height silver beam. The mark and wordmark stay together as one unit. The beam uses a crisp center rail, a narrow silver band, and one diffuse outer corridor, then fades behind the identity and copy so no keyline crosses text. Keep this opening surface free of cards, telemetry, micro-label rails, and extra claims; the product interface starts after the first scroll.
 
 The Latency Corridor is the supporting brand image: one event at `T+0`, followed by staggered synthetic venue repricing stations. It must always be labeled as illustrative when timing is not measured.
 
-The Quote Convergence Window is the secondary scroll asset. Two synthetic quote rails approach the modeled execution gate, then settle into a narrow normalized pair. It explains the timing thesis without implying measured venue behavior.
+### Landing chapter grammar
+
+The Event-to-Edge Route is the open reaction tape. It spans the page on straight horizontal rails, keeps its key values attached to the route, and avoids the rounded instrument shell used later. It compresses the story into one repeating path: match event, complementary venue quotes, paired cost, and after-cost decision. The loop runs only while visible, offers a compact pause/resume control, pauses with the browser tab, and remains explicitly labeled synthetic. Keep detailed settlement and fill accounting inside the replay console.
+
+The Quote Convergence Window is the full-width timing corridor. A centered editorial promise gives way to one wide clock field, with `0 ms`, `800 ms`, and `3,000 ms` anchored directly to the event, capture, and normalized phases. It has no rounded outer card or shadow. Two synthetic quote rails approach the modeled execution gate, then settle into a narrow normalized pair. On desktop the complete chapter fits in one viewport. Its controlled event → capture → normalized loop explains the timing thesis without implying measured venue behavior.
+
+The Execution Interlock is the structured protocol instrument and the only one of these three chapters inside a rounded bordered panel. A single route carries the candidate through Wake, Verify, Pair, and Guard, with compact readouts for the TxLINE-format event, exact terms, equal executable depth, and after-cost comparison. Its controlled loop uses stage ordinals rather than invented latency and exposes only the semantic green pass route; the full static route remains visible when motion is reduced.
 
 ## Typography — Instrument Serif + Inter + JetBrains Mono
 

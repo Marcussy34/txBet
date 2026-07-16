@@ -157,7 +157,7 @@ export function QuoteWindowGraphic({ className }: { className?: string }) {
 
       <path d="M56 52H904M56 140H904M56 228H904" stroke="currentColor" strokeOpacity="0.10" />
       <path d="M120 28V252M480 28V252M840 28V252" stroke="currentColor" strokeOpacity="0.08" />
-      <rect x="466" y="28" width="28" height="224" fill="currentColor" fillOpacity="0.055" />
+      <rect data-gsap-stage-surface="capture" x="466" y="28" width="28" height="224" fill="currentColor" fillOpacity="0.055" />
       <path d="M466 54H450V226H466M494 54H510V226H494" stroke="currentColor" strokeOpacity="0.32" strokeWidth="2" />
 
       <path
@@ -176,15 +176,15 @@ export function QuoteWindowGraphic({ className }: { className?: string }) {
         strokeLinecap="square"
       />
 
-      <g data-gsap-node>
+      <g data-gsap-node data-gsap-stage="event">
         <rect x="46" y="62" width="20" height="20" fill="currentColor" />
         <circle cx="56" cy="210" r="10" stroke="currentColor" strokeWidth="3" />
       </g>
-      <g data-gsap-node>
+      <g data-gsap-node data-gsap-stage="capture">
         <circle cx="480" cy="132" r="10" fill="currentColor" />
         <circle cx="480" cy="132" r="20" stroke="currentColor" strokeOpacity="0.24" />
       </g>
-      <g data-gsap-node>
+      <g data-gsap-node data-gsap-stage="normalized">
         <rect x="894" y="116" width="20" height="20" fill="currentColor" />
         <circle cx="904" cy="138" r="10" stroke="currentColor" strokeWidth="3" />
       </g>
@@ -198,6 +198,225 @@ export function QuoteWindowGraphic({ className }: { className?: string }) {
         <text x="56" y="34">T+0</text>
         <text x="386" y="272">CAPTURE</text>
         <text x="700" y="34">SETTLED</text>
+      </g>
+    </svg>
+  );
+}
+
+export function EventEdgeRoute({ className }: { className?: string }) {
+  return (
+    <svg
+      data-gsap-asset="event-edge-route"
+      viewBox="0 0 760 280"
+      role="img"
+      aria-labelledby="event-edge-title event-edge-description"
+      className={cn("w-full text-foreground", className)}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="event-edge-title">Event-to-edge route</title>
+      <desc id="event-edge-description">
+        A red-card event opens complementary venue scans that converge at one after-cost decision gate.
+      </desc>
+
+      <path d="M48 52H712M48 140H712M48 228H712" stroke="currentColor" strokeOpacity="0.09" />
+      <path d="M168 38V242M430 38V242M558 38V242" stroke="currentColor" strokeOpacity="0.07" />
+      <rect x="430" y="38" width="128" height="204" fill="currentColor" fillOpacity="0.025" />
+
+      {/* Complementary venue routes split at the event and reunite at the cost gate. */}
+      <path
+        data-gsap-draw
+        d="M64 140H168C214 140 222 76 290 76H426C486 76 496 140 558 140H704"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+      <path
+        data-gsap-draw
+        d="M64 140H168C214 140 222 204 290 204H426C486 204 496 140 558 140"
+        stroke="currentColor"
+        strokeOpacity="0.52"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+
+      <rect data-gsap-node data-gsap-stage="event" x="52" y="128" width="24" height="24" fill="currentColor" />
+      <circle data-gsap-node data-gsap-stage="quote" cx="306" cy="76" r="9" fill="currentColor" />
+      <circle data-gsap-node data-gsap-stage="quote" cx="306" cy="204" r="9" stroke="currentColor" strokeWidth="3" />
+      <path data-gsap-node data-gsap-stage="pair" d="M558 126L572 140L558 154L544 140L558 126Z" className="fill-success" />
+      <path data-gsap-node data-gsap-stage="pass" d="M704 133L718 140L704 147V133Z" className="fill-success" />
+
+      <g className="hidden sm:block" fill="currentColor" fontFamily="var(--font-data)" fontSize="16" letterSpacing="1.5">
+        <text x="48" y="112">TXLINE / 63:00</text>
+        <text x="48" y="178">RED CARD</text>
+        <text x="274" y="52">YES / $0.54</text>
+        <text x="274" y="242">NO / $0.40</text>
+        <text x="524" y="112">PAIR / $0.94</text>
+        <text x="582" y="178">COST GATE</text>
+      </g>
+      <g className="sm:hidden" fill="currentColor" fontFamily="var(--font-data)" fontSize="28" letterSpacing="1.5">
+        <text x="48" y="108">EVENT</text>
+        <text x="48" y="182">CARD</text>
+        <text x="254" y="48">YES .54</text>
+        <text x="254" y="250">NO .40</text>
+        <text x="526" y="106">PAIR</text>
+        <text x="582" y="184">PASS</text>
+      </g>
+    </svg>
+  );
+}
+
+export function ExecutionProtocolGraphic({ className }: { className?: string }) {
+  return (
+    <svg
+      data-gsap-asset="execution-protocol"
+      data-gsap-protocol-view
+      viewBox="0 0 1120 320"
+      role="img"
+      aria-labelledby="execution-protocol-title execution-protocol-description"
+      className={cn("w-full text-foreground", className)}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="execution-protocol-title">Execution protocol route</title>
+      <desc id="execution-protocol-description">
+        A synthetic TxLINE-format event moves through wake, contract verification, executable-depth pairing, and an after-cost risk guard.
+      </desc>
+
+      <path d="M54 72H1066M54 160H1066M54 248H1066" stroke="currentColor" strokeOpacity="0.09" />
+      <path d="M140 38V282M405 38V282M700 38V282M970 38V282" stroke="currentColor" strokeOpacity="0.065" />
+      <path d="M96 160H1042" stroke="currentColor" strokeOpacity="0.14" strokeWidth="2" />
+
+      {/* Each connector is owned by the protocol loop so completed checks stay visibly accumulated. */}
+      <path
+        data-gsap-protocol-segment="wake-verify"
+        d="M174 160H356"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+      <path
+        data-gsap-protocol-segment="verify-pair"
+        d="M454 160H646"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+      <path
+        data-gsap-protocol-segment="pair-guard"
+        d="M754 160H916"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+
+      <g data-gsap-node data-gsap-stage="wake">
+        <circle cx="140" cy="160" r="34" stroke="currentColor" strokeOpacity="0.18" />
+        <rect x="128" y="148" width="24" height="24" fill="currentColor" />
+        <path d="M140 116V132M96 160H112M168 160H184M140 188V204" stroke="currentColor" strokeWidth="2" />
+      </g>
+
+      <g data-gsap-node data-gsap-stage="verify">
+        <path d="M370 124H358V196H370M440 124H452V196H440" stroke="currentColor" strokeWidth="2" />
+        <rect x="378" y="135" width="54" height="18" stroke="currentColor" strokeOpacity="0.45" />
+        <rect x="378" y="167" width="54" height="18" stroke="currentColor" strokeOpacity="0.45" />
+        <path d="M387 144H412M387 176H412M419 142L424 147L432 138M419 174L424 179L432 170" stroke="currentColor" strokeWidth="2" />
+      </g>
+
+      <g data-gsap-node data-gsap-stage="pair">
+        <circle cx="674" cy="126" r="9" fill="currentColor" />
+        <circle cx="674" cy="194" r="9" stroke="currentColor" strokeWidth="3" />
+        <path d="M674 126H690C712 126 716 151 730 160M674 194H690C712 194 716 169 730 160" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M730 146L744 160L730 174L716 160L730 146Z" fill="currentColor" />
+      </g>
+
+      <g data-gsap-node data-gsap-stage="guard">
+        <path d="M936 118H922V202H936M994 118H1008V202H994" stroke="currentColor" strokeWidth="2" />
+        <path d="M946 138H984M946 160H976M946 182H968" stroke="currentColor" strokeOpacity="0.55" strokeWidth="3" />
+        <path d="M984 151L993 160L984 169L975 160L984 151Z" fill="currentColor" />
+      </g>
+
+      <g data-gsap-protocol-result className="text-success">
+        <path d="M1008 160H1052" stroke="currentColor" strokeWidth="3" />
+        <path d="M1052 150L1072 160L1052 170V150Z" fill="currentColor" />
+        <circle cx="1058" cy="160" r="24" stroke="currentColor" strokeOpacity="0.16" />
+      </g>
+
+      <g className="hidden sm:block" fill="currentColor" fontFamily="var(--font-data)" fontSize="14" letterSpacing="1.7">
+        <text x="124" y="48">01</text>
+        <text x="389" y="48">02</text>
+        <text x="684" y="48">03</text>
+        <text x="954" y="48">04</text>
+        <text x="90" y="292">RED CARD / 63:00</text>
+        <text x="336" y="292">EXACT TERMS</text>
+        <text x="636" y="292">YES .54 + NO .40</text>
+        <text x="902" y="292">.952 &lt; 1.000</text>
+      </g>
+      <g className="sm:hidden" fill="currentColor" fontFamily="var(--font-data)" fontSize="30" letterSpacing="1.5">
+        <text x="94" y="52">01</text>
+        <text x="358" y="52">02</text>
+        <text x="654" y="52">03</text>
+        <text x="924" y="52">04</text>
+      </g>
+    </svg>
+  );
+}
+
+export function ExecutionProtocolMobileGraphic({ className }: { className?: string }) {
+  return (
+    <svg
+      data-gsap-protocol-view
+      viewBox="0 0 320 560"
+      role="img"
+      aria-labelledby="execution-protocol-mobile-title execution-protocol-mobile-description"
+      className={cn("w-full text-foreground", className)}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="execution-protocol-mobile-title">Execution protocol route</title>
+      <desc id="execution-protocol-mobile-description">
+        A vertical mobile view of the synthetic wake, verify, pair, and guard decision sequence.
+      </desc>
+
+      <path d="M32 24V536M32 88H294M32 224H294M32 360H294M32 496H294" stroke="currentColor" strokeOpacity="0.08" />
+      <path d="M64 70V508" stroke="currentColor" strokeOpacity="0.16" strokeWidth="2" />
+      <path data-gsap-protocol-segment="wake-verify" d="M64 94V198" stroke="currentColor" strokeWidth="3" />
+      <path data-gsap-protocol-segment="verify-pair" d="M64 230V334" stroke="currentColor" strokeWidth="3" />
+      <path data-gsap-protocol-segment="pair-guard" d="M64 366V470" stroke="currentColor" strokeWidth="3" />
+
+      <g data-gsap-node data-gsap-stage="wake">
+        <circle cx="64" cy="76" r="22" stroke="currentColor" strokeOpacity="0.2" />
+        <rect x="56" y="68" width="16" height="16" fill="currentColor" />
+      </g>
+      <g data-gsap-node data-gsap-stage="verify">
+        <path d="M50 202H42V226H50M78 202H86V226H78" stroke="currentColor" strokeWidth="2" />
+        <path d="M54 208H74M54 218H70M70 205L75 210L80 204" stroke="currentColor" strokeWidth="2" />
+      </g>
+      <g data-gsap-node data-gsap-stage="pair">
+        <circle cx="50" cy="342" r="6" fill="currentColor" />
+        <circle cx="50" cy="362" r="6" stroke="currentColor" strokeWidth="2" />
+        <path d="M56 342H62C72 342 72 352 80 352M56 362H62C72 362 72 352 80 352" stroke="currentColor" strokeWidth="2" />
+        <path d="M80 344L88 352L80 360L72 352L80 344Z" fill="currentColor" />
+      </g>
+      <g data-gsap-node data-gsap-stage="guard">
+        <path d="M50 474H42V510H50M78 474H86V510H78" stroke="currentColor" strokeWidth="2" />
+        <path d="M54 482H74M54 492H70M54 502H66" stroke="currentColor" strokeWidth="2" />
+      </g>
+      <g data-gsap-protocol-result className="text-success">
+        <path d="M86 492H108" stroke="currentColor" strokeWidth="3" />
+        <path d="M108 484L124 492L108 500V484Z" fill="currentColor" />
+      </g>
+
+      <g fill="currentColor" fontFamily="var(--font-data)" letterSpacing="1.1">
+        <text x="112" y="60" fontSize="13">01 / WAKE</text>
+        <text x="112" y="82" fontSize="11.5" opacity="0.68">RED CARD / 63:00</text>
+        <text x="112" y="196" fontSize="13">02 / VERIFY</text>
+        <text x="112" y="218" fontSize="11.5" opacity="0.68">EXACT TERMS</text>
+        <text x="112" y="332" fontSize="13">03 / PAIR</text>
+        <text x="112" y="354" fontSize="11.5" opacity="0.68">YES .54 + NO .40</text>
+        <text x="112" y="468" fontSize="13">04 / GUARD</text>
+        <text x="112" y="490" fontSize="11.5" opacity="0.68">.952 &lt; 1.000</text>
+        <text x="142" y="516" fontSize="11.5" className="fill-success">PASS / MATCHED</text>
       </g>
     </svg>
   );
