@@ -101,6 +101,8 @@ The signature landing composition is the Split-Window Gate lockup crossing one f
 
 The Latency Corridor is the supporting brand image: one event at `T+0`, followed by staggered synthetic venue repricing stations. It must always be labeled as illustrative when timing is not measured.
 
+The Quote Convergence Window is the secondary scroll asset. Two synthetic quote rails approach the modeled execution gate, then settle into a narrow normalized pair. It explains the timing thesis without implying measured venue behavior.
+
 ## Typography — Instrument Serif + Inter + JetBrains Mono
 
 - **Display:** Instrument Serif, regular. Use for the page promise and major section statements only.
@@ -165,6 +167,7 @@ Avoid hype, emojis, exclamation marks, “unlock,” “seamless,” “free mon
 - Keep the replay and execution disclosure visible.
 - Keep core copy and controls visible before client hydration; motion must never own content visibility.
 - Let the landing beam resolve once on page load. Never pulse, loop, or compete with the wordmark.
+- Use native smooth scrolling and GSAP only as progressive enhancement. Do not pin sections, replace the browser scroll, or hide core copy before a trigger fires.
 - Test both light and dark tokens, even though the product defaults to dark.
 
 **Don't:**

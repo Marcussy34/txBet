@@ -7,8 +7,8 @@ txBet is a minimal, premium operations surface for event-triggered trading infra
 - **Palette:** Carbon Zero. Brand surfaces are monochrome; color is semantic only.
 - **Typography:** Instrument Serif for major promises, Inter for body/UI, JetBrains Mono for prices, clocks, latency, and state.
 - **Geometry:** 6 px controls, 8–10 px major surfaces, 1 px keylines, generous outer whitespace, dense internal ledgers.
-- **Imagery:** agent telemetry tiles and the Latency Corridor. No portraits, stadium photography, balls, trophies, or generic AI imagery.
-- **Motion:** content is visible in server HTML. The opening beam resolves once, the lockup settles, and then the supporting copy follows. There is no looping ambient motion; reduced-motion preferences skip the sequence.
+- **Imagery:** agent telemetry tiles, the Latency Corridor, and the Quote Convergence Window. No portraits, stadium photography, balls, trophies, or generic AI imagery.
+- **Motion:** content is visible in server HTML. The opening beam resolves once, then narrows into the system as the user scrolls. GSAP draws quote rails and telemetry paths only when their section enters; editorial blocks use a restrained 18 px settle. There is no scroll hijacking, pinning, or looping ambient motion. Reduced-motion preferences skip the full sequence.
 - **Accessibility:** micro labels are at least 11 px; every state has a text label; focus rings remain visible; mobile layouts must not overflow.
 - **Truthfulness:** the browser uses TxLINE-format replay events, synthetic venue books, and simulated fills. The credentialed TxLINE smoke client is separate and live execution is not included.
 

@@ -27,6 +27,9 @@ describe("landing page resilience", () => {
     expect(markup).toContain('href="#system"');
     expect(markup).toContain("See the gap");
     expect(markup).toContain("Speed finds it");
+    expect(markup).toContain('data-gsap-beam="true"');
+    expect(markup).toContain('data-gsap-reveal="true"');
+    expect(markup).toContain("Quote convergence window");
     expect(markup.match(/<h1/g)).toHaveLength(1);
     expect(markup).not.toContain("opacity:0");
   });

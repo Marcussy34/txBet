@@ -73,6 +73,8 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) for the dedicated landing page, then choose **Launch console**. The replay console is also available directly at [http://localhost:3000/console](http://localhost:3000/console).
 
+The landing page uses native smooth anchor scrolling plus GSAP ScrollTrigger as progressive enhancement for the split-window beam, quote rails, latency corridor, and telemetry traces. Reduced-motion preferences keep every asset static and fully visible.
+
 For the clearest first walkthrough:
 
 1. Select **Red card / matched bundle**.
@@ -185,6 +187,7 @@ flowchart LR
 Important modules:
 
 - [`src/components/landing`](src/components/landing) — the public product story and console handoff.
+- [`src/components/landing/use-landing-motion.ts`](src/components/landing/use-landing-motion.ts) — scoped GSAP ScrollTrigger choreography and reduced-motion handling.
 - [`src/app/console`](src/app/console) — the deterministic interactive replay route.
 - [`src/lib/txline`](src/lib/txline) — authenticated TxLINE transport and event normalization.
 - [`src/agents`](src/agents) — trigger definitions and routing.

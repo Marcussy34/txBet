@@ -114,6 +114,8 @@
   html {
     @apply scroll-smooth font-sans;
     background: var(--background);
+    /* Anchor transitions land below the persistent navigation rail. */
+    scroll-padding-top: 4.5rem;
   }
 
   body {

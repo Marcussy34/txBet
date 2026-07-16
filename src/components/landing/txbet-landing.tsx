@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   motion,
   useReducedMotion,
@@ -13,11 +13,13 @@ import { AGENTS } from "@/agents/definitions";
 import {
   AgentTelemetry,
   LatencyCorridor,
+  QuoteWindowGraphic,
   StatusGlyph,
   TxBetLockup,
   TxBetMark,
 } from "@/components/brand/txbet-brand";
 import { buttonVariants } from "@/components/ui/button";
+import { useLandingMotion } from "@/components/landing/use-landing-motion";
 import { cn } from "@/lib/utils";
 
 /* BRAND SPLASH STORYBOARD
@@ -92,7 +94,7 @@ function Reveal({
   className?: string;
 }) {
   // Core content stays visible in server HTML; motion is progressive enhancement only.
-  return <div className={className}>{children}</div>;
+  return <div data-gsap-reveal="true" className={className}>{children}</div>;
 }
 
 function MicroLabel({ children, className }: { children: ReactNode; className?: string }) {
@@ -129,8 +131,8 @@ function BrandSplash() {
   const splashTransition = reduceMotion ? { duration: 0 } : BRAND_SPLASH_SPRING;
 
   return (
-    <section aria-labelledby="brand-splash-title" className="relative isolate overflow-hidden border-b border-border">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+    <section data-brand-splash="true" aria-labelledby="brand-splash-title" className="relative isolate overflow-hidden border-b border-border">
+      <div data-gsap-beam="true" aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <motion.div
           initial={false}
           animate={{ scaleY: beamReady ? 1 : 0.58, scaleX: beamReady ? 1 : 0.72 }}
@@ -158,7 +160,7 @@ function BrandSplash() {
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center py-12 text-center sm:py-16">
-          <div className="grid w-full max-w-5xl grid-cols-2 items-center">
+          <div data-gsap-lockup="true" className="grid w-full max-w-5xl grid-cols-2 items-center">
             <motion.div
               initial={false}
               animate={{ x: identityReady ? 0 : 14 }}
@@ -351,7 +353,7 @@ function MarketSignalPreview() {
 
 function SystemIntro() {
   return (
-    <section id="system" className="relative isolate scroll-mt-20 overflow-hidden border-b border-border">
+    <section id="system" className="relative isolate overflow-hidden border-b border-border">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-10 top-8 -z-10 font-serif text-[32vw] leading-none tracking-[-0.08em] text-foreground/[0.025] sm:text-[23vw]"
@@ -437,18 +439,23 @@ function TensionSection() {
             <span className="block text-muted-foreground">Many clocks.</span>
             <span className="block">One payout.</span>
           </h2>
-          <div className="mt-12 grid gap-px border border-border bg-border sm:grid-cols-3">
-            <div className="bg-card p-5">
-              <MicroLabel>event received</MicroLabel>
-              <div className="mt-3 font-mono text-3xl font-semibold tabular-nums">0 ms</div>
+          <div className="mt-12 overflow-hidden border border-border bg-card/45">
+            <div className="border-b border-border bg-background/65 px-3 py-5 sm:px-6 sm:py-7">
+              <QuoteWindowGraphic className="h-auto max-h-72" />
             </div>
-            <div className="bg-card p-5">
-              <MicroLabel>synthetic capture</MicroLabel>
-              <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-success">800 ms</div>
-            </div>
-            <div className="bg-card p-5">
-              <MicroLabel>synthetic gap gone</MicroLabel>
-              <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-warning">3,000 ms</div>
+            <div className="grid gap-px bg-border sm:grid-cols-3">
+              <div className="bg-card p-5">
+                <MicroLabel>event received</MicroLabel>
+                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums">0 ms</div>
+              </div>
+              <div className="bg-card p-5">
+                <MicroLabel>synthetic capture</MicroLabel>
+                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-success">800 ms</div>
+              </div>
+              <div className="bg-card p-5">
+                <MicroLabel>synthetic gap gone</MicroLabel>
+                <div className="mt-3 font-mono text-3xl font-semibold tabular-nums text-warning">3,000 ms</div>
+              </div>
             </div>
           </div>
           <p className="mt-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
@@ -462,7 +469,7 @@ function TensionSection() {
 
 function ProtocolSection() {
   return (
-    <section id="protocol" className="scroll-mt-20 border-b border-border bg-card/25 py-24 sm:py-32">
+    <section id="protocol" className="border-b border-border bg-card/25 py-24 sm:py-32">
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <Reveal className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div>
@@ -498,7 +505,7 @@ function ProtocolSection() {
 
 function AgentSection() {
   return (
-    <section id="agents" className="scroll-mt-20 border-b border-border py-24 sm:py-32">
+    <section id="agents" className="border-b border-border py-24 sm:py-32">
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <Reveal className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
           <div>
@@ -515,7 +522,7 @@ function AgentSection() {
 
         <div className="mt-16 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           {AGENTS.map((agent, index) => (
-            <Reveal key={agent.id}>
+            <div key={agent.id}>
               <article className="group overflow-hidden rounded-lg border border-border bg-card/65 transition-colors duration-300 hover:border-foreground/35">
                 <AgentTelemetry agent={agent.id} className="aspect-[4/5] border-0 border-b border-border" />
                 <div className="min-h-36 p-3">
@@ -524,7 +531,7 @@ function AgentSection() {
                   <p className="mt-2 line-clamp-3 text-[0.7rem] leading-5 text-muted-foreground">{agent.description}</p>
                 </div>
               </article>
-            </Reveal>
+            </div>
           ))}
         </div>
         <p className="mt-5 max-w-3xl font-mono text-[0.6875rem] uppercase leading-5 tracking-[0.1em] text-muted-foreground">
@@ -537,7 +544,7 @@ function AgentSection() {
 
 function ProofSection() {
   return (
-    <section id="proof" className="scroll-mt-20 border-b border-border bg-card/25 py-24 sm:py-32">
+    <section id="proof" className="border-b border-border bg-card/25 py-24 sm:py-32">
       <div className="mx-auto grid max-w-[1500px] gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
         <Reveal>
           <MicroLabel className="text-success">04 / decision evidence</MicroLabel>
@@ -690,11 +697,13 @@ function LandingFooter() {
 }
 
 export function TxBetLanding() {
+  const landingRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 180, damping: 28, mass: 0.35 });
+  useLandingMotion({ scope: landingRef });
 
   return (
-    <div className="min-h-screen overflow-x-clip text-foreground">
+    <div ref={landingRef} className="min-h-screen overflow-x-clip text-foreground">
       <motion.div
         aria-hidden="true"
         style={{ scaleX: progress, originX: 0 }}

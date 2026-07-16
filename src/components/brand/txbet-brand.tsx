@@ -122,6 +122,7 @@ export function AgentTelemetry({ agent, className }: { agent: AgentId; className
         </span>
       </div>
       <svg
+        data-gsap-asset="agent-telemetry"
         viewBox="0 0 160 88"
         role="img"
         aria-label={`${agent.replaceAll("-", " ")} trigger telemetry`}
@@ -130,17 +131,82 @@ export function AgentTelemetry({ agent, className }: { agent: AgentId; className
       >
         <path d="M8 20H152M8 44H152M8 68H152" stroke="currentColor" strokeOpacity="0.10" />
         <path d="M40 8V80M80 8V80M120 8V80" stroke="currentColor" strokeOpacity="0.08" />
-        <path d={telemetry.trace} stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter" />
-        <circle cx={telemetry.point[0]} cy={telemetry.point[1]} r="3.2" fill="currentColor" />
+        <path data-gsap-draw d={telemetry.trace} stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter" />
+        <circle data-gsap-node cx={telemetry.point[0]} cy={telemetry.point[1]} r="3.2" fill="currentColor" />
       </svg>
       <span className="absolute bottom-3 left-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">event trace</span>
     </div>
   );
 }
 
+export function QuoteWindowGraphic({ className }: { className?: string }) {
+  return (
+    <svg
+      data-gsap-asset="quote-window"
+      viewBox="0 0 960 280"
+      role="img"
+      aria-labelledby="quote-window-title quote-window-description"
+      className={cn("w-full text-foreground", className)}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="quote-window-title">Quote convergence window</title>
+      <desc id="quote-window-description">
+        Two synthetic venue quotes converge after a match event, leaving a brief modeled execution window before the pair normalizes.
+      </desc>
+
+      <path d="M56 52H904M56 140H904M56 228H904" stroke="currentColor" strokeOpacity="0.10" />
+      <path d="M120 28V252M480 28V252M840 28V252" stroke="currentColor" strokeOpacity="0.08" />
+      <rect x="466" y="28" width="28" height="224" fill="currentColor" fillOpacity="0.055" />
+      <path d="M466 54H450V226H466M494 54H510V226H494" stroke="currentColor" strokeOpacity="0.32" strokeWidth="2" />
+
+      <path
+        data-gsap-draw
+        d="M56 72C176 72 230 82 330 96C404 106 442 116 480 132C574 128 694 126 904 126"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+      <path
+        data-gsap-draw
+        d="M56 210C176 210 244 196 338 180C402 169 448 150 480 132C574 136 696 138 904 138"
+        stroke="currentColor"
+        strokeOpacity="0.58"
+        strokeWidth="3"
+        strokeLinecap="square"
+      />
+
+      <g data-gsap-node>
+        <rect x="46" y="62" width="20" height="20" fill="currentColor" />
+        <circle cx="56" cy="210" r="10" stroke="currentColor" strokeWidth="3" />
+      </g>
+      <g data-gsap-node>
+        <circle cx="480" cy="132" r="10" fill="currentColor" />
+        <circle cx="480" cy="132" r="20" stroke="currentColor" strokeOpacity="0.24" />
+      </g>
+      <g data-gsap-node>
+        <rect x="894" y="116" width="20" height="20" fill="currentColor" />
+        <circle cx="904" cy="138" r="10" stroke="currentColor" strokeWidth="3" />
+      </g>
+
+      <g className="hidden sm:block" fill="currentColor" fontFamily="var(--font-data)" fontSize="14" letterSpacing="1.8">
+        <text x="56" y="34">EVENT / T+0</text>
+        <text x="410" y="272">CAPTURE WINDOW</text>
+        <text x="740" y="34">PAIR NORMALIZED</text>
+      </g>
+      <g className="sm:hidden" fill="currentColor" fontFamily="var(--font-data)" fontSize="32" letterSpacing="1.8">
+        <text x="56" y="34">T+0</text>
+        <text x="386" y="272">CAPTURE</text>
+        <text x="700" y="34">SETTLED</text>
+      </g>
+    </svg>
+  );
+}
+
 export function LatencyCorridor({ className }: { className?: string }) {
   return (
     <svg
+      data-gsap-asset="latency-corridor"
       viewBox="0 0 720 240"
       role="img"
       aria-labelledby="latency-corridor-title latency-corridor-description"
@@ -153,11 +219,11 @@ export function LatencyCorridor({ className }: { className?: string }) {
       <path d="M54 48H676M54 96H676M54 144H676M54 192H676" stroke="currentColor" strokeOpacity="0.12" />
       <path d="M150 30V210" stroke="currentColor" strokeWidth="2" />
       <path d="M310 72V120M430 120V168M560 168V216" stroke="currentColor" strokeWidth="2" strokeOpacity="0.55" />
-      <path d="M150 48H310V96H430V144H560V192H676" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter" />
-      <rect x="139" y="37" width="22" height="22" fill="currentColor" />
-      <circle cx="310" cy="96" r="7" fill="currentColor" />
-      <circle cx="430" cy="144" r="7" fill="currentColor" />
-      <circle cx="560" cy="192" r="7" fill="currentColor" />
+      <path data-gsap-draw d="M150 48H310V96H430V144H560V192H676" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter" />
+      <rect data-gsap-node x="139" y="37" width="22" height="22" fill="currentColor" />
+      <circle data-gsap-node cx="310" cy="96" r="7" fill="currentColor" />
+      <circle data-gsap-node cx="430" cy="144" r="7" fill="currentColor" />
+      <circle data-gsap-node cx="560" cy="192" r="7" fill="currentColor" />
       <g className="hidden sm:block" fill="currentColor" fontFamily="var(--font-data)" fontSize="18" letterSpacing="1.4">
         <text x="54" y="22">TXLINE EVENT</text>
         <text x="139" y="232">T+0</text>
