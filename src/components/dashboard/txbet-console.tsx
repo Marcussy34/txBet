@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Pause, Play, RotateCcw, StepForward } from "lucide-react";
@@ -18,7 +19,7 @@ import {
   type DemoScenarioId,
 } from "@/fixtures/demo-tapes";
 import { cn } from "@/lib/utils";
-import { AgentPortrait, StatusGlyph, TxBetLockup } from "@/components/brand/txbet-brand";
+import { AgentTelemetry, StatusGlyph, TxBetLockup, TxBetMark } from "@/components/brand/txbet-brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,12 +75,12 @@ function PanelHeading({
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[0.6rem] text-primary">{index}</span>
-        <h2 className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.18em] text-foreground">
+        <span className="font-mono text-[0.6875rem] text-primary">{index}</span>
+        <h2 className="font-mono text-[0.6875rem] font-medium uppercase tracking-[0.15em] text-foreground">
           {title}
         </h2>
       </div>
-      {aside && <span className="font-mono text-[0.58rem] uppercase tracking-widest text-muted-foreground">{aside}</span>}
+      {aside && <span className="font-mono text-[0.6875rem] uppercase tracking-widest text-muted-foreground">{aside}</span>}
     </div>
   );
 }
@@ -88,7 +89,7 @@ function ControlLabel({ label, value }: { label: string; value?: string }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-3">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      {value && <span className="font-mono text-[0.65rem] text-foreground">{value}</span>}
+      {value && <span className="font-mono text-[0.6875rem] text-foreground">{value}</span>}
     </div>
   );
 }
@@ -105,7 +106,7 @@ function VenueMatrix({ frame }: { frame: DemoFrame }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[520px] border-collapse text-left">
         <thead>
-          <tr className="border-b border-border/70 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-muted-foreground">
+          <tr className="border-b border-border/70 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
             <th className="px-4 py-2 font-normal">Venue</th>
             <th className="px-3 py-2 font-normal">Leg</th>
             <th className="px-3 py-2 font-normal">Ask</th>
@@ -123,8 +124,8 @@ function VenueMatrix({ frame }: { frame: DemoFrame }) {
                 <td className="px-4 py-3 text-sm font-semibold">{quote.contract.venueName}</td>
                 <td className="px-3 py-3">
                   <Badge variant="outline" className={cn(
-                    "rounded-sm font-mono text-[0.62rem]",
-                    quote.contract.outcome === "YES" ? "border-feed/40 text-feed" : "border-locked/40 text-locked",
+                    "rounded-sm font-mono text-[0.6875rem]",
+            "border-border bg-background text-foreground",
                   )}>
                     {quote.contract.outcome}
                   </Badge>
@@ -136,8 +137,8 @@ function VenueMatrix({ frame }: { frame: DemoFrame }) {
                 <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{age}ms</td>
                 <td className="px-4 py-3 text-right">
                   <span className={cn(
-                    "font-mono text-[0.58rem] uppercase tracking-wider",
-                    quote.updateState === "repriced" ? "text-primary" : quote.updateState === "older-quote" ? "text-amber-300" : "text-muted-foreground",
+                    "font-mono text-[0.6875rem] uppercase tracking-wider",
+                    quote.updateState === "repriced" ? "text-signal" : quote.updateState === "older-quote" ? "text-warning" : "text-muted-foreground",
                   )}>
                     {quote.updateState.replace("-", " ")}
                   </span>
@@ -157,7 +158,7 @@ function MathRow({ label, value, tone }: { label: string; value: string; tone?: 
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className={cn(
         "font-mono text-xs font-medium",
-        tone === "good" ? "text-locked" : tone === "warn" ? "text-primary" : "text-foreground",
+        tone === "good" ? "text-success" : tone === "warn" ? "text-warning" : "text-foreground",
       )}>
         {value}
       </span>
@@ -173,14 +174,14 @@ function ExecutionPanel({ execution }: { execution: BundleExecution | null }) {
     <div className="space-y-3">
       <div className={cn(
         "flex items-center gap-2 border px-3 py-2.5",
-        execution.state === "MATCHED" ? "border-locked/35 bg-locked/8 text-locked" : "border-primary/40 bg-primary/8 text-primary",
+        execution.state === "MATCHED" ? "border-success/35 bg-success/8 text-success" : "border-danger/40 bg-danger/8 text-danger",
       )}>
         <StatusGlyph state={execution.state === "MATCHED" ? "locked" : "risk"} />
         <span className="font-mono text-xs font-semibold tracking-wider">{execution.state}</span>
       </div>
       {[execution.yes, execution.no].map((leg) => (
         <div key={leg.outcome} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border/45 pb-2 text-xs last:border-0">
-          <span className={leg.outcome === "YES" ? "text-feed" : "text-locked"}>{leg.outcome}</span>
+          <span className="font-mono text-foreground">{leg.outcome}</span>
           <span className="text-muted-foreground">{leg.venueId}</span>
           <span className="font-mono">{leg.filledQuantity}/{leg.requestedQuantity}</span>
         </div>
@@ -287,15 +288,21 @@ export function TxBetConsole() {
     <div className="min-h-screen text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.5rem] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6">
-          <TxBetLockup />
+          <Link href="/" aria-label="Back to txBet landing page" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <span className="sm:hidden"><TxBetLockup compact /></span>
+            <span className="hidden sm:block"><TxBetLockup /></span>
+          </Link>
+          <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-muted-foreground md:hidden">
+            SYNTHETIC · SIMULATED
+          </Badge>
           <div className="hidden items-center gap-2 md:flex">
-            <Badge variant="outline" className="rounded-sm border-feed/35 bg-feed/5 font-mono text-[0.58rem] tracking-wider text-feed">
-              TXLINE INPUT
+            <Badge variant="outline" className="border-signal/35 bg-signal/5 font-mono text-[0.6875rem] tracking-wider text-signal">
+              TXLINE SMOKE BOUNDARY
             </Badge>
-            <Badge variant="outline" className="rounded-sm border-primary/35 bg-primary/5 font-mono text-[0.58rem] tracking-wider text-primary">
+            <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-foreground">
               SYNTHETIC REPLAY
             </Badge>
-            <Badge variant="outline" className="rounded-sm border-locked/35 bg-locked/5 font-mono text-[0.58rem] tracking-wider text-locked">
+            <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-muted-foreground">
               SIMULATED EXECUTION
             </Badge>
           </div>
@@ -303,28 +310,27 @@ export function TxBetConsole() {
       </header>
 
       <main className="mx-auto max-w-[1600px] px-3 py-4 sm:px-6 sm:py-6">
-        <section className="relative mb-5 overflow-hidden border border-border bg-card/70 px-5 py-6 sm:px-7">
-          <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,transparent_48%,color-mix(in_oklch,var(--feed),transparent_94%)_48%,transparent_74%)]" />
+        <section className="relative mb-5 overflow-hidden rounded-xl border border-border bg-card/80 px-5 py-6 sm:px-7">
           <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="mb-2 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-primary">No edge, no trade / tape 001</p>
-              <h1 className="max-w-4xl font-heading text-4xl font-bold uppercase leading-[0.92] tracking-[-0.03em] sm:text-6xl lg:text-7xl">
+              <p className="mb-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-primary">No edge. No trade. / tape 001</p>
+              <h1 className="max-w-4xl font-serif text-4xl font-normal leading-[0.96] tracking-[-0.035em] sm:text-6xl lg:text-7xl">
                 The match event wakes the agent.
-                <span className="block text-feed">Settlement math decides.</span>
+                <span className="block text-muted-foreground">Settlement math decides.</span>
               </h1>
             </div>
             <div className="grid min-w-[270px] grid-cols-3 border border-border bg-background/70">
               <div className="px-4 py-3 text-left">
-                <div className="font-mono text-[0.55rem] uppercase tracking-wider text-muted-foreground">home</div>
-                <div className="mt-1 font-heading text-xl font-semibold uppercase">{scenario.fixture.home}</div>
+                <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">home</div>
+                <div className="mt-1 font-sans text-lg font-semibold">{scenario.fixture.home}</div>
               </div>
               <div className="grid place-items-center border-x border-border px-4 py-3 text-center">
-                <div className="font-heading text-3xl font-bold">{frame.score}</div>
-                <div className="font-mono text-[0.58rem] text-primary">{frame.clock}</div>
+                <div className="font-mono text-2xl font-semibold tabular-nums">{frame.score}</div>
+                <div className="font-mono text-[0.6875rem] text-primary">{frame.clock}</div>
               </div>
               <div className="px-4 py-3 text-right">
-                <div className="font-mono text-[0.55rem] uppercase tracking-wider text-muted-foreground">away</div>
-                <div className="mt-1 font-heading text-xl font-semibold uppercase">{scenario.fixture.away}</div>
+                <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">away</div>
+                <div className="mt-1 font-sans text-lg font-semibold">{scenario.fixture.away}</div>
               </div>
             </div>
           </div>
@@ -332,22 +338,22 @@ export function TxBetConsole() {
 
         <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
           <aside className="space-y-4">
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="01" title="Operator controls" aside="simulation" />
               <CardContent className="space-y-5 px-4 py-4">
                 <div>
                   <ControlLabel label="Demo tape" />
                   <Select value={scenarioId} onValueChange={changeScenario}>
-                    <SelectTrigger aria-label="Demo tape" className="h-10 w-full rounded-none border-border bg-background/60">
+                    <SelectTrigger aria-label="Demo tape" className="h-10 w-full border-border bg-background/60">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent alignItemWithTrigger={false} className="rounded-none border border-border">
+                    <SelectContent alignItemWithTrigger={false} className="border border-border">
                       {DEMO_SCENARIOS.map((item) => (
                         <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="mt-2 text-[0.68rem] leading-5 text-muted-foreground">{scenario.subtitle}</p>
+                  <p className="mt-2 text-[0.6875rem] leading-5 text-muted-foreground">{scenario.subtitle}</p>
                 </div>
 
                 <Separator />
@@ -367,21 +373,21 @@ export function TxBetConsole() {
                         )}
                         aria-pressed={agentId === agent.id}
                       >
-                        <AgentPortrait agent={agent.id} className="aspect-square w-full border-0 border-b border-white/10" />
-                        <span className="block min-h-10 px-2 py-2 text-[0.64rem] font-semibold leading-tight">{agent.shortName}</span>
+                        <AgentTelemetry agent={agent.id} className="aspect-square w-full border-0 border-b border-border" />
+                        <span className="block min-h-10 px-2 py-2 text-[0.6875rem] font-semibold leading-tight">{agent.shortName}</span>
                       </button>
                     ))}
                   </div>
                   <div className="mt-3 border border-border bg-background/45 p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-mono text-[0.58rem] uppercase tracking-wider text-primary">Selected referee</span>
-                      <span className="font-mono text-[0.55rem] text-locked">ARMED</span>
+                      <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-primary">Selected agent</span>
+                      <span className="font-mono text-[0.6875rem] text-signal">ARMED</span>
                     </div>
                     <div className="mt-2 text-xs font-semibold text-foreground">{selectedAgent.name}</div>
-                    <p className="mt-1.5 text-[0.65rem] leading-4 text-muted-foreground">{selectedAgent.description}</p>
+                    <p className="mt-1.5 text-[0.6875rem] leading-4 text-muted-foreground">{selectedAgent.description}</p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {selectedAgent.marketFamilies.map((family) => (
-                        <span key={family} className="border border-border px-1.5 py-1 font-mono text-[0.5rem] uppercase tracking-wider text-muted-foreground">
+                        <span key={family} className="rounded-sm border border-border px-1.5 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
                           {family.replaceAll("-", " ")}
                         </span>
                       ))}
@@ -421,7 +427,7 @@ export function TxBetConsole() {
                 <div className="flex items-center justify-between gap-3 border border-border bg-background/40 px-3 py-2.5">
                   <div>
                     <div className="text-xs font-semibold">Automatic simulated execution</div>
-                    <div className="mt-0.5 font-mono text-[0.55rem] text-muted-foreground">off = scan only</div>
+                    <div className="mt-0.5 font-mono text-[0.6875rem] text-muted-foreground">off = scan only</div>
                   </div>
                   <Switch aria-label="Automatic simulated execution" checked={automatic} onCheckedChange={setAutomatic} />
                 </div>
@@ -430,7 +436,7 @@ export function TxBetConsole() {
           </aside>
 
           <div className="min-w-0 space-y-4">
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="02" title="TxLINE action tape" aside={`${step + 1} / ${scenario.frames.length}`} />
               <CardContent className="px-0 py-0">
                 <ScrollArea className="h-[150px]">
@@ -445,14 +451,14 @@ export function TxBetConsole() {
                           index > step && "opacity-35",
                         )}
                       >
-                        <span className="font-mono text-[0.62rem] text-muted-foreground">{item.clock}</span>
+                        <span className="font-mono text-[0.6875rem] text-muted-foreground">{item.clock}</span>
                         <span className={cn(
                           "mt-1 block size-2 border",
-                          index === step ? "border-primary bg-primary" : index < step ? "border-locked bg-locked" : "border-border",
+                          index === step ? "border-primary bg-primary" : index < step ? "border-success bg-success" : "border-border",
                         )} />
                         <span>
                           <span className="block text-xs font-semibold">{item.label}</span>
-                          <span className="mt-0.5 block text-[0.66rem] leading-4 text-muted-foreground">
+                          <span className="mt-0.5 block text-[0.6875rem] leading-4 text-muted-foreground">
                             {item.event?.description ?? "Agent remains armed; no venue scan is requested."}
                           </span>
                         </span>
@@ -463,12 +469,12 @@ export function TxBetConsole() {
               </CardContent>
             </Card>
 
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="03" title="Cross-venue matrix" aside={`${frame.quotes.length} books`} />
               <CardContent className="px-0 py-0"><VenueMatrix frame={frame} /></CardContent>
             </Card>
 
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="04" title="Matched-position composer" aside="fixed $1 payout" />
               <CardContent className="px-4 py-4">
                 <AnimatePresence mode="wait">
@@ -481,19 +487,19 @@ export function TxBetConsole() {
                   >
                     {candidate ? (
                       <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
-                        <div className="border border-feed/30 bg-feed/5 p-4">
-                          <div className="font-mono text-[0.58rem] uppercase tracking-wider text-feed">Buy YES</div>
-                          <div className="mt-2 font-heading text-3xl font-bold">{formatPrice(candidate.yes.averagePriceMicros)}</div>
+                        <div className="rounded-md border border-border bg-background/55 p-4">
+                          <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">Buy YES</div>
+                          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums">{formatPrice(candidate.yes.averagePriceMicros)}</div>
                           <div className="mt-1 text-xs text-muted-foreground">{candidate.yes.venueName} · {candidate.quantity} shares</div>
                         </div>
                         <div className="grid place-items-center">
-                          <div className="grid size-12 rotate-45 place-items-center border border-primary bg-primary/10">
-                            <span className="-rotate-45 font-mono text-[0.6rem] text-primary">PAIR</span>
+                          <div className="grid size-14 place-items-center rounded-md border border-border bg-card">
+                            <TxBetMark className="size-9" />
                           </div>
                         </div>
-                        <div className="border border-locked/30 bg-locked/5 p-4 text-right md:text-left">
-                          <div className="font-mono text-[0.58rem] uppercase tracking-wider text-locked">Buy NO</div>
-                          <div className="mt-2 font-heading text-3xl font-bold">{formatPrice(candidate.no.averagePriceMicros)}</div>
+                        <div className="rounded-md border border-border bg-background/55 p-4 text-right md:text-left">
+                          <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">Buy NO</div>
+                          <div className="mt-2 font-mono text-2xl font-semibold tabular-nums">{formatPrice(candidate.no.averagePriceMicros)}</div>
                           <div className="mt-1 text-xs text-muted-foreground">{candidate.no.venueName} · {candidate.quantity} shares</div>
                         </div>
                         <div className="md:col-span-3 grid gap-x-8 md:grid-cols-2">
@@ -511,11 +517,11 @@ export function TxBetConsole() {
                       <div className="grid min-h-48 place-items-center border border-dashed border-border bg-background/35 px-6 text-center">
                         <div className="max-w-md">
                           <StatusGlyph state={pipeline.trigger.active ? "blocked" : "scan"} className="mx-auto size-8 text-muted-foreground" />
-                          <h3 className="mt-3 font-heading text-2xl font-semibold uppercase">
+                          <h3 className="mt-3 font-sans text-2xl font-semibold tracking-[-0.03em]">
                             {pipeline.trigger.active ? "No executable bundle" : "Waiting for match action"}
                           </h3>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            {reasons[0] ?? "No edge, no trade."}
+                            {reasons[0] ?? "No edge. No trade."}
                           </p>
                         </div>
                       </div>
@@ -525,87 +531,87 @@ export function TxBetConsole() {
               </CardContent>
             </Card>
 
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
-              <PanelHeading index="05" title="Synthetic backtest + latency lab" aside={`${backtest.windows} windows`} />
+            <Card className="gap-0 bg-card/85 py-0">
+              <PanelHeading index="05" title="Synthetic replay report + latency lab" aside={`${backtest.windows} windows`} />
               <CardContent className="px-4 py-4">
                 <div className="grid grid-cols-2 gap-px border border-border bg-border lg:grid-cols-4">
                   {[
-                    ["Locked replay P&L", formatUsd(backtest.lockedProfitMicros), "text-locked"],
+                    ["Modeled matched P&L", formatUsd(backtest.lockedProfitMicros), "text-success"],
                     ["Matched bundles", String(backtest.matchedCount), "text-foreground"],
                     ["No-trade windows", String(backtest.noTradeCount), "text-foreground"],
-                    ["Unhedged alerts", String(backtest.unhedgedCount), "text-primary"],
+                    ["Unhedged alerts", String(backtest.unhedgedCount), "text-danger"],
                   ].map(([label, value, tone]) => (
                     <div key={label} className="bg-card px-3 py-3">
-                      <div className="font-mono text-[0.52rem] uppercase tracking-wider text-muted-foreground">{label}</div>
-                      <div className={cn("mt-2 font-heading text-2xl font-bold", tone)}>{value}</div>
+                      <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{label}</div>
+                      <div className={cn("mt-2 font-mono text-xl font-semibold tabular-nums", tone)}>{value}</div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div className="border border-feed/30 bg-feed/5 p-3">
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-mono text-[0.58rem] uppercase tracking-wider text-feed">800ms route</span>
-                      <span className="font-mono text-[0.58rem] text-locked">CAPTURED</span>
+                      <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">800ms route</span>
+                      <span className="font-mono text-[0.6875rem] text-success">CAPTURED</span>
                     </div>
-                    <div className="mt-2 font-heading text-2xl font-bold">
+                    <div className="mt-2 font-mono text-xl font-semibold tabular-nums text-success">
                       {fastTrace?.scan.candidate ? formatBps(fastTrace.scan.candidate.netReturnBps) : "—"}
                     </div>
-                    <p className="mt-1 text-[0.66rem] leading-5 text-muted-foreground">The replay bundle remains below payout after modeled costs.</p>
+                    <p className="mt-1 text-[0.6875rem] leading-5 text-muted-foreground">The replay bundle remains below payout after modeled costs.</p>
                   </div>
-                  <div className="border border-primary/30 bg-primary/5 p-3">
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-mono text-[0.58rem] uppercase tracking-wider text-primary">3,000ms route</span>
-                      <span className="font-mono text-[0.58rem] text-primary">MISSED</span>
+                      <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-foreground">3,000ms route</span>
+                      <span className="font-mono text-[0.6875rem] text-warning">MISSED</span>
                     </div>
-                    <div className="mt-2 font-heading text-2xl font-bold">NO TRADE</div>
-                    <p className="mt-1 text-[0.66rem] leading-5 text-muted-foreground">
+                    <div className="mt-2 font-sans text-xl font-semibold">NO TRADE</div>
+                    <p className="mt-1 text-[0.6875rem] leading-5 text-muted-foreground">
                       {delayedTrace?.scan.reasons[0] ? reasonCopy[delayedTrace.scan.reasons[0]] : "The gap has decayed."}
                     </p>
                   </div>
                 </div>
-                <p className="mt-3 border-l-2 border-border pl-3 text-[0.62rem] leading-5 text-muted-foreground">
-                  Synthetic replay evidence only. Locked P&amp;L excludes the intentionally unhedged window and does not predict real-world returns.
+                <p className="mt-3 border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
+                  Synthetic replay evidence only. Modeled matched P&amp;L excludes the intentionally unhedged window and does not predict real-world returns.
                 </p>
               </CardContent>
             </Card>
           </div>
 
           <aside className="space-y-4">
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="06" title="Decision gate" aside={automatic ? "sim auto" : "scan only"} />
               <CardContent className="px-4 py-4">
                 <div className={cn(
                   "mb-4 flex items-center justify-between gap-4 border px-3 py-3",
-                  decisionTone === "locked" && "border-locked/40 bg-locked/8 text-locked",
-                  decisionTone === "risk" && "border-primary/45 bg-primary/8 text-primary",
-                  decisionTone === "ready" && "border-feed/40 bg-feed/8 text-feed",
+                  decisionTone === "locked" && "border-success/40 bg-success/8 text-success",
+                  decisionTone === "risk" && "border-danger/45 bg-danger/8 text-danger",
+                  decisionTone === "ready" && "border-signal/40 bg-signal/8 text-signal",
                   decisionTone === "idle" && "border-border bg-background/45 text-muted-foreground",
                 )}>
                   <div className="flex items-center gap-2">
                     <StatusGlyph state={decisionTone === "locked" ? "locked" : decisionTone === "risk" ? "risk" : decisionTone === "ready" ? "scan" : "blocked"} />
                     <span className="font-mono text-xs font-semibold tracking-wider">{decision}</span>
                   </div>
-                  <span className="font-mono text-[0.55rem] uppercase tracking-widest">no edge, no trade</span>
+                  <span className="font-mono text-[0.6875rem] uppercase tracking-widest">no edge, no trade</span>
                 </div>
                 <div className="space-y-0">
                   {gateRows.map((gate) => (
                     <div key={gate.label} className="flex items-center justify-between gap-3 border-b border-border/45 py-2.5 last:border-0">
                       <span className="text-xs text-muted-foreground">{gate.label}</span>
-                      <span className={cn("font-mono text-[0.62rem]", gate.pass ? "text-locked" : "text-muted-foreground")}>
+                      <span className={cn("font-mono text-[0.6875rem]", gate.pass ? "text-success" : "text-muted-foreground")}>
                         {gate.pass ? "PASS" : "WAIT"}
                       </span>
                     </div>
                   ))}
                 </div>
                 {reasons.length > 0 && pipeline.trigger.active && (
-                  <div className="mt-4 border-l-2 border-primary bg-primary/6 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
+                  <div className="mt-4 border-l-2 border-warning bg-warning/6 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
                     {reasons[0]}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="gap-0 rounded-none bg-card/85 py-0">
+            <Card className="gap-0 bg-card/85 py-0">
               <PanelHeading index="07" title="Bundle state" aside="two-leg" />
               <CardContent className="px-4 py-4">
                 <Tabs defaultValue="execution">
@@ -622,13 +628,13 @@ export function TxBetConsole() {
                         {branches.map((branch) => (
                           <div key={branch.winner} className="border border-border bg-background/40 p-3">
                             <div className="flex items-center justify-between gap-3">
-                              <span className={branch.winner === "YES" ? "font-mono text-xs text-feed" : "font-mono text-xs text-locked"}>{branch.winner} wins</span>
-                              <span className="font-mono text-xs text-locked">+{formatUsd(branch.modeledProfitMicros)}</span>
+                              <span className="font-mono text-xs text-foreground">{branch.winner} wins</span>
+                              <span className="font-mono text-xs text-success">+{formatUsd(branch.modeledProfitMicros)}</span>
                             </div>
-                            <div className="mt-1 text-[0.66rem] text-muted-foreground">Payout {formatUsd(branch.payoutMicros)}</div>
+                            <div className="mt-1 text-[0.6875rem] text-muted-foreground">Payout {formatUsd(branch.payoutMicros)}</div>
                           </div>
                         ))}
-                        <p className="text-[0.66rem] leading-5 text-muted-foreground">
+                        <p className="text-[0.6875rem] leading-5 text-muted-foreground">
                           Both modeled branches produce the same P&amp;L only after equal complementary fills.
                         </p>
                       </div>
@@ -640,24 +646,24 @@ export function TxBetConsole() {
               </CardContent>
             </Card>
 
-            <Card className="gap-0 rounded-none border-primary/20 bg-primary/[0.035] py-0">
+            <Card className="gap-0 border-warning/25 bg-warning/[0.035] py-0">
               <CardHeader className="px-4 py-4">
-                <CardTitle className="font-mono text-[0.66rem] uppercase tracking-[0.16em] text-primary">Pitch-safe disclosure</CardTitle>
+                <CardTitle className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-warning">Pitch-safe disclosure</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4 text-xs leading-5 text-muted-foreground">
-                {scenario.disclosure}. Cross-venue profit is locked only after both legs fill equally and settlement rules remain compatible.
+                {scenario.disclosure}. In this replay, modeled profit appears matched only after equal simulated fills and compatible settlement rules.
               </CardContent>
             </Card>
           </aside>
         </div>
 
-        <div className="sticky bottom-3 z-30 mx-auto mt-4 flex max-w-3xl items-center gap-2 border border-border bg-background/95 p-2 shadow-2xl backdrop-blur-xl">
+        <div className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 mx-auto mt-4 flex max-w-3xl flex-wrap items-center gap-2 rounded-lg border border-border bg-background/95 p-2 shadow-2xl backdrop-blur-xl">
           <Button
             variant="outline"
             size="icon"
             title="Reset replay"
             onClick={() => { setStep(0); setPlaying(false); }}
-            className="rounded-none"
+            className="rounded-md"
           >
             <RotateCcw />
           </Button>
@@ -670,7 +676,7 @@ export function TxBetConsole() {
               }
               setPlaying((current) => !current);
             }}
-            className="h-9 flex-1 rounded-none bg-primary px-4 font-mono text-xs font-semibold uppercase tracking-wider text-primary-foreground"
+            className="h-9 flex-1 rounded-md bg-primary px-4 font-mono text-xs font-semibold uppercase tracking-wider text-primary-foreground"
           >
             {playing ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
             {playing ? "Pause tape" : step >= scenario.frames.length - 1 ? "Replay tape" : "Play tape"}
@@ -680,26 +686,28 @@ export function TxBetConsole() {
             size="icon"
             title="Advance one step"
             onClick={() => { setStep((current) => Math.min(current + 1, scenario.frames.length - 1)); setPlaying(false); }}
-            className="rounded-none"
+            className="rounded-md"
           >
             <StepForward />
           </Button>
-          {[1, 2, 4].map((rate) => (
-            <Button
-              key={rate}
-              variant={speed === rate ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setSpeed(rate)}
-              className="rounded-none font-mono text-[0.65rem]"
-            >
-              {rate}×
-            </Button>
-          ))}
+          <div className="flex gap-1 max-[359px]:order-last max-[359px]:w-full max-[359px]:justify-end max-[359px]:border-t max-[359px]:border-border max-[359px]:pt-2">
+            {[1, 2, 4].map((rate) => (
+              <Button
+                key={rate}
+                variant={speed === rate ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setSpeed(rate)}
+                className="rounded-md font-mono text-[0.6875rem]"
+              >
+                {rate}×
+              </Button>
+            ))}
+          </div>
         </div>
       </main>
 
-      <footer className="border-t border-border px-4 py-5 text-center font-mono text-[0.58rem] uppercase tracking-[0.12em] text-muted-foreground">
-        txBet / TxLINE-powered strategy core / venue adapters required for live execution
+      <footer className="border-t border-border px-4 py-5 text-center font-mono text-[0.6875rem] uppercase tracking-[0.11em] text-muted-foreground">
+        txBet / strategy core built for TxLINE input / venue adapters required for live execution
       </footer>
     </div>
   );

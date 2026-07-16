@@ -11,13 +11,14 @@ export function TxBetMark({ className }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect x="1" y="1" width="46" height="46" rx="9" fill="#0B1110" stroke="#26302D" />
-      <path d="M7 34H15L22 27" stroke="#66DDE7" strokeWidth="3" strokeLinecap="square" />
-      <path d="M41 14H33L26 21" stroke="#B8F15A" strokeWidth="3" strokeLinecap="square" />
-      <path d="M24 18L30 24L24 30L18 24L24 18Z" fill="#F8F4E8" />
-      <path d="M12 40H36" stroke="#FF8A45" strokeWidth="2" strokeLinecap="square" />
-      <circle cx="12" cy="40" r="2" fill="#FF8A45" />
-      <circle cx="36" cy="40" r="2" fill="#FF8A45" />
+      <path
+        d="M5 11H15L21 21M5 37H15L21 27M27 21L33 11H43M27 27L33 37H43"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+      <path d="M21 16V32M27 16V32" stroke="currentColor" strokeWidth="3.2" />
     </svg>
   );
 }
@@ -27,12 +28,10 @@ export function TxBetLockup({ compact = false }: { compact?: boolean }) {
     <div className="flex items-center gap-3">
       <TxBetMark className={compact ? "size-8" : "size-10"} />
       <div className="leading-none">
-        <div className="font-heading text-[1.75rem] font-bold tracking-[-0.03em]">
-          <span className="text-feed">tx</span><span className="text-foreground">Bet</span>
-        </div>
+        <div className="font-sans text-[1.55rem] font-semibold tracking-[-0.045em] text-foreground">txBet</div>
         {!compact && (
-          <div className="mt-0.5 font-mono text-[0.55rem] uppercase tracking-[0.22em] text-muted-foreground">
-            event-triggered arbitrage
+          <div className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
+            Event-driven trading infrastructure
           </div>
         )}
       </div>
@@ -99,40 +98,81 @@ export function AgentGlyph({
   );
 }
 
-const portraitColors: Record<AgentId, { background: string; shirt: string; accent: string }> = {
-  "red-card": { background: "#18363A", shirt: "#66DDE7", accent: "#FF8A45" },
-  injury: { background: "#302E1B", shirt: "#E2D56B", accent: "#F8F4E8" },
-  "penalty-var": { background: "#26361B", shirt: "#B8F15A", accent: "#66DDE7" },
-  "goal-reaction": { background: "#3A2519", shirt: "#FF8A45", accent: "#F8F4E8" },
-  "corner-pressure": { background: "#222844", shirt: "#8EA6FF", accent: "#B8F15A" },
-  "dangerous-free-kick": { background: "#382134", shirt: "#ED8FD6", accent: "#66DDE7" },
+const agentTelemetry: Record<AgentId, { code: string; trace: string; point: [number, number] }> = {
+  "red-card": { code: "A01", trace: "M8 68H40V52H66V24H92V52H120V42H152", point: [152, 42] },
+  injury: { code: "A02", trace: "M8 54H34L48 30L62 72L78 44L94 54H152", point: [152, 54] },
+  "penalty-var": { code: "A03", trace: "M8 62H42V34H72V62H102V28H132V62H152", point: [152, 62] },
+  "goal-reaction": { code: "A04", trace: "M8 68H34V58H58V22H84V58H110V46H152", point: [152, 46] },
+  "corner-pressure": { code: "A05", trace: "M8 72H32V62H56V50H80V38H104V26H128V14H152", point: [152, 14] },
+  "dangerous-free-kick": { code: "A06", trace: "M8 68C38 68 48 38 76 38S112 18 152 18", point: [152, 18] },
 };
 
-export function AgentPortrait({ agent, className }: { agent: AgentId; className?: string }) {
-  const palette = portraitColors[agent];
+export function AgentTelemetry({ agent, className }: { agent: AgentId; className?: string }) {
+  const telemetry = agentTelemetry[agent];
   return (
-    <div className={cn("relative overflow-hidden border border-white/10", className)}>
-      <svg
-        viewBox="0 0 96 96"
-        role="img"
-        aria-label={`${agent.replaceAll("-", " ")} agent referee profile`}
-        className="size-full"
-      >
-        <rect width="96" height="96" fill={palette.background} />
-        <path d="M0 24H96M0 48H96M0 72H96M24 0V96M48 0V96M72 0V96" stroke="#F8F4E8" strokeOpacity="0.06" />
-        <circle cx="48" cy="31" r="14" fill="#D9AE8C" />
-        <path d="M34 29C35 15 61 15 62 29C56 25 40 25 34 29Z" fill="#111817" />
-        <path d="M29 96V69C29 55 38 48 48 48C58 48 67 55 67 69V96H29Z" fill={palette.shirt} />
-        <path d="M39 50L48 63L57 50" fill="#F8F4E8" fillOpacity="0.9" />
-        <path d="M48 63V96" stroke="#0B1110" strokeOpacity="0.3" strokeWidth="2" />
-        <rect x="55" y="64" width="8" height="11" fill={palette.accent} />
-        <path d="M36 75H60" stroke="#0B1110" strokeOpacity="0.22" strokeWidth="2" />
-      </svg>
-      <div className="absolute right-2 top-2 grid size-8 place-items-center border border-white/20 bg-background/75 text-foreground backdrop-blur-sm">
-        <AgentGlyph agent={agent} className="size-4" />
+    <div className={cn("relative overflow-hidden border border-border bg-card text-foreground", className)}>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--foreground),transparent_95%)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--foreground),transparent_95%)_1px,transparent_1px)] bg-[size:24px_24px]"
+      />
+      <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between">
+        <span className="font-mono text-[0.6875rem] font-medium tracking-[0.16em] text-muted-foreground">{telemetry.code}</span>
+        <span className="grid size-8 place-items-center rounded-sm border border-border bg-background/85">
+          <AgentGlyph agent={agent} className="size-4" />
+        </span>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-7 bg-gradient-to-t from-background/85 to-transparent" />
+      <svg
+        viewBox="0 0 160 88"
+        role="img"
+        aria-label={`${agent.replaceAll("-", " ")} trigger telemetry`}
+        className="absolute inset-x-3 bottom-4 h-[58%] w-[calc(100%-1.5rem)]"
+        fill="none"
+      >
+        <path d="M8 20H152M8 44H152M8 68H152" stroke="currentColor" strokeOpacity="0.10" />
+        <path d="M40 8V80M80 8V80M120 8V80" stroke="currentColor" strokeOpacity="0.08" />
+        <path d={telemetry.trace} stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter" />
+        <circle cx={telemetry.point[0]} cy={telemetry.point[1]} r="3.2" fill="currentColor" />
+      </svg>
+      <span className="absolute bottom-3 left-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">event trace</span>
     </div>
+  );
+}
+
+export function LatencyCorridor({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 720 240"
+      role="img"
+      aria-labelledby="latency-corridor-title latency-corridor-description"
+      className={cn("w-full text-foreground", className)}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title id="latency-corridor-title">Latency Corridor</title>
+      <desc id="latency-corridor-description">A TxLINE-format event at T plus zero precedes three staggered synthetic venue repricing moments.</desc>
+      <path d="M54 48H676M54 96H676M54 144H676M54 192H676" stroke="currentColor" strokeOpacity="0.12" />
+      <path d="M150 30V210" stroke="currentColor" strokeWidth="2" />
+      <path d="M310 72V120M430 120V168M560 168V216" stroke="currentColor" strokeWidth="2" strokeOpacity="0.55" />
+      <path d="M150 48H310V96H430V144H560V192H676" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter" />
+      <rect x="139" y="37" width="22" height="22" fill="currentColor" />
+      <circle cx="310" cy="96" r="7" fill="currentColor" />
+      <circle cx="430" cy="144" r="7" fill="currentColor" />
+      <circle cx="560" cy="192" r="7" fill="currentColor" />
+      <g className="hidden sm:block" fill="currentColor" fontFamily="var(--font-data)" fontSize="18" letterSpacing="1.4">
+        <text x="54" y="22">TXLINE EVENT</text>
+        <text x="139" y="232">T+0</text>
+        <text x="286" y="64">VENUE 01</text>
+        <text x="406" y="112">VENUE 02</text>
+        <text x="536" y="160">VENUE 03</text>
+      </g>
+      <g className="sm:hidden" fill="currentColor" fontFamily="var(--font-data)" fontSize="32" letterSpacing="1.4">
+        <text x="54" y="30">EVENT</text>
+        <text x="139" y="232">T+0</text>
+        <text x="286" y="68">V01</text>
+        <text x="406" y="116">V02</text>
+        <text x="536" y="164">V03</text>
+      </g>
+    </svg>
   );
 }
 

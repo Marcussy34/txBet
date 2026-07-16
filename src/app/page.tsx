@@ -1,5 +1,5 @@
-import { TxBetConsole } from "@/components/dashboard/txbet-console";
+import { TxBetLanding } from "@/components/landing/txbet-landing";
 
 export default function Home() {
-  return <TxBetConsole />;
+  return <TxBetLanding />;
 }

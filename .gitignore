@@ -37,7 +37,10 @@ yarn-error.log*
 # local research and browser artifacts
 .firecrawl/
 .playwright-cli/
+.brand-preview/
 output/
+/brand.md.bak
+/src/app/globals.css.bak
 
 # vercel
 .vercel

@@ -1,7 +1,7 @@
 {
   "name": "txbet",
   "version": "0.1.0",
-  "description": "Live-event, exact-complement arbitrage orchestration powered by TxLINE.",
+  "description": "World Cup hackathon prototype for TxLINE-format, event-triggered exact-complement strategies.",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@10.17.1",
@@ -23,9 +23,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@fontsource-variable/manrope": "^5.2.8",
-    "@fontsource/barlow-condensed": "^5.2.8",
-    "@fontsource/ibm-plex-mono": "^5.2.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",

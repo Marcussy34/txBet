@@ -1,14 +1,14 @@
 # txBet
 
-![txBet — event-triggered prediction-market arbitrage](docs/assets/txbet-readme-banner.svg)
+![txBet — event-triggered exact-complement strategy prototype](docs/assets/txbet-readme-banner.svg)
 
-> **The match event wakes the agent. Settlement math decides.**
+> **See the gap before the market catches up.**
 
-txBet is a hackathon prototype for a TxLINE-powered arbitrage agent for live sports prediction markets. It is designed so that a major match action—such as a red card, goal, injury, penalty, or pressure window—wakes an immediate scan of the same binary market across approved prediction venues.
+txBet is a World Cup hackathon prototype for event-triggered exact-complement strategies. In the bundled synthetic replay, a red card, goal, injury, penalty, or pressure-window event wakes a scan of the same binary market across approved prediction venues.
 
 It proceeds only when it can pair exact opposite outcomes for less than their common settlement payout after executable depth, venue fees, and a safety buffer.
 
-**No edge, no trade.**
+**No edge. No trade.**
 
 > The browser and terminal demonstrations currently use synthetic TxLINE-format events, synthetic venue books, and simulated fills. A separate credentialed client can authenticate to TxLINE, read a score snapshot, and observe its live SSE stream, but that live stream is not yet wired into the strategy loop or browser. The repository does not place real-money orders.
 
@@ -38,7 +38,7 @@ This is not a directional prediction about Argentina. If both complementary legs
 
 ## Target product flow
 
-1. **Listen** — TxLINE supplies confirmed live match actions.
+1. **Listen** — TxLINE supplies supported live match actions.
 2. **Wake an agent** — the selected red-card, goal, injury, penalty, or pressure agent decides whether the event qualifies.
 3. **Scope the scan** — txBet accepts only quotes for the triggering fixture and the agent's approved market families.
 4. **Match contracts** — exact settlement fingerprints replace fuzzy title matching.
@@ -56,7 +56,7 @@ This is not a directional prediction about Argentina. If both complementary legs
 | Exact settlement and complementary-outcome matching | Implemented |
 | Depth, fees, capital, exposure, freshness, and return optimizer | Implemented |
 | Browser and terminal walkthroughs | Deterministic synthetic replay |
-| Backtest and latency comparison | Synthetic demonstration data |
+| Synthetic replay report and latency comparison | Synthetic demonstration data |
 | Prediction-venue books and order fills | Simulated |
 | Live prediction-market order placement | Adapter interface only; not included |
 
@@ -71,7 +71,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for the dedicated landing page, then choose **Launch console**. The replay console is also available directly at [http://localhost:3000/console](http://localhost:3000/console).
 
 For the clearest first walkthrough:
 
@@ -96,7 +96,7 @@ pnpm verify
 
 ## Selectable agents
 
-| Agent | Wakes on | Scans |
+| Agent | Wakes on | Permitted market families |
 |---|---|---|
 | Red Card Arbitrage | Confirmed dismissal | Binary winner, qualification, next-goal, and totals markets |
 | Injury Arbitrage | High-importance injury or substitution | Binary winner, qualification, and next-goal markets |
@@ -109,7 +109,7 @@ The agents are trigger configurations over one shared matcher, optimizer, and ex
 
 The injury gate expects a player-importance metric, while corner pressure expects derived corner, shot, and possession metrics. Those fields exist in the deterministic replay inputs, but the current live TxLINE normalizer does not derive them automatically.
 
-## Demo scenarios and P&L
+## Synthetic replay scenarios and modeled P&L
 
 The bundled replay contains four deliberately small synthetic windows:
 
@@ -132,7 +132,7 @@ Modeled net return          5.03%
 
 Money calculations use integer microdollars. Displayed totals are rounded to cents.
 
-This P&L demonstrates accounting, execution states, and latency sensitivity. It is **not historical performance evidence** and does not predict future returns. A production backtest requires timestamped TxLINE events, executable venue books, venue-specific fees, measured routing latency, and actual fill or rejection records.
+This P&L demonstrates accounting, execution states, and latency sensitivity. It is **not historical performance evidence** and does not predict future returns. Production validation requires timestamped TxLINE events, executable venue books, venue-specific fees, measured routing latency, and actual fill or rejection records.
 
 ## Is this really arbitrage?
 
@@ -175,7 +175,7 @@ flowchart LR
   S --> V[Approved venue quotes]
   V --> F[Settlement fingerprint matcher]
   F --> D[Depth + fee optimizer]
-  D --> G{No edge, no trade}
+  D --> G{No edge. No trade.}
   G -->|blocked| N[Reason code]
   G -->|passes| E[Two-leg execution state]
   E --> M[MATCHED]
@@ -184,6 +184,8 @@ flowchart LR
 
 Important modules:
 
+- [`src/components/landing`](src/components/landing) — the public product story and console handoff.
+- [`src/app/console`](src/app/console) — the deterministic interactive replay route.
 - [`src/lib/txline`](src/lib/txline) — authenticated TxLINE transport and event normalization.
 - [`src/agents`](src/agents) — trigger definitions and routing.
 - [`src/core/pipeline.ts`](src/core/pipeline.ts) — event, fixture, and market-family scoping.

@@ -1,39 +1,55 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/manrope";
-import "@fontsource/barlow-condensed/600.css";
-import "@fontsource/barlow-condensed/700.css";
-import "@fontsource/ibm-plex-mono/400.css";
-import "@fontsource/ibm-plex-mono/500.css";
+import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { resolveMetadataBase } from "@/lib/metadata-base";
 
+const displayFont = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
+});
+
+const bodyFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const dataFont = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-data",
+});
+
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(process.env),
   title: {
-    default: "txBet — Event-triggered prediction-market arbitrage",
+    default: "txBet — Event-triggered arbitrage strategy prototype",
     template: "%s · txBet",
   },
-  description: "TxLINE match actions wake a cross-venue exact-complement arbitrage agent. No edge, no trade.",
+  description: "World Cup hackathon prototype: TxLINE-format match events trigger exact-complement scans over synthetic venue books. Current fills and P&L are simulated.",
   applicationName: "txBet",
   keywords: ["TxLINE", "TxODDS", "prediction markets", "arbitrage", "sports data", "trading agent"],
   openGraph: {
-    title: "txBet — The match event wakes the agent",
-    description: "Exact settlement matching, executable depth, fees, slippage, and explicit leg risk.",
+    title: "txBet — See the gap before the market catches up",
+    description: "Exact-complement strategy demo with a TxLINE smoke boundary, synthetic venue books, and simulated fills.",
     type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "txBet event-triggered arbitrage console" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "txBet hackathon prototype and synthetic replay" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "txBet — Event-triggered arbitrage",
-    description: "The match event wakes the agent. Settlement math decides.",
+    title: "txBet — Event-triggered strategy prototype",
+    description: "TxLINE smoke boundary. Synthetic venue books. Simulated fills. No edge. No trade.",
     images: ["/opengraph-image"],
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className={`dark ${displayFont.variable} ${bodyFont.variable} ${dataFont.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>{children}</body>
     </html>
   );
