@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
+import { TxBetPrivyProvider } from "@/components/auth/privy-auth";
 import { resolveMetadataBase } from "@/lib/metadata-base";
 
 const displayFont = Instrument_Serif({
@@ -43,14 +45,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="en"
       className={`dark ${displayFont.variable} ${bodyFont.variable} ${dataFont.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body>{children}</body>
+      <body>
+        <TxBetPrivyProvider
+          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ""}
+          nonce={nonce}
+        >
+          {children}
+        </TxBetPrivyProvider>
+      </body>
     </html>
   );
 }
