@@ -25,13 +25,20 @@ export function buildOddsStreamUrl(baseUrl: string, fixtureId: string): string {
   return url.toString();
 }
 
+export interface TxLineRequestOptions {
+  readonly fetcher?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
 export async function startGuestSession(
   baseUrl = DEFAULT_TXLINE_BASE_URL,
-  fetcher: typeof fetch = fetch,
+  options: TxLineRequestOptions = {},
 ): Promise<string> {
+  const fetcher = options.fetcher ?? fetch;
   const response = await fetcher(`${normalizedBaseUrl(baseUrl)}/auth/guest/start`, {
     method: "POST",
     headers: { Accept: "application/json" },
+    signal: options.signal,
   });
   if (!response.ok) throw new Error(`TxLINE guest session failed with HTTP ${response.status}`);
   return guestSchema.parse(await response.json()).token;
@@ -69,11 +76,15 @@ export async function fetchScoreSnapshot(input: {
   guestJwt: string;
   apiToken: string;
   fetcher?: typeof fetch;
+  signal?: AbortSignal;
 }): Promise<readonly unknown[]> {
   const fetcher = input.fetcher ?? fetch;
   const response = await fetcher(
     buildScoreSnapshotUrl(input.baseUrl ?? DEFAULT_TXLINE_BASE_URL, input.fixtureId),
-    { headers: txLineHeaders(input.guestJwt, input.apiToken) },
+    {
+      headers: txLineHeaders(input.guestJwt, input.apiToken),
+      signal: input.signal,
+    },
   );
   if (!response.ok) throw new Error(`TxLINE score snapshot failed with HTTP ${response.status}`);
   const payload: unknown = await response.json();

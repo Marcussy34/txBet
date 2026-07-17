@@ -20,6 +20,9 @@ import {
 } from "@/fixtures/demo-tapes";
 import { cn } from "@/lib/utils";
 import { AgentTelemetry, StatusGlyph, TxBetLockup, TxBetMark } from "@/components/brand/txbet-brand";
+import { AuthWalletControl } from "@/components/auth/privy-auth";
+import { PolymarketShadowStatus } from "@/components/dashboard/polymarket-shadow-status";
+import { WorldCupLiveStatus } from "@/components/dashboard/world-cup-live-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -295,16 +298,19 @@ export function TxBetConsole() {
           <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-muted-foreground md:hidden">
             SYNTHETIC · SIMULATED
           </Badge>
-          <div className="hidden items-center gap-2 md:flex">
-            <Badge variant="outline" className="border-signal/35 bg-signal/5 font-mono text-[0.6875rem] tracking-wider text-signal">
-              TXLINE SMOKE BOUNDARY
-            </Badge>
-            <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-foreground">
-              SYNTHETIC REPLAY
-            </Badge>
-            <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-muted-foreground">
-              SIMULATED EXECUTION
-            </Badge>
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-2 md:flex">
+              <Badge variant="outline" className="border-signal/35 bg-signal/5 font-mono text-[0.6875rem] tracking-wider text-signal">
+                READ-ONLY LIVE STATUS
+              </Badge>
+              <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-foreground">
+                SYNTHETIC REPLAY
+              </Badge>
+              <Badge variant="outline" className="border-border bg-card font-mono text-[0.6875rem] tracking-wider text-muted-foreground">
+                SIMULATED EXECUTION
+              </Badge>
+            </div>
+            <AuthWalletControl />
           </div>
         </div>
       </header>
@@ -335,6 +341,14 @@ export function TxBetConsole() {
             </div>
           </div>
         </section>
+
+        <Card className="mb-4 gap-0 bg-card/85 py-0">
+          <PanelHeading index="M1" title="MVP live boundaries" aside="read-only" />
+          <CardContent className="grid gap-3 px-3 py-3 lg:grid-cols-2">
+            <WorldCupLiveStatus />
+            <PolymarketShadowStatus />
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
           <aside className="space-y-4">
@@ -707,7 +721,7 @@ export function TxBetConsole() {
       </main>
 
       <footer className="border-t border-border px-4 py-5 text-center font-mono text-[0.6875rem] uppercase tracking-[0.11em] text-muted-foreground">
-        txBet / strategy core built for TxLINE input / venue adapters required for live execution
+        txBet / read-only live status / deterministic replay / money mutations disabled
       </footer>
     </div>
   );

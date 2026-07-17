@@ -5,6 +5,8 @@ import {
   buildScoreSnapshotUrl,
   buildScoreStreamUrl,
   createTxLineStreamFetch,
+  fetchScoreSnapshot,
+  startGuestSession,
 } from "../src/lib/txline/client";
 import { normalizeTxLineEvent } from "../src/lib/txline/normalize";
 
@@ -74,5 +76,37 @@ describe("TxLINE boundary", () => {
     expect(headers.get("x-eventsource-trace")).toBe("keep-me");
     expect(headers.get("authorization")).toBe("Bearer guest-jwt");
     expect(headers.get("x-api-token")).toBe("api-token");
+  });
+
+  it("forwards one abort signal through guest auth and snapshot body reads", async () => {
+    const signal = new AbortController().signal;
+    const guestFetch = vi.fn<typeof fetch>(async () =>
+      new Response(JSON.stringify({ token: "guest-jwt" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const snapshotFetch = vi.fn<typeof fetch>(async () =>
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await startGuestSession("https://txline.txodds.com", {
+      fetcher: guestFetch,
+      signal,
+    });
+    await fetchScoreSnapshot({
+      baseUrl: "https://txline.txodds.com",
+      fixtureId: "123",
+      guestJwt: "guest-jwt",
+      apiToken: "api-token",
+      fetcher: snapshotFetch,
+      signal,
+    });
+
+    expect(guestFetch.mock.calls[0]?.[1]?.signal).toBe(signal);
+    expect(snapshotFetch.mock.calls[0]?.[1]?.signal).toBe(signal);
   });
 });
