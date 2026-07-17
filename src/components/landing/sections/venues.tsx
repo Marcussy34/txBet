@@ -27,7 +27,7 @@ type Venue = {
 // Taker figures are published venue schedules (Jul 2026), peak-of-curve where fees
 // follow the symmetric p(1−p) shape: cost is highest at $0.50 and falls toward 0/1.
 const venues: readonly Venue[] = [
-  { id: "polymarket", name: "Polymarket", icon: "/venues/polymarket.svg", kind: "CLOB", rail: "Polygon", taker: "0.04–0.07×p(1−p)", status: "adapter" },
+  { id: "polymarket", name: "Polymarket", icon: "/venues/polymarket-blue.svg", kind: "CLOB", rail: "Polygon", taker: "0.04–0.07×p(1−p)", status: "adapter" },
   { id: "kalshi", name: "Kalshi", icon: "/venues/kalshi.svg", kind: "CFTC DCM", rail: "US regulated / DFlow", taker: "0.07×p(1−p)", status: "adapter" },
   { id: "opinion", name: "Opinion", icon: "/venues/opinion.webp", kind: "CLOB", rail: "BNB Chain", taker: "≤1% curve", status: "roadmap" },
   { id: "predictfun", name: "Predict.fun", icon: "/venues/predictfun.svg", kind: "CLOB", rail: "BNB Chain", taker: "≤2% curve", status: "roadmap" },
