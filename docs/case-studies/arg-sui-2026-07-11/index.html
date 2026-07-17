@@ -1,0 +1,1502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>txBet — Argentina vs Switzerland case study</title>
+  <style>
+    :root {
+      --surface: #060606;
+      --card: #121212;
+      --card-2: #0c0c0c;
+      --border: #262626;
+      --grid: #1e1e1e;
+      --text: #f8f8f8;
+      --secondary: #9e9e9e;
+      --muted: #6f6f6f;
+      --pm: #2e5cff;
+      --ks: #169c71;
+      --success: #3fa26c;
+      --warning: #b8862e;
+      --danger: #c24a3a;
+      --max: 1120px;
+      --radius: 2px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px),
+        var(--surface);
+      background-size: 32px 32px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, table { font: inherit; }
+
+    a { color: inherit; }
+
+    .mono,
+    .number,
+    table,
+    .metric-value,
+    .chart-tooltip,
+    code {
+      font-variant-numeric: tabular-nums slashed-zero;
+    }
+
+    .page-shell {
+      width: min(calc(100% - 48px), var(--max));
+      margin: 0 auto;
+    }
+
+    .masthead {
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,6,6,.94);
+    }
+
+    .masthead-inner {
+      padding: 34px 0 32px;
+    }
+
+    .masthead-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 44px;
+    }
+
+    .wordmark {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      font-weight: 740;
+      letter-spacing: -.03em;
+    }
+
+    .wordmark-mark {
+      display: inline-grid;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      border: 1px solid #4a4a4a;
+      color: #fff;
+      font-size: 13px;
+      letter-spacing: -.08em;
+    }
+
+    .wordmark-sub {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 580;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .run-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--secondary);
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .run-state::before {
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--success);
+      border-radius: 50%;
+      content: "";
+      box-shadow: 0 0 0 3px rgba(63,162,108,.1);
+    }
+
+    .headline-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(290px, .55fr);
+      gap: 56px;
+      align-items: end;
+    }
+
+    .eyebrow,
+    .section-kicker,
+    .micro-label {
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 720;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 800px;
+      margin: 0;
+      font-size: clamp(40px, 6.8vw, 74px);
+      font-weight: 620;
+      letter-spacing: -.065em;
+      line-height: .96;
+    }
+
+    .fixture-meta {
+      display: grid;
+      gap: 14px;
+      margin: 0;
+    }
+
+    .fixture-meta div {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 18px;
+      padding-top: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    .fixture-meta dt {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .fixture-meta dd {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 550;
+      text-align: right;
+    }
+
+    .disclosure {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(184,134,46,.5);
+      background: #171309;
+      color: #d9bf8d;
+    }
+
+    .disclosure-inner {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-height: 44px;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+    }
+
+    .disclosure svg { flex: 0 0 auto; }
+
+    main { padding: 54px 0 92px; }
+
+    section { margin-top: 92px; }
+
+    .hero-stats { margin-top: 0; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+    }
+
+    .metric {
+      min-height: 164px;
+      padding: 22px 22px 24px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(18,18,18,.7);
+    }
+
+    .metric-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 30px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .metric-index { color: #434343; }
+
+    .metric-value {
+      margin-bottom: 7px;
+      font-size: clamp(25px, 3vw, 36px);
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: 1;
+    }
+
+    .metric-copy {
+      max-width: 22ch;
+      color: var(--secondary);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metric.warning .metric-value { color: #d4a44d; }
+    .metric.success .metric-value { color: #72bf94; }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 22px;
+    }
+
+    .section-head h2 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(24px, 3.2vw, 38px);
+      font-weight: 590;
+      letter-spacing: -.045em;
+      line-height: 1.08;
+    }
+
+    .section-note {
+      max-width: 360px;
+      margin: 0;
+      color: var(--secondary);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .chart-card,
+    .exhibit,
+    .table-card,
+    .method-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(18,18,18,.82);
+    }
+
+    .chart-card { overflow: hidden; }
+
+    .chart-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-height: 58px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #0d0d0d;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      color: var(--secondary);
+      background: #101010;
+      font-size: 10px;
+      font-weight: 640;
+      letter-spacing: .04em;
+    }
+
+    .line-chip {
+      display: inline-block;
+      width: 20px;
+      height: 0;
+      border-top: 2px solid currentColor;
+    }
+
+    .line-chip.pm { color: var(--pm); }
+    .line-chip.ks { color: var(--ks); }
+    .line-chip.fair { color: #8a8a8a; border-top-style: dashed; }
+
+    .utc-note {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .price-panel-wrap,
+    .edge-wrap {
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      background: #0a0a0a;
+    }
+
+    .price-panel-wrap:last-child { border-bottom: 0; }
+
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      z-index: 10;
+      display: none;
+      min-width: 190px;
+      padding: 11px 12px;
+      border: 1px solid #2e2e2e;
+      background: rgba(18,18,18,.98);
+      box-shadow: 0 14px 34px rgba(0,0,0,.4);
+      color: var(--secondary);
+      font-size: 11px;
+      line-height: 1.6;
+      pointer-events: none;
+    }
+
+    .chart-tooltip strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 680;
+      letter-spacing: .05em;
+    }
+
+    .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .tooltip-row span:last-child { color: var(--text); }
+
+    .chart-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      background: #0d0d0d;
+      font-size: 10px;
+    }
+
+    .edge-legend .line-chip.arg { color: #d0d0d0; }
+    .edge-legend .line-chip.draw { color: #969696; border-top-style: dashed; }
+    .edge-legend .line-chip.sui { color: #6f6f6f; border-top-style: dotted; }
+
+    .exhibit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .exhibit {
+      position: relative;
+      overflow: hidden;
+      padding: 26px;
+    }
+
+    .exhibit:first-child { grid-column: 1 / -1; }
+
+    .exhibit::before {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 2px;
+      background: var(--border);
+      content: "";
+    }
+
+    .exhibit.qualified::before { background: var(--success); }
+    .exhibit.refused::before { background: var(--warning); }
+
+    .exhibit-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .exhibit-title {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+      line-height: 1.18;
+    }
+
+    .badge {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 8px;
+      border: 1px solid currentColor;
+      font-size: 9px;
+      font-weight: 760;
+      letter-spacing: .12em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .badge.success { color: #72bf94; background: rgba(63,162,108,.08); }
+    .badge.warning { color: #d4a44d; background: rgba(184,134,46,.08); }
+
+    .exhibit-story {
+      margin: 0;
+      color: #b8b8b8;
+      font-size: 14px;
+      line-height: 1.72;
+    }
+
+    .exhibit-story strong { color: var(--text); font-weight: 650; }
+
+    .exhibit-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(350px, .85fr);
+      gap: 42px;
+      align-items: start;
+    }
+
+    .economics {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .economics th,
+    .economics td {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .economics th {
+      color: var(--muted);
+      font-weight: 520;
+      text-align: left;
+    }
+
+    .economics td {
+      color: var(--text);
+      font-weight: 620;
+      text-align: right;
+    }
+
+    .economics tr:last-child th,
+    .economics tr:last-child td {
+      padding-top: 12px;
+      border-bottom: 0;
+      color: #72bf94;
+      font-weight: 720;
+    }
+
+    .mini-chart {
+      margin-top: 28px;
+      padding-top: 19px;
+      border-top: 1px solid var(--border);
+    }
+
+    .mini-chart svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .reason-code {
+      display: block;
+      margin-top: 18px;
+      padding: 11px 12px;
+      border-left: 2px solid var(--warning);
+      color: #d4a44d;
+      background: rgba(184,134,46,.06);
+      font-size: 10px;
+      font-weight: 720;
+      letter-spacing: .06em;
+      overflow-wrap: anywhere;
+    }
+
+    .et-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 1px;
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      background: var(--border);
+    }
+
+    .et-point {
+      padding: 12px;
+      background: #0c0c0c;
+    }
+
+    .et-time {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: .08em;
+    }
+
+    .et-value {
+      color: var(--pm);
+      font-size: 14px;
+      font-weight: 680;
+    }
+
+    .table-card { overflow: hidden; }
+
+    .table-scroll { overflow-x: auto; }
+
+    .data-table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .data-table th:first-child,
+    .data-table td:first-child,
+    .data-table th:nth-child(2),
+    .data-table td:nth-child(2),
+    .data-table th:nth-child(3),
+    .data-table td:nth-child(3) { text-align: left; }
+
+    .data-table thead th {
+      color: var(--muted);
+      background: #0d0d0d;
+      font-size: 9px;
+      font-weight: 720;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .data-table tbody td { color: #c2c2c2; }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+    .data-table tbody tr:hover td { background: rgba(255,255,255,.018); }
+
+    .shadow-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #d4a44d;
+      font-size: 9px;
+      font-weight: 720;
+      letter-spacing: .1em;
+    }
+
+    .shadow-tag::before {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--warning);
+      content: "";
+    }
+
+    .table-total {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 20px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      background: #0d0d0d;
+    }
+
+    .table-total span:first-child {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 720;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .table-total strong { color: #72bf94; font-size: 18px; }
+
+    .table-footnote {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .lag-table { min-width: 680px; }
+    .lag-table th,
+    .lag-table td { text-align: left !important; }
+    .lag-table td:not(:first-child) { color: var(--text); }
+
+    .method-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .method-column { padding: 28px; }
+    .method-column + .method-column { border-left: 1px solid var(--border); }
+
+    .method-column h3 {
+      margin: 0 0 18px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .source-list,
+    .caveat-list {
+      display: grid;
+      gap: 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list li,
+    .caveat-list li {
+      color: var(--secondary);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .source-list strong,
+    .caveat-list strong { color: var(--text); font-weight: 650; }
+
+    code {
+      color: #c7c7c7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 18px;
+      color: #4e4e4e;
+      font-size: 9px;
+      font-weight: 680;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+      .headline-grid,
+      .method-card { grid-template-columns: 1fr; }
+      .headline-grid { gap: 38px; }
+      .fixture-meta { max-width: 520px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .exhibit-grid { grid-template-columns: 1fr; }
+      .exhibit:first-child { grid-column: auto; }
+      .exhibit-layout { grid-template-columns: 1fr; gap: 28px; }
+      .method-column + .method-column { border-top: 1px solid var(--border); border-left: 0; }
+    }
+
+    @media (max-width: 620px) {
+      .page-shell { width: min(calc(100% - 28px), var(--max)); }
+      .masthead-inner { padding: 24px 0 27px; }
+      .masthead-top { margin-bottom: 34px; }
+      .wordmark-sub { display: none; }
+      .run-state { font-size: 9px; }
+      h1 { font-size: clamp(39px, 13vw, 58px); }
+      main { padding-top: 34px; }
+      section { margin-top: 68px; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .metric { min-height: 140px; }
+      .metric-label { margin-bottom: 22px; }
+      .section-head { display: block; }
+      .section-note { margin-top: 12px; text-align: left; }
+      .chart-toolbar { display: block; }
+      .utc-note { margin-top: 12px; }
+      .chart-caption { display: block; }
+      .chart-caption span + span { display: block; margin-top: 5px; }
+      .chart-svg { min-width: 720px; }
+      .price-panel-wrap,
+      .edge-wrap { overflow-x: auto; }
+      .chart-tooltip { position: fixed; left: 14px !important; right: 14px; bottom: 14px; top: auto !important; }
+      .exhibit { padding: 22px 20px; }
+      .exhibit-head { display: block; }
+      .badge { margin-top: 14px; }
+      .et-strip { grid-template-columns: repeat(2, 1fr); }
+      .disclosure-inner { padding: 9px 0; line-height: 1.4; }
+      .method-column { padding: 22px 20px; }
+      .footer-line { display: block; }
+    }
+
+    @media print {
+      .disclosure { position: static; }
+      body { background: var(--surface); }
+      .chart-tooltip { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="page-shell masthead-inner">
+      <div class="masthead-top">
+        <div class="wordmark" aria-label="txBet case study">
+          <span class="wordmark-mark" aria-hidden="true">tx</span>
+          <span>txBet</span>
+          <span class="wordmark-sub">case study</span>
+        </div>
+        <div class="run-state">retrospective replay</div>
+      </div>
+      <div class="headline-grid">
+        <div>
+          <p class="eyebrow" id="competition"></p>
+          <h1 id="match-title"></h1>
+        </div>
+        <dl class="fixture-meta" id="fixture-meta"></dl>
+      </div>
+    </div>
+  </header>
+
+  <div class="disclosure" role="note" aria-label="Permanent simulation disclosure">
+    <div class="page-shell disclosure-inner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path>
+        <path d="M12 8v4M12 16h.01"></path>
+      </svg>
+      <span>Retrospective replay of public market data. Simulated SHADOW_ONLY executions. No orders were placed. Not investment advice.</span>
+    </div>
+  </div>
+
+  <main class="page-shell">
+    <section class="hero-stats" aria-label="Case study summary">
+      <div class="metric-grid" id="hero-metrics"></div>
+    </section>
+
+    <section aria-labelledby="market-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Market tape / regulation contracts</p>
+          <h2 id="market-title">Three books, one match timeline</h2>
+        </div>
+        <p class="section-note">Printed minute closes aligned to TxLINE event detections. Price lines remain unfilled; missing prints remain visible as gaps.</p>
+      </div>
+      <div class="chart-card">
+        <div class="chart-toolbar">
+          <div class="legend" aria-label="Price chart legend">
+            <span class="legend-chip"><span class="line-chip pm"></span>Polymarket mid</span>
+            <span class="legend-chip"><span class="line-chip ks"></span>Kalshi close</span>
+            <span class="legend-chip"><span class="line-chip fair"></span>TxLINE consensus (reference)</span>
+          </div>
+          <span class="utc-note">UTC · $ probability</span>
+        </div>
+        <div id="price-panels"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="edge-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Decision surface / exact complements</p>
+          <h2 id="edge-title">Cross-venue complement edge after worst-case fees</h2>
+        </div>
+        <p class="section-note">Positive territory qualifies on price only. Execution gates can still refuse when state evidence is ambiguous.</p>
+      </div>
+      <div class="chart-card">
+        <div class="chart-toolbar">
+          <div class="legend edge-legend" aria-label="Edge chart legend">
+            <span class="legend-chip"><span class="line-chip arg"></span>Argentina</span>
+            <span class="legend-chip"><span class="line-chip draw"></span>Draw</span>
+            <span class="legend-chip"><span class="line-chip sui"></span>Switzerland</span>
+          </div>
+          <span class="utc-note">Triangle = shadow entry</span>
+        </div>
+        <div class="edge-wrap" id="edge-chart"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="exhibits-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Decision exhibits / agent behavior</p>
+          <h2 id="exhibits-title">The scanner’s job is to say “no” well</h2>
+        </div>
+        <p class="section-note">One clean complement, one officiating ambiguity, and one superficially similar contract that is not the same bet.</p>
+      </div>
+      <div class="exhibit-grid">
+        <article class="exhibit qualified" id="equalizer-exhibit"></article>
+        <article class="exhibit refused" id="var-exhibit"></article>
+        <article class="exhibit refused" id="identity-exhibit"></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="ledger-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Shadow execution ledger</p>
+          <h2 id="ledger-title">Retrospective minute-close fills</h2>
+        </div>
+        <p class="section-note">All fills are simulated. Locked profit is the exact-complement payout less modeled all-in cost.</p>
+      </div>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Entry</th>
+                <th>Outcome / strategy</th>
+                <th>Cost</th>
+                <th>Fees</th>
+                <th>Edge</th>
+                <th>Contracts</th>
+                <th>Locked profit</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-body"></tbody>
+          </table>
+        </div>
+        <div class="table-total" id="ledger-total"></div>
+      </div>
+      <p class="table-footnote">Fills simulate minute-close executable prices (Kalshi at ask/bid, Polymarket at printed mid) and are retrospective. No order routing occurred.</p>
+    </section>
+
+    <section aria-labelledby="lag-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Event response / one-minute buckets</p>
+          <h2 id="lag-title">Reprice lag by shock</h2>
+        </div>
+        <p class="section-note">Each cell shows the slowest observed move across the three match outcomes for that source.</p>
+      </div>
+      <div class="table-card table-scroll">
+        <table class="data-table lag-table">
+          <thead>
+            <tr>
+              <th>Shock</th>
+              <th>Polymarket</th>
+              <th>Kalshi</th>
+              <th>TxLINE consensus</th>
+            </tr>
+          </thead>
+          <tbody id="lag-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="method-title">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Methodology / provenance</p>
+          <h2 id="method-title">Public data, explicit assumptions</h2>
+        </div>
+        <p class="section-note">Retrieved 2026-07-17. Replay scope is limited to the supplied public minute histories and official event feed.</p>
+      </div>
+      <div class="method-card">
+        <div class="method-column">
+          <h3>Sources</h3>
+          <ul class="source-list" id="source-list"></ul>
+        </div>
+        <div class="method-column">
+          <h3>Fee model & caveats</h3>
+          <ul class="caveat-list" id="caveat-list"></ul>
+        </div>
+      </div>
+      <div class="footer-line">
+        <span>txBet / exact-complement research</span>
+        <span>SHADOW_ONLY · deterministic replay</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DATA = {"fixture": {"id": 18222446, "match": "Argentina vs Switzerland", "comp": "FIFA World Cup 2026 QF", "kickoff_utc": "2026-07-12T01:00:42.435000+00:00", "score_reg": "1-1", "score_final": "3-1 aet"}, "events": [{"key": "kickoff", "ts": 1783818042435, "min": 29730300, "label": "Kickoff (H1)", "iso": "2026-07-12T01:00:42.435000+00:00"}, {"key": "goal_arg_1", "ts": 1783818619532, "min": 29730310, "label": "GOAL Argentina 1-0 (header, detected)", "iso": "2026-07-12T01:10:19.532000+00:00"}, {"key": "halftime", "ts": 1783821014872, "min": 29730350, "label": "Halftime", "iso": "2026-07-12T01:50:14.872000+00:00"}, {"key": "h2_start", "ts": 1783821964129, "min": 29730366, "label": "Second half", "iso": "2026-07-12T02:06:04.129000+00:00"}, {"key": "goal_sui_1", "ts": 1783823299482, "min": 29730388, "label": "GOAL Switzerland 1-1 (detected)", "iso": "2026-07-12T02:28:19.482000+00:00"}, {"key": "var_start", "ts": 1783823468702, "min": 29730391, "label": "VAR review begins", "iso": "2026-07-12T02:31:08.702000+00:00"}, {"key": "red_card_sui", "ts": 1783823568543, "min": 29730392, "label": "RED CARD Switzerland (second yellow, VAR)", "iso": "2026-07-12T02:32:48.543000+00:00"}, {"key": "reg_end", "ts": 1783825253855, "min": 29730420, "label": "Regulation ends 1-1 (draw settled)", "iso": "2026-07-12T03:00:53.855000+00:00"}, {"key": "et1_start", "ts": 1783825436055, "min": 29730423, "label": "Extra time begins", "iso": "2026-07-12T03:03:56.055000+00:00"}, {"key": "goal_arg_2", "ts": 1783827127672, "min": 29730452, "label": "GOAL Argentina 2-1 in ET (detected)", "iso": "2026-07-12T03:32:07.672000+00:00"}, {"key": "goal_arg_3", "ts": 1783827669666, "min": 29730461, "label": "GOAL Argentina 3-1 in ET (detected)", "iso": "2026-07-12T03:41:09.666000+00:00"}, {"key": "match_end", "ts": 1783827870346, "min": 29730464, "label": "Match ends 3-1 aet", "iso": "2026-07-12T03:44:30.346000+00:00"}], "reprice_lags": {"goal_arg_1|arg": {"pm": {"lag_min": 1, "base": 0.539, "moved_to": 0.749, "at": "01:11Z"}, "ks": {"lag_min": 1, "base": 0.54, "moved_to": 0.75, "at": "01:11Z"}, "fair": {"lag_min": 1, "base": 0.523, "moved_to": 0.772, "at": "01:11Z"}}, "goal_arg_1|draw": {"pm": {"lag_min": 1, "base": 0.294, "moved_to": 0.186, "at": "01:11Z"}, "ks": {"lag_min": 1, "base": 0.3, "moved_to": 0.18, "at": "01:11Z"}, "fair": {"lag_min": 1, "base": 0.301, "moved_to": 0.161, "at": "01:11Z"}}, "goal_arg_1|sui": {"pm": {"lag_min": 1, "base": 0.174, "moved_to": 0.064, "at": "01:11Z"}, "ks": {"lag_min": 1, "base": 0.18, "moved_to": 0.06, "at": "01:11Z"}, "fair": {"lag_min": 1, "base": 0.176, "moved_to": 0.067, "at": "01:11Z"}}, "goal_sui_1|arg": {"pm": {"lag_min": 1, "base": 0.784, "moved_to": 0.346, "at": "02:29Z"}, "ks": {"lag_min": 1, "base": 0.79, "moved_to": 0.34, "at": "02:29Z"}, "fair": {"lag_min": 1, "base": 0.796, "moved_to": 0.329, "at": "02:29Z"}}, "goal_sui_1|draw": {"pm": {"lag_min": 1, "base": 0.186, "moved_to": 0.506, "at": "02:29Z"}, "ks": {"lag_min": 1, "base": 0.18, "moved_to": 0.5, "at": "02:29Z"}, "fair": {"lag_min": 1, "base": 0.171, "moved_to": 0.517, "at": "02:29Z"}}, "goal_sui_1|sui": {"pm": {"lag_min": 1, "base": 0.039, "moved_to": 0.144, "at": "02:29Z"}, "ks": {"lag_min": 1, "base": 0.04, "moved_to": 0.15, "at": "02:29Z"}, "fair": {"lag_min": 1, "base": 0.034, "moved_to": 0.153, "at": "02:29Z"}}, "red_card_sui|arg": {"pm": {"lag_min": 0, "base": 0.339, "moved_to": 0.519, "at": "02:32Z"}, "ks": {"lag_min": 0, "base": 0.34, "moved_to": 0.51, "at": "02:32Z"}, "fair": {"lag_min": 2, "base": 0.329, "moved_to": 0.477, "at": "02:34Z"}}, "red_card_sui|draw": {"pm": {"lag_min": 0, "base": 0.506, "moved_to": 0.351, "at": "02:32Z"}, "ks": {"lag_min": 0, "base": 0.5, "moved_to": 0.38, "at": "02:32Z"}, "fair": {"lag_min": 2, "base": 0.527, "moved_to": 0.462, "at": "02:34Z"}}, "red_card_sui|sui": {"pm": {"lag_min": 1, "base": 0.154, "moved_to": 0.062, "at": "02:33Z"}, "ks": {"lag_min": 1, "base": 0.16, "moved_to": 0.08, "at": "02:33Z"}, "fair": {"lag_min": 2, "base": 0.142, "moved_to": 0.061, "at": "02:34Z"}}}, "windows": [{"o": "sui", "start": 29730314, "peak": 0.002669859374999979, "peak_min": 29730314, "dir": "KS SUI-YES@ask + PM sui-NO@mid", "end": 29730314}, {"o": "arg", "start": 29730371, "peak": 0.006162109374999995, "peak_min": 29730371, "dir": "KS ARG-YES@ask + PM arg-NO@mid", "end": 29730371}, {"o": "draw", "start": 29730371, "peak": 0.01635010937499995, "peak_min": 29730371, "dir": "PM draw-YES@mid + KS DRAW-NO@ask", "end": 29730371}, {"o": "sui", "start": 29730371, "peak": 0.01078935937500004, "peak_min": 29730371, "dir": "PM sui-YES@mid + KS SUI-NO@ask", "end": 29730371}], "fills": [{"outcome": "draw", "window": "02:11Z-02:11Z", "entry": "02:11Z", "strategy": "PM draw-YES@mid + KS DRAW-NO@ask", "cost_per_contract": 0.9613, "fees_per_contract": 0.0224, "edge_per_contract": 0.0164, "contracts": 100, "locked_profit": 1.64, "note": "complement pays $1 regardless of outcome; profit locked at entry"}, {"outcome": "sui", "window": "02:11Z-02:11Z", "entry": "02:11Z", "strategy": "PM sui-YES@mid + KS SUI-NO@ask", "cost_per_contract": 0.9812, "fees_per_contract": 0.008, "edge_per_contract": 0.0108, "contracts": 100, "locked_profit": 1.08, "note": "complement pays $1 regardless of outcome; profit locked at entry"}, {"outcome": "arg", "window": "02:11Z-02:11Z", "entry": "02:11Z", "strategy": "KS ARG-YES@ask + PM arg-NO@mid", "cost_per_contract": 0.9688, "fees_per_contract": 0.0251, "edge_per_contract": 0.0062, "contracts": 100, "locked_profit": 0.62, "note": "complement pays $1 regardless of outcome; profit locked at entry"}, {"outcome": "sui", "window": "01:14Z-01:14Z", "entry": "01:14Z", "strategy": "KS SUI-YES@ask + PM sui-NO@mid", "cost_per_contract": 0.9888, "fees_per_contract": 0.0086, "edge_per_contract": 0.0027, "contracts": 100, "locked_profit": 0.27, "note": "complement pays $1 regardless of outcome; profit locked at entry"}], "series": {"grid_start_min": 29730240, "grid_end_min": 29730520, "pm": {"arg_yes": [0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.57375, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56625, 0.56625, 0.56625, 0.56625, 0.56625, 0.56625, 0.56625, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56875, 0.56625, 0.56625, 0.56375, 0.56375, 0.56125, 0.56125, 0.56125, 0.56125, 0.56125, 0.56125, 0.56125, 0.56375, 0.56125, 0.55625, 0.55125, 0.55125, 0.54625, 0.53875, 0.53375, 0.54125, 0.55125, 0.74875, 0.75625, 0.76375, 0.76125, 0.75625, 0.76125, 0.76625, 0.76625, 0.76875, 0.76875, 0.77375, 0.77125, 0.77375, 0.77625, 0.77625, 0.77625, 0.77625, 0.77125, 0.77625, 0.77875, 0.77875, 0.77125, 0.77125, 0.76875, 0.75375, 0.75375, 0.75875, 0.75875, 0.75875, 0.75875, 0.76125, 0.74625, 0.75875, 0.76625, 0.76875, 0.77125, 0.77375, 0.77875, 0.78125, 0.78125, 0.78375, 0.78375, 0.78125, 0.78125, 0.78125, 0.78125, 0.78125, 0.77875, 0.77875, 0.78125, 0.78125, 0.78125, 0.78125, 0.78125, 0.78125, 0.78125, 0.77875, 0.77875, 0.77875, 0.78375, 0.78125, 0.78875, 0.815, 0.79625, 0.79875, 0.79875, 0.79125, 0.78125, 0.79125, 0.79125, 0.78625, 0.79125, 0.79375, 0.80125, 0.78125, 0.78375, 0.79375, 0.78375, 0.34625, 0.33875, 0.335, 0.51875, 0.50875, 0.48625, 0.51375, 0.4975, 0.49625, 0.49625, 0.4925, 0.48125, 0.46125, 0.43125, 0.42375, 0.41625, 0.39375, 0.35875, 0.35125, 0.31625, 0.31125, 0.30125, 0.28625, 0.31125, 0.28125, 0.23875, 0.24625, 0.20625, 0.15875, 0.13125, 0.12125, 0.06, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125], "arg_no": [0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.42625, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43375, 0.43375, 0.43375, 0.43375, 0.43375, 0.43375, 0.43375, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43125, 0.43375, 0.43375, 0.43625, 0.43625, 0.43875, 0.43875, 0.43875, 0.43875, 0.43875, 0.43875, 0.43875, 0.43625, 0.43875, 0.44375, 0.44875, 0.44875, 0.45375, 0.46125, 0.46625, 0.45875, 0.44875, 0.25125, 0.24375, 0.23625, 0.23875, 0.24375, 0.23875, 0.23625, 0.23375, 0.23125, 0.23125, 0.22625, 0.22875, 0.22625, 0.22375, 0.22375, 0.22375, 0.22375, 0.22875, 0.22375, 0.22125, 0.22125, 0.22875, 0.22875, 0.23125, 0.24625, 0.24625, 0.24125, 0.24125, 0.24125, 0.24125, 0.23875, 0.25375, 0.24125, 0.23375, 0.23125, 0.22875, 0.22625, 0.22125, 0.21875, 0.21875, 0.21625, 0.21625, 0.21875, 0.21875, 0.21875, 0.21875, 0.21875, 0.22125, 0.22125, 0.21875, 0.21875, 0.21875, 0.21875, 0.21875, 0.21875, 0.21875, 0.22125, 0.22125, 0.22125, 0.21625, 0.21875, 0.21125, 0.18375, 0.20375, 0.20125, 0.20125, 0.20875, 0.21875, 0.20875, 0.20875, 0.21375, 0.20875, 0.20625, 0.19875, 0.21875, 0.21625, 0.20625, 0.21625, 0.65375, 0.66125, 0.665, 0.48125, 0.49125, 0.51375, 0.48625, 0.5025, 0.50375, 0.50375, 0.50875, 0.51875, 0.53875, 0.56875, 0.57625, 0.58375, 0.60625, 0.64125, 0.64875, 0.68375, 0.68875, 0.69875, 0.715, 0.68875, 0.71875, 0.76, 0.75375, 0.79375, 0.84125, 0.86875, 0.87875, 0.94, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875], "draw_yes": [0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27375, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27625, 0.27875, 0.27875, 0.27875, 0.27875, 0.28125, 0.28125, 0.28625, 0.28625, 0.28625, 0.28625, 0.28875, 0.28875, 0.28875, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29375, 0.29375, 0.29375, 0.29125, 0.29125, 0.29125, 0.29125, 0.29125, 0.29375, 0.29375, 0.29375, 0.29375, 0.29375, 0.18625, 0.18375, 0.17625, 0.17625, 0.17625, 0.17375, 0.17375, 0.17375, 0.17125, 0.17125, 0.16875, 0.16875, 0.16625, 0.17125, 0.16875, 0.16875, 0.16875, 0.16875, 0.16875, 0.17125, 0.17125, 0.1725, 0.17625, 0.18125, 0.18625, 0.18875, 0.18375, 0.18375, 0.18125, 0.18375, 0.18375, 0.19125, 0.18125, 0.17875, 0.17875, 0.17625, 0.17625, 0.17125, 0.17125, 0.17125, 0.17125, 0.17125, 0.17125, 0.17125, 0.17125, 0.17375, 0.17375, 0.17375, 0.17375, 0.17375, 0.17375, 0.17625, 0.17375, 0.17375, 0.17625, 0.17625, 0.17625, 0.1775, 0.18, 0.17625, 0.18125, 0.16875, 0.15625, 0.16625, 0.16625, 0.16375, 0.16875, 0.17875, 0.17125, 0.17375, 0.17625, 0.17625, 0.17125, 0.17125, 0.18625, 0.18875, 0.17875, 0.18375, 0.50625, 0.50125, 0.50625, 0.35125, 0.43125, 0.43875, 0.44125, 0.45375, 0.45625, 0.46125, 0.46875, 0.48125, 0.49625, 0.52125, 0.53375, 0.54125, 0.57375, 0.59375, 0.61875, 0.63875, 0.64875, 0.65875, 0.66875, 0.65375, 0.67625, 0.72, 0.73375, 0.77125, 0.81375, 0.84875, 0.86875, 0.92875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875], "draw_no": [0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72625, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72375, 0.72125, 0.72125, 0.72125, 0.72125, 0.71875, 0.71875, 0.71375, 0.71375, 0.71375, 0.71375, 0.71125, 0.71125, 0.71125, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70625, 0.70625, 0.70625, 0.70875, 0.70875, 0.70875, 0.70875, 0.70875, 0.70625, 0.70625, 0.70625, 0.70625, 0.70625, 0.81625, 0.81625, 0.82375, 0.82375, 0.82375, 0.82625, 0.82625, 0.82625, 0.82875, 0.82875, 0.83125, 0.83125, 0.83375, 0.82875, 0.83125, 0.83125, 0.83125, 0.83125, 0.83125, 0.82875, 0.82875, 0.82625, 0.82375, 0.81875, 0.81375, 0.81125, 0.81625, 0.81625, 0.81875, 0.81625, 0.81625, 0.80875, 0.81875, 0.82125, 0.82125, 0.82375, 0.82375, 0.82875, 0.82875, 0.82875, 0.82875, 0.82875, 0.82875, 0.82875, 0.82875, 0.82625, 0.82625, 0.82625, 0.82625, 0.82625, 0.82625, 0.82375, 0.82625, 0.82625, 0.82375, 0.82375, 0.82375, 0.8225, 0.82, 0.82375, 0.82, 0.83125, 0.84375, 0.83375, 0.83375, 0.83625, 0.83125, 0.82125, 0.82875, 0.82625, 0.82375, 0.82375, 0.82875, 0.82875, 0.81375, 0.81125, 0.82125, 0.81625, 0.49375, 0.49875, 0.495, 0.64875, 0.56875, 0.56125, 0.55875, 0.54625, 0.54375, 0.53875, 0.53125, 0.51875, 0.50375, 0.47875, 0.46625, 0.45875, 0.42375, 0.4025, 0.38125, 0.36625, 0.35125, 0.34125, 0.33125, 0.34625, 0.32375, 0.28125, 0.26625, 0.22875, 0.18875, 0.1525, 0.135, 0.07125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125], "sui_yes": [0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15625, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.15375, 0.14875, 0.14875, 0.14875, 0.14875, 0.14625, 0.14625, 0.14625, 0.14625, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14375, 0.14625, 0.14625, 0.14625, 0.14625, 0.14625, 0.14625, 0.14625, 0.14875, 0.15625, 0.15875, 0.15875, 0.15875, 0.16625, 0.17125, 0.17875, 0.17375, 0.16625, 0.06375, 0.06625, 0.06625, 0.06875, 0.06875, 0.06875, 0.07375, 0.07125, 0.06875, 0.06875, 0.06625, 0.06375, 0.06125, 0.05875, 0.05875, 0.05875, 0.05875, 0.06125, 0.05875, 0.05625, 0.05375, 0.05625, 0.05125, 0.05625, 0.06125, 0.05875, 0.05875, 0.05875, 0.05875, 0.05875, 0.05875, 0.0625, 0.05375, 0.04875, 0.05125, 0.05375, 0.05375, 0.05125, 0.04875, 0.04875, 0.04625, 0.04625, 0.04625, 0.04625, 0.04625, 0.04625, 0.04875, 0.04875, 0.04875, 0.04875, 0.04875, 0.04875, 0.04875, 0.05, 0.05125, 0.05, 0.04875, 0.05, 0.05125, 0.04625, 0.05125, 0.04375, 0.04125, 0.03875, 0.03625, 0.03875, 0.04125, 0.04125, 0.03625, 0.03625, 0.03875, 0.03875, 0.03375, 0.03375, 0.03875, 0.045, 0.03625, 0.03625, 0.14375, 0.15375, 0.15625, 0.125, 0.0625, 0.05875, 0.04625, 0.04625, 0.04375, 0.045, 0.04125, 0.04375, 0.04625, 0.04625, 0.04375, 0.04125, 0.04125, 0.04125, 0.03875, 0.04625, 0.03625, 0.03375, 0.03375, 0.02625, 0.03125, 0.03375, 0.02625, 0.02625, 0.02875, 0.0175, 0.00875, 0.0075, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125], "sui_no": [0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84375, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.84625, 0.85125, 0.85125, 0.85125, 0.85125, 0.85375, 0.85375, 0.85375, 0.85375, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85625, 0.85375, 0.85375, 0.85375, 0.85375, 0.85375, 0.85375, 0.85375, 0.85125, 0.84375, 0.84125, 0.84125, 0.84125, 0.83375, 0.82875, 0.82125, 0.82625, 0.83375, 0.93625, 0.93375, 0.93375, 0.92875, 0.93125, 0.93125, 0.92625, 0.92875, 0.93125, 0.93125, 0.93375, 0.93625, 0.93875, 0.94125, 0.94125, 0.94125, 0.94125, 0.93875, 0.94125, 0.94375, 0.94625, 0.94375, 0.94875, 0.94375, 0.93875, 0.94125, 0.94125, 0.94125, 0.94125, 0.94125, 0.94125, 0.9375, 0.94625, 0.95125, 0.94875, 0.94625, 0.94625, 0.94875, 0.95125, 0.95125, 0.95375, 0.95375, 0.95375, 0.95375, 0.95375, 0.95375, 0.95125, 0.95, 0.95125, 0.95125, 0.95125, 0.95125, 0.95125, 0.95, 0.94875, 0.95, 0.95125, 0.95, 0.94875, 0.95375, 0.95, 0.95625, 0.95875, 0.96125, 0.96375, 0.96125, 0.95875, 0.95875, 0.96375, 0.96375, 0.96125, 0.96125, 0.96625, 0.96625, 0.96125, 0.95375, 0.96375, 0.96375, 0.85625, 0.84625, 0.84375, 0.875, 0.9375, 0.94125, 0.95375, 0.95375, 0.95625, 0.955, 0.95875, 0.95625, 0.95375, 0.95375, 0.95625, 0.95875, 0.95875, 0.95875, 0.96125, 0.95375, 0.96375, 0.96625, 0.96625, 0.97375, 0.96875, 0.96625, 0.97375, 0.97375, 0.97125, 0.98375, 0.99125, 0.9925, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875]}, "ks": {"arg_close": [0.57, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.57, 0.57, 0.58, 0.57, 0.58, 0.58, 0.58, 0.58, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.56, 0.57, 0.57, 0.57, 0.56, 0.57, 0.57, 0.54, 0.54, 0.55, 0.56, 0.75, 0.77, 0.77, 0.76, 0.77, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.77, 0.77, 0.78, 0.78, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.77, 0.77, 0.76, 0.76, 0.76, 0.77, 0.77, 0.77, 0.77, 0.76, 0.77, 0.78, 0.77, 0.78, 0.78, 0.78, 0.78, 0.79, 0.79, 0.78, 0.78, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.78, 0.79, 0.79, 0.79, 0.79, 0.79, 0.78, 0.79, 0.79, 0.8, 0.73, 0.8, 0.81, 0.8, 0.81, 0.81, 0.8, 0.8, 0.79, 0.8, 0.8, 0.79, 0.8, 0.8, 0.78, 0.79, 0.79, 0.78, 0.34, 0.34, 0.34, 0.51, 0.52, 0.52, 0.52, 0.52, 0.51, 0.5, 0.51, 0.49, 0.46, 0.43, 0.43, 0.42, 0.38, 0.37, 0.36, 0.31, 0.32, 0.3, 0.27, 0.31, 0.28, 0.24, 0.26, 0.21, 0.16, 0.12, 0.11, 0.06, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01], "arg_bid": [0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.56, 0.53, 0.53, 0.54, 0.55, 0.75, 0.76, 0.76, 0.76, 0.76, 0.76, 0.77, 0.77, 0.77, 0.77, 0.77, 0.76, 0.76, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.77, 0.75, 0.75, 0.75, 0.76, 0.76, 0.76, 0.76, 0.75, 0.76, 0.77, 0.77, 0.77, 0.77, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.79, 0.74, 0.79, 0.81, 0.79, 0.8, 0.8, 0.79, 0.79, 0.79, 0.79, 0.79, 0.78, 0.79, 0.8, 0.78, 0.78, 0.79, 0.78, 0.34, 0.33, 0.33, 0.52, 0.51, 0.51, 0.51, 0.51, 0.51, 0.5, 0.5, 0.48, 0.46, 0.43, 0.42, 0.41, 0.38, 0.36, 0.35, 0.31, 0.32, 0.29, 0.27, 0.3, 0.27, 0.24, 0.25, 0.2, 0.15, 0.12, 0.11, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "arg_ask": [0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.57, 0.54, 0.54, 0.55, 0.56, 0.76, 0.77, 0.77, 0.77, 0.77, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.77, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78, 0.76, 0.76, 0.76, 0.77, 0.77, 0.77, 0.77, 0.76, 0.77, 0.78, 0.78, 0.78, 0.78, 0.78, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.79, 0.8, 0.75, 0.8, 0.82, 0.8, 0.81, 0.81, 0.8, 0.8, 0.8, 0.8, 0.8, 0.79, 0.8, 0.81, 0.79, 0.79, 0.8, 0.79, 0.35, 0.34, 0.34, 0.55, 0.52, 0.52, 0.52, 0.52, 0.52, 0.51, 0.51, 0.49, 0.47, 0.44, 0.43, 0.42, 0.39, 0.37, 0.36, 0.32, 0.33, 0.3, 0.28, 0.31, 0.28, 0.25, 0.26, 0.21, 0.16, 0.13, 0.12, 0.06, 0.01, 0.01, 0.01, 0.01, 0.01, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], "sui_close": [0.17, 0.17, 0.17, 0.17, 0.16, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.16, 0.16, 0.16, 0.16, 0.15, 0.15, 0.15, 0.15, 0.15, 0.14, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.14, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.16, 0.15, 0.16, 0.16, 0.16, 0.18, 0.18, 0.17, 0.17, 0.06, 0.06, 0.06, 0.06, 0.07, 0.07, 0.07, 0.06, 0.07, 0.07, 0.06, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.06, 0.05, 0.06, 0.05, 0.05, 0.05, 0.07, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.05, 0.06, 0.06, 0.06, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.04, 0.05, 0.05, 0.05, 0.04, 0.05, 0.04, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.08, 0.05, 0.04, 0.04, 0.03, 0.04, 0.05, 0.05, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.15, 0.16, 0.16, 0.14, 0.08, 0.06, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.04, 0.05, 0.05, 0.04, 0.05, 0.04, 0.04, 0.04, 0.03, 0.04, 0.03, 0.03, 0.02, 0.03, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01], "sui_bid": [0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.15, 0.15, 0.15, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.14, 0.15, 0.15, 0.15, 0.15, 0.15, 0.17, 0.17, 0.16, 0.16, 0.06, 0.05, 0.05, 0.05, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.05, 0.05, 0.05, 0.04, 0.04, 0.04, 0.06, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.07, 0.04, 0.03, 0.03, 0.03, 0.03, 0.04, 0.04, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.04, 0.04, 0.03, 0.03, 0.14, 0.15, 0.15, 0.13, 0.06, 0.05, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.03, 0.04, 0.04, 0.04, 0.04, 0.03, 0.03, 0.03, 0.02, 0.03, 0.03, 0.02, 0.02, 0.02, 0.02, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "sui_ask": [0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.16, 0.16, 0.16, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.16, 0.16, 0.16, 0.16, 0.16, 0.18, 0.18, 0.17, 0.17, 0.07, 0.06, 0.06, 0.06, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.06, 0.06, 0.06, 0.05, 0.05, 0.05, 0.07, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.07, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.08, 0.05, 0.04, 0.04, 0.04, 0.04, 0.05, 0.05, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.05, 0.05, 0.04, 0.04, 0.15, 0.16, 0.16, 0.14, 0.08, 0.06, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.04, 0.05, 0.05, 0.05, 0.05, 0.04, 0.04, 0.04, 0.03, 0.04, 0.04, 0.03, 0.03, 0.03, 0.03, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], "draw_close": [0.27, 0.27, 0.27, 0.26, 0.27, 0.27, 0.27, 0.27, 0.26, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.28, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.29, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.29, 0.3, 0.3, 0.3, 0.3, 0.3, 0.18, 0.19, 0.17, 0.18, 0.18, 0.17, 0.18, 0.18, 0.18, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.18, 0.18, 0.18, 0.18, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.18, 0.19, 0.19, 0.19, 0.19, 0.18, 0.17, 0.17, 0.17, 0.16, 0.16, 0.17, 0.17, 0.16, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.16, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.24, 0.17, 0.15, 0.17, 0.16, 0.16, 0.17, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.17, 0.18, 0.2, 0.18, 0.19, 0.5, 0.5, 0.51, 0.38, 0.43, 0.43, 0.45, 0.45, 0.46, 0.46, 0.46, 0.47, 0.5, 0.51, 0.53, 0.55, 0.57, 0.6, 0.61, 0.63, 0.65, 0.66, 0.69, 0.65, 0.7, 0.72, 0.72, 0.78, 0.81, 0.85, 0.87, 0.93, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99], "draw_bid": [0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.26, 0.27, 0.28, 0.28, 0.28, 0.28, 0.28, 0.28, 0.28, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.18, 0.18, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.17, 0.17, 0.17, 0.17, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.19, 0.18, 0.17, 0.17, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.16, 0.22, 0.16, 0.15, 0.16, 0.16, 0.15, 0.16, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.19, 0.17, 0.18, 0.49, 0.5, 0.5, 0.32, 0.43, 0.42, 0.44, 0.45, 0.45, 0.45, 0.45, 0.47, 0.49, 0.5, 0.53, 0.54, 0.57, 0.59, 0.6, 0.62, 0.64, 0.65, 0.68, 0.65, 0.69, 0.71, 0.71, 0.77, 0.8, 0.84, 0.86, 0.93, 0.99, 0.99, 0.99, 0.99, 0.99, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "draw_ask": [0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.27, 0.28, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.29, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.19, 0.19, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.18, 0.18, 0.18, 0.18, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.2, 0.19, 0.18, 0.18, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.17, 0.24, 0.17, 0.16, 0.17, 0.17, 0.16, 0.17, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.18, 0.2, 0.18, 0.19, 0.5, 0.51, 0.51, 0.35, 0.44, 0.43, 0.45, 0.46, 0.46, 0.46, 0.46, 0.48, 0.5, 0.51, 0.54, 0.55, 0.58, 0.6, 0.61, 0.63, 0.65, 0.66, 0.69, 0.66, 0.7, 0.72, 0.72, 0.78, 0.81, 0.85, 0.87, 0.94, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]}, "fair": {"arg": [0.57339, 0.57339, 0.57339, 0.57372, 0.57372, 0.57372, 0.57438, 0.57438, 0.57438, 0.57372, 0.57504, 0.5747099999999999, 0.57604, 0.5747099999999999, 0.57438, 0.57438, 0.5753699999999999, 0.5757099999999999, 0.5747099999999999, 0.5740500000000001, 0.57372, 0.57372, 0.5747099999999999, 0.57604, 0.5757099999999999, 0.5757099999999999, 0.5757099999999999, 0.5767, 0.57703, 0.57604, 0.57604, 0.5753699999999999, 0.5753699999999999, 0.5753699999999999, 0.57339, 0.57339, 0.57372, 0.57143, 0.57143, 0.57143, 0.57241, 0.57208, 0.5710999999999999, 0.5710999999999999, 0.57013, 0.57013, 0.57045, 0.5698, 0.5688300000000001, 0.5688300000000001, 0.56561, 0.56465, 0.56465, 0.56402, 0.56243, 0.56243, 0.56117, 0.5602199999999999, 0.5618, 0.5596, 0.5531, 0.54795, 0.54377, 0.53937, 0.54025, 0.5385, 0.5293800000000001, 0.52493, 0.51948, 0.52274, 0.52549, 0.7722, 0.76161, 0.7622, 0.7622, 0.7622, 0.7680500000000001, 0.76511, 0.75988, 0.77042, 0.7610399999999999, 0.76923, 0.76982, 0.7716, 0.7757999999999999, 0.77519, 0.7764, 0.7680500000000001, 0.777, 0.77821, 0.77821, 0.77519, 0.77399, 0.77399, 0.7722, 0.76982, 0.7716, 0.7674599999999999, 0.7668699999999999, 0.76511, 0.7680500000000001, 0.77519, 0.76923, 0.76511, 0.76923, 0.7764, 0.7806399999999999, 0.7776000000000001, 0.78003, 0.7818600000000001, 0.78616, 0.7980800000000001, 0.78802, 0.78927, 0.7849299999999999, 0.7764, 0.7776000000000001, 0.7788200000000001, 0.77821, 0.7855500000000001, 0.7867799999999999, 0.7776000000000001, 0.7867799999999999, 0.7867799999999999, 0.7874, 0.7898900000000001, 0.78003, 0.78309, 0.7806399999999999, 0.78431, 0.7855500000000001, 0.7867799999999999, 0.79428, 0.79365, 0.79428, 0.79428, 0.79365, 0.79681, 0.79554, 0.79681, 0.79428, 0.79745, 0.79745, 0.80321, 0.80257, 0.79554, 0.79872, 0.7930200000000001, 0.7917700000000001, 0.32949, 0.33069000000000004, 0.32415, 0.32134, 0.32134, 0.47733, 0.49406999999999995, 0.4914, 0.48567, 0.48100000000000004, 0.47664, 0.46210999999999997, 0.45005, 0.43459000000000003, 0.41719, 0.39448, 0.37779, 0.35689, 0.35014, 0.33332999999999996, 0.32122999999999996, 0.30469, 0.297, 0.28926999999999997, 0.2681, 0.2505, 0.20084, 0.1845, 0.15411, 0.1351, 0.06289, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996, 0.039529999999999996], "draw": [0.26695, 0.26695, 0.26695, 0.26724, 0.26724, 0.26724, 0.26759, 0.26759, 0.26781, 0.26846, 0.26781, 0.26781, 0.26781, 0.26788, 0.26853, 0.26853, 0.2681, 0.26831, 0.26853, 0.26882, 0.26911, 0.26925, 0.26889, 0.26788, 0.26724, 0.26724, 0.26724, 0.26688, 0.26674, 0.26738, 0.26788, 0.26853, 0.26867, 0.26867, 0.27137, 0.2727, 0.27233, 0.2742, 0.27442, 0.27473, 0.27525, 0.27533, 0.27617, 0.27601, 0.27586, 0.27655, 0.27601, 0.27632, 0.2767, 0.27762, 0.28153, 0.28120999999999996, 0.28003, 0.28074, 0.28098, 0.28114, 0.28225, 0.28313, 0.28248999999999996, 0.28498, 0.28019, 0.28554999999999997, 0.28852, 0.29231, 0.29334, 0.29438, 0.29824, 0.30147999999999997, 0.30139, 0.30166, 0.30266, 0.16064, 0.17259, 0.17193999999999998, 0.17203, 0.172, 0.16866, 0.16981000000000002, 0.17331, 0.16664, 0.17464, 0.17114000000000001, 0.17173, 0.17123000000000002, 0.16912, 0.16909, 0.17004000000000002, 0.17501, 0.16863, 0.16909, 0.16998000000000002, 0.17143999999999998, 0.17379, 0.17209, 0.174, 0.17452, 0.17388, 0.17683, 0.17892, 0.1808, 0.17886, 0.17235, 0.17778, 0.18162, 0.17815999999999999, 0.17295000000000002, 0.17232, 0.17515999999999998, 0.17274, 0.17143999999999998, 0.16906, 0.15823, 0.16696999999999998, 0.16529, 0.16846, 0.1759, 0.17422, 0.17238, 0.17358, 0.16844, 0.16835, 0.17643, 0.16915, 0.16915, 0.16588999999999998, 0.16431, 0.17388, 0.17209, 0.17274, 0.17106000000000002, 0.17244, 0.17112, 0.16584, 0.16710999999999998, 0.16702999999999998, 0.16635999999999998, 0.1681, 0.16617, 0.1672, 0.16716999999999999, 0.16915, 0.16631, 0.1677, 0.1638, 0.16454999999999997, 0.17071000000000003, 0.16762, 0.17146999999999998, 0.17271, 0.5170600000000001, 0.5274300000000001, 0.5361899999999999, 0.53706, 0.53706, 0.46189, 0.45767, 0.46381999999999995, 0.46685000000000004, 0.47058999999999995, 0.47939, 0.49727, 0.50505, 0.52083, 0.54054, 0.56465, 0.57971, 0.6035, 0.6056900000000001, 0.62305, 0.63735, 0.65703, 0.6613800000000001, 0.67889, 0.6993, 0.7163299999999999, 0.77399, 0.7898900000000001, 0.8244, 0.84246, 0.92336, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329, 0.95329], "sui": [0.15949, 0.15949, 0.15949, 0.15906, 0.15906, 0.15906, 0.15814999999999999, 0.15814999999999999, 0.1577, 0.15785, 0.15701, 0.15733, 0.15613, 0.15750999999999998, 0.15713, 0.15713, 0.15662, 0.1561, 0.15662, 0.15704, 0.15721, 0.15708, 0.15649, 0.15618, 0.15701, 0.15701, 0.15701, 0.15642, 0.15635, 0.15672, 0.15615, 0.15601, 0.15584, 0.15584, 0.15523, 0.15401, 0.15406, 0.15434, 0.15414999999999998, 0.15373, 0.15225, 0.15265, 0.15281, 0.15298, 0.15381999999999998, 0.15337, 0.15368, 0.15385, 0.15444000000000002, 0.15356, 0.15302, 0.15404, 0.15545, 0.15516, 0.15649, 0.15645, 0.15652, 0.15662, 0.15564, 0.1555, 0.16661, 0.16649999999999998, 0.16779, 0.16821000000000003, 0.16631, 0.16713999999999998, 0.17235, 0.17358, 0.17905000000000001, 0.17568999999999999, 0.17179, 0.06711, 0.06579, 0.06623, 0.06623, 0.06579, 0.06329, 0.06494, 0.06667, 0.06329, 0.0641, 0.05988, 0.05882, 0.05747, 0.05525, 0.05556, 0.05376, 0.05682, 0.05464, 0.052629999999999996, 0.05181, 0.05319, 0.05236, 0.05376, 0.05376, 0.05556, 0.054349999999999996, 0.05556, 0.054349999999999996, 0.054349999999999996, 0.05319, 0.05236, 0.05319, 0.05319, 0.05236, 0.05051, 0.04717, 0.04739, 0.046950000000000006, 0.04673, 0.044640000000000006, 0.04386, 0.04484, 0.045250000000000005, 0.046509999999999996, 0.047619999999999996, 0.04854, 0.04854, 0.048310000000000006, 0.045869999999999994, 0.044640000000000006, 0.046079999999999996, 0.04386, 0.04386, 0.046509999999999996, 0.04566, 0.046079999999999996, 0.04505, 0.046509999999999996, 0.04484, 0.04184, 0.04184, 0.04016, 0.039369999999999995, 0.03846, 0.039369999999999995, 0.03817, 0.03676, 0.03717, 0.03597, 0.0365, 0.03597, 0.03472, 0.03279, 0.03311, 0.03367, 0.03367, 0.03521, 0.03571, 0.15335000000000001, 0.14194, 0.13968, 0.14176, 0.14176, 0.06098, 0.04854, 0.044640000000000006, 0.04739, 0.04854, 0.04386, 0.040650000000000006, 0.04505, 0.04444, 0.042190000000000005, 0.040819999999999995, 0.04237, 0.03984, 0.044050000000000006, 0.04348, 0.04149, 0.03831, 0.04149, 0.03205, 0.03257, 0.03289, 0.02538, 0.02558, 0.02169, 0.02247, 0.0137, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001, 0.006670000000000001]}, "basket": {"pm_yes_sum": [1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 0.99875, 0.99875, 1.00125, 1.00125, 1.00125, 1.00125, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.9962500000000001, 0.9962500000000001, 0.99875, 0.99875, 0.99875, 0.99875, 1.00125, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00625, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00375, 1.00125, 1.00125, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 0.99875, 1.00125, 1.00125, 1.00125, 1.00375, 1.00875, 1.00625, 1.00125, 1.00125, 1.00625, 1.0037500000000001, 1.0062499999999999, 1.00875, 1.01125, 0.99875, 1.0062499999999999, 1.00625, 1.00625, 1.00125, 1.00375, 1.01375, 1.01125, 1.00875, 1.00875, 1.00875, 1.00375, 1.00125, 1.00625, 1.0037500000000001, 1.0037500000000001, 1.0037500000000001, 1.00125, 1.0037500000000001, 1.00625, 1.0037500000000001, 1.0, 0.99875, 1.00625, 1.00125, 1.00125, 1.00125, 1.00125, 0.99875, 1.00125, 1.00375, 1.0, 0.99375, 0.9937499999999999, 0.99875, 1.00125, 1.0037500000000001, 1.00125, 1.00125, 1.00125, 1.00125, 1.00125, 0.99875, 0.99875, 0.99875, 1.00125, 1.00375, 1.00125, 1.00125, 1.00375, 1.00375, 1.00625, 1.00375, 1.005, 1.00875, 1.0075, 1.0037500000000001, 1.00625, 1.01, 1.0062499999999999, 1.01375, 1.00125, 1.0125, 1.00125, 1.00125, 1.00125, 1.00125, 1.00125, 0.99875, 1.00125, 1.00125, 1.00625, 0.99875, 1.00625, 1.00625, 1.0174999999999998, 1.0087499999999998, 1.00375, 0.9962500000000001, 0.9937499999999999, 0.9975, 0.9950000000000001, 1.0025, 0.98375, 1.00125, 0.9974999999999999, 0.99625, 1.0025, 1.0025, 1.00625, 1.00375, 0.99875, 1.00125, 0.99875, 1.00875, 0.99375, 1.00875, 1.00125, 0.9962500000000001, 0.9937499999999999, 0.98875, 0.9912500000000001, 0.98875, 0.9924999999999999, 1.00625, 1.0037500000000001, 1.00125, 0.9974999999999999, 0.99875, 0.99625, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "ks_ask_sum": [1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.03, 1.0299999999999998, 1.0299999999999998, 1.0199999999999998, 1.0099999999999998, 1.0099999999999998, 1.0099999999999998, 1.0099999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0199999999999998, 1.0299999999999998, 1.0299999999999998, 1.0299999999999998, 1.0299999999999998, 1.0299999999999998, 1.02, 1.02, 1.02, 1.03, 1.02, 1.02, 1.01, 1.01, 1.02, 1.02, 1.03, 1.03, 1.03, 1.02, 1.02, 1.01, 1.01, 1.02, 1.02, 1.02, 1.02, 1.03, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1.01, 1.01, 1.02, 1.02, 1.02, 1.02, 1.03, 1.02, 1.02, 1.02, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.01, 1.02, 1.07, 1.02, 1.02, 1.01, 1.02, 1.01, 1.02, 1.03, 1.02, 1.02, 1.02, 1.01, 1.02, 1.03, 1.02, 1.04, 1.02, 1.02, 1.0, 1.01, 1.01, 1.04, 1.04, 1.01, 1.02, 1.03, 1.03, 1.02, 1.02, 1.02, 1.02, 1.0, 1.02, 1.01, 1.02, 1.02, 1.02, 1.0, 1.02, 1.0, 1.01, 1.0, 1.02, 1.01, 1.01, 1.02, 1.0, 1.01, 1.01, 1.01, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]}, "edge": {"arg": [-0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.038026265625000145, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03307614062500003, -0.03059976562500008, -0.03059976562500008, -0.03059976562500008, -0.03059976562500008, -0.03059976562500008, -0.03059976562500008, -0.03059976562500008, -0.03307614062500003, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.035576140624999975, -0.03809976562499992, -0.03809976562499992, -0.03821351562499992, -0.03821351562499992, -0.035735390624999974, -0.035735390624999974, -0.035735390624999974, -0.035735390624999974, -0.035735390624999974, -0.035735390624999974, -0.035735390624999974, -0.03821351562499992, -0.035735390624999974, -0.030776515624999973, -0.025814140624999968, -0.025814140624999968, -0.02084826562499996, -0.03603289062499998, -0.03860726562499992, -0.03601889062499998, -0.03589114062499997, -0.02504364062500003, -0.02192151562499997, -0.029148515625000142, -0.026740390624999978, -0.02192151562499997, -0.026740390624999978, -0.02118476562499997, -0.02118476562499997, -0.023591140625000027, -0.023591140625000027, -0.028401265625000144, -0.02349664062500003, -0.02090126562500008, -0.027920015625000145, -0.027920015625000145, -0.027920015625000145, -0.027920015625000145, -0.025996640624999977, -0.027920015625000145, -0.025322890624999976, -0.025322890624999976, -0.025996640624999977, -0.025996640624999977, -0.023591140625000027, -0.029867765625000143, -0.029867765625000143, -0.026831390624999972, -0.02433139062500003, -0.02433139062500003, -0.02433139062500003, -0.026740390624999978, -0.022630265624999972, -0.02433139062500003, -0.02118476562499997, -0.023591140625000027, -0.025996640624999977, -0.028401265625000144, -0.025322890624999976, -0.025224890624999975, -0.025224890624999975, -0.027626015624999924, -0.027626015624999924, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.022822890625000026, -0.022822890625000026, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.025224890624999975, -0.022822890625000026, -0.022822890625000026, -0.022822890625000026, -0.017227015624999915, 0.006162109374999995, -0.02202664062499992, -0.024581015624999925, -0.026306515625000144, -0.021202390624999918, -0.021202390624999918, -0.024425140624999973, -0.014825890624999966, -0.024425140624999973, -0.024425140624999973, -0.01962726562499997, -0.021925140625000027, -0.026822765624999925, -0.02359739062499997, -0.025224890624999975, -0.027626015624999924, -0.026822765624999925, -0.027626015624999924, -0.035520265625000144, -0.03263789062499998, -0.0360712499999999, -0.03369739062500003, -0.03373764062500003, -0.011229765625000068, -0.03872976562500015, -0.02249256250000005, -0.02124201562500007, -0.031249015625000084, -0.027496062499999946, -0.03619739062499998, -0.03603289062499998, -0.0355761406250002, -0.03789501562500014, -0.03781101562499993, -0.029612765624999975, -0.030981390625000035, -0.033126140624999974, -0.03411851562499992, -0.02148814062499997, -0.028184890625000028, -0.02337625, -0.028729140625000028, -0.027012390625000028, -0.024240390625000028, -0.022367765624999973, -0.026822765624999925, -0.020006390624999974, -0.014648640625000028, -0.013600390625000026, -0.007896000000000004, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "draw": [-0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.023963765624999973, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.021542515625000026, -0.01912039062499997, -0.01912039062499997, -0.01912039062499997, -0.029435390624999974, -0.029512390624999975, -0.029512390624999975, -0.03246476562499992, -0.03246476562499992, -0.03246476562499992, -0.03246476562499992, -0.030039140624999974, -0.027539140625000028, -0.027539140625000028, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.032685265624999925, -0.032685265624999925, -0.032685265624999925, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.03011264062499998, -0.032685265624999925, -0.032685265624999925, -0.032685265624999925, -0.032685265624999925, -0.032685265624999925, -0.027191265625000086, -0.02458101562500014, -0.02424501562499992, -0.02424501562499992, -0.02424501562499992, -0.023676265624999922, -0.023676265624999922, -0.023676265624999922, -0.02106164062499998, -0.018561640625000028, -0.020946140624999974, -0.020946140624999974, -0.023329765624999922, -0.018561640625000028, -0.020946140624999974, -0.020946140624999974, -0.020946140624999974, -0.01844614062500003, -0.01844614062500003, -0.02106164062499998, -0.02106164062499998, -0.012824062500000045, -0.016745015625000078, -0.02196989062499997, -0.025132265624999924, -0.022741640624999976, -0.02458101562500014, -0.02458101562500014, -0.02196989062499997, -0.02458101562500014, -0.02458101562500014, -0.022850140624999973, -0.02196989062499997, -0.021857890624999973, -0.021857890624999973, -0.013790015625000027, -0.013790015625000027, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.018561640625000028, -0.01617626562500008, -0.01617626562500008, -0.01617626562500008, -0.01617626562500008, -0.01617626562500008, -0.01617626562500008, -0.013790015625000027, -0.01617626562500008, -0.01617626562500008, -0.013790015625000027, -0.013790015625000027, -0.013790015625000027, -0.012596562500000054, -0.010208999999999996, -0.013790015625000027, 0.01635010937499995, -0.020946140624999974, -0.022386515624999923, -0.023329765624999922, -0.023329765624999922, -0.015243515625000079, -0.020946140624999974, -0.021857890624999973, -0.02106164062499998, -0.023676265624999922, -0.02424501562499992, -0.02424501562499992, -0.02106164062499998, -0.02106164062499998, -0.014691265624999915, -0.020241640625000026, -0.021857890624999973, -0.02458101562500014, -0.028747265625000025, -0.036249890624999975, -0.039991249999999895, -0.030626140625000034, -0.0355761406250002, -0.02564439062499997, -0.03575639062499998, -0.03842526562500014, -0.03850401562499993, -0.033532890625000034, -0.026069640624999973, -0.03369739062500003, -0.03874901562500015, -0.023711390625000023, -0.03860726562499992, -0.03601889062499998, -0.037895015624999924, -0.03613456249999995, -0.024415890624999964, -0.028814765625000086, -0.033126140624999974, -0.03269389062499997, -0.019488640624999908, -0.035520265625000144, -0.016548515625000076, -0.029512390624999975, -0.014037265624999962, -0.025996640624999977, -0.020241640625000026, -0.02047206249999995, -0.021091249999999895, -0.007939140624999915, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "sui": [-0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.014886515624999971, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.012265765624999914, -0.021782765624999922, -0.021782765624999922, -0.01653864062500003, -0.019038640624999978, -0.019038640624999978, -0.019038640624999978, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.02079401562499992, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.021415265624999923, -0.019038640624999978, -0.022386515624999923, -0.020006390624999974, -0.020006390624999974, -0.020006390624999974, -0.012860765625000027, -0.02106164062499998, -0.021857890624999973, -0.01617626562500008, -0.023329765624999922, -0.011876015624999924, -0.0020282656249999143, -0.0020282656249999143, 0.002669859374999979, -0.010288640624999974, -0.010288640624999974, -0.0055887656250000785, -0.007939140625000028, -0.010288640624999974, -0.010288640624999974, -0.012637265624999922, -0.011876015624999924, -0.009222890624999976, -0.006568890624999919, -0.006568890624999919, -0.006568890624999919, -0.006568890624999919, -0.009222890624999976, -0.009068890624999972, -0.011414015624999923, -0.010635265624999925, -0.0007910156250000248, -0.005478640625000028, -0.0007910156250000248, -0.009222890624999976, -0.009068890624999972, -0.009068890624999972, -0.009068890624999972, -0.009068890624999972, -0.009068890624999972, -0.009068890624999972, -0.016158562500000063, -0.010635265624999925, -0.00532114062499992, -0.007978640624999978, -0.010635265624999925, -0.010635265624999925, -0.007978640624999978, -0.007821140624999971, -0.007821140624999971, -0.01016276562499992, -0.01016276562499992, -0.01016276562499992, -0.01016276562499992, -0.01016276562499992, -0.01016276562499992, -0.007821140624999971, -0.006650000000000003, -0.007821140624999971, -0.007821140624999971, -0.007821140624999971, -0.007821140624999971, -0.007821140624999971, -0.006650000000000003, -0.005478640625000028, -0.006650000000000003, -0.007821140624999971, -0.006650000000000003, -0.005478640625000028, -0.01016276562499992, 0.01078935937500004, -0.009366515624999922, -0.004206390625000028, -0.006545390624999971, -0.008883515624999921, -0.006545390624999971, -0.006706390624999977, -0.006706390624999977, -0.008883515624999921, -0.008883515624999921, -0.006545390624999971, -0.006545390624999971, -0.008069765624999923, -0.008069765624999923, -0.004045390624999919, -0.01016276562499992, -0.008883515624999921, -0.008883515624999921, -0.02079401562499992, -0.021782765624999922, -0.022386515624999923, -0.010573249999999996, -0.01054956249999995, -0.009068890624999972, -0.01016276562499992, -0.01016276562499992, -0.009366515624999922, -0.010696249999999897, -0.006706390624999977, -0.009366515624999922, -0.01016276562499992, -0.01016276562499992, -0.009366515624999922, -0.004206390625000028, -0.006706390624999977, -0.006706390624999977, -0.004045390624999919, -0.01016276562499992, -0.008883515624999921, -0.008069765624999923, -0.008069765624999923, -0.00757626562499992, -0.005406140624999976, -0.008069765624999923, -0.00757626562499992, -0.00757626562499992, -0.005241640624999978, -7.556249999994373e-05, -5.014062500002716e-05, -0.0037140624999999435, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]}}, "shock_rows": [{"minute": "01:10Z", "event": "ARG 1-0 goal", "offset": 0, "ks_arg": {"open": 0.55, "high": 0.56, "low": 0.55, "close": 0.56, "mean": 0.5583, "vol": 35726.56}, "pm_arg_yes": 0.55125, "pm_arg_no": 0.44875, "edge_arg_at_ks_mean": -0.0416, "ks_draw": {"open": 0.3, "high": 0.3, "low": 0.29, "close": 0.3, "mean": 0.2999, "vol": 6217.63}, "pm_draw_yes": 0.29375, "pm_draw_no": 0.70625, "edge_draw_at_ks_mean": -0.0354, "ks_sui": {"open": 0.17, "high": 0.17, "low": 0.15, "close": 0.17, "mean": 0.1596, "vol": 9498.47}, "pm_sui_yes": 0.16625, "pm_sui_no": 0.83375, "edge_sui_at_ks_mean": -0.0124}, {"minute": "01:11Z", "event": "ARG 1-0 goal", "offset": 1, "ks_arg": {"open": 0.56, "high": 0.75, "low": 0.56, "close": 0.75, "mean": 0.7231, "vol": 111689.09}, "pm_arg_yes": 0.74875, "pm_arg_no": 0.25125, "edge_arg_at_ks_mean": -0.0015, "ks_draw": {"open": 0.3, "high": 0.3, "low": 0.18, "close": 0.18, "mean": 0.2379, "vol": 44735.87}, "pm_draw_yes": 0.18625, "pm_draw_no": 0.81625, "edge_draw_at_ks_mean": -0.0773, "ks_sui": {"open": 0.17, "high": 0.17, "low": 0.06, "close": 0.06, "mean": 0.1038, "vol": 35037.93}, "pm_sui_yes": 0.06375, "pm_sui_no": 0.93625, "edge_sui_at_ks_mean": -0.0507}, {"minute": "02:28Z", "event": "SUI equalizer", "offset": 0, "ks_arg": {"open": 0.79, "high": 0.8, "low": 0.77, "close": 0.78, "mean": 0.7893, "vol": 54696.3}, "pm_arg_yes": 0.78375, "pm_arg_no": 0.21625, "edge_arg_at_ks_mean": -0.0291, "ks_draw": {"open": 0.18, "high": 0.21, "low": 0.17, "close": 0.19, "mean": 0.1876, "vol": 25243.47}, "pm_draw_yes": 0.18375, "pm_draw_no": 0.81625, "edge_draw_at_ks_mean": -0.025, "ks_sui": {"open": 0.04, "high": 0.04, "low": 0.03, "close": 0.04, "mean": 0.0394, "vol": 10106.66}, "pm_sui_yes": 0.03625, "pm_sui_no": 0.96375, "edge_sui_at_ks_mean": -0.0082}, {"minute": "02:29Z", "event": "SUI equalizer", "offset": 1, "ks_arg": {"open": 0.78, "high": 0.79, "low": 0.31, "close": 0.34, "mean": 0.4402, "vol": 90867.54}, "pm_arg_yes": 0.34625, "pm_arg_no": 0.65375, "edge_arg_at_ks_mean": -0.127, "ks_draw": {"open": 0.19, "high": 0.5, "low": 0.18, "close": 0.5, "mean": 0.4056, "vol": 42381.47}, "pm_draw_yes": 0.50625, "pm_draw_no": 0.49375, "edge_draw_at_ks_mean": 0.0663, "ks_sui": {"open": 0.04, "high": 0.15, "low": 0.04, "close": 0.15, "mean": 0.1176, "vol": 40348.43}, "pm_sui_yes": 0.14375, "pm_sui_no": 0.85625, "edge_sui_at_ks_mean": 0.0103}, {"minute": "02:31Z", "event": "VAR review window", "offset": 0, "ks_arg": {"open": 0.34, "high": 0.34, "low": 0.33, "close": 0.34, "mean": 0.3379, "vol": 149195.7}, "pm_arg_yes": 0.335, "pm_arg_no": 0.665, "edge_arg_at_ks_mean": -0.0342, "ks_draw": {"open": 0.5, "high": 0.52, "low": 0.5, "close": 0.51, "mean": 0.5105, "vol": 56322.44}, "pm_draw_yes": 0.50625, "pm_draw_no": 0.495, "edge_draw_at_ks_mean": -0.0405, "ks_sui": {"open": 0.16, "high": 0.16, "low": 0.15, "close": 0.16, "mean": 0.154, "vol": 106924.19}, "pm_sui_yes": 0.15625, "pm_sui_no": 0.84375, "edge_sui_at_ks_mean": -0.0161}, {"minute": "02:32Z", "event": "VAR review window", "offset": 1, "ks_arg": {"open": 0.34, "high": 0.55, "low": 0.3, "close": 0.51, "mean": 0.3964, "vol": 133202.93}, "pm_arg_yes": 0.51875, "pm_arg_no": 0.48125, "edge_arg_at_ks_mean": 0.0881, "ks_draw": {"open": 0.5, "high": 0.53, "low": 0.16, "close": 0.38, "mean": 0.4407, "vol": 39416.88}, "pm_draw_yes": 0.35125, "pm_draw_no": 0.64875, "edge_draw_at_ks_mean": -0.1227, "ks_sui": {"open": 0.16, "high": 0.21, "low": 0.11, "close": 0.14, "mean": 0.1465, "vol": 88723.29}, "pm_sui_yes": 0.125, "pm_sui_no": 0.875, "edge_sui_at_ks_mean": -0.0379}, {"minute": "02:33Z", "event": "VAR review window", "offset": 2, "ks_arg": {"open": 0.53, "high": 0.58, "low": 0.45, "close": 0.52, "mean": 0.5186, "vol": 147834.6}, "pm_arg_yes": 0.50875, "pm_arg_no": 0.49125, "edge_arg_at_ks_mean": -0.0448, "ks_draw": {"open": 0.35, "high": 0.47, "low": 0.33, "close": 0.43, "mean": 0.3955, "vol": 51323.72}, "pm_draw_yes": 0.43125, "pm_draw_no": 0.56875, "edge_draw_at_ks_mean": 0.0018, "ks_sui": {"open": 0.14, "high": 0.14, "low": 0.06, "close": 0.08, "mean": 0.1014, "vol": 150668.83}, "pm_sui_yes": 0.0625, "pm_sui_no": 0.9375, "edge_sui_at_ks_mean": -0.0494}, {"minute": "02:32Z", "event": "SUI red card", "offset": 0, "ks_arg": {"open": 0.34, "high": 0.55, "low": 0.3, "close": 0.51, "mean": 0.3964, "vol": 133202.93}, "pm_arg_yes": 0.51875, "pm_arg_no": 0.48125, "edge_arg_at_ks_mean": 0.0881, "ks_draw": {"open": 0.5, "high": 0.53, "low": 0.16, "close": 0.38, "mean": 0.4407, "vol": 39416.88}, "pm_draw_yes": 0.35125, "pm_draw_no": 0.64875, "edge_draw_at_ks_mean": -0.1227, "ks_sui": {"open": 0.16, "high": 0.21, "low": 0.11, "close": 0.14, "mean": 0.1465, "vol": 88723.29}, "pm_sui_yes": 0.125, "pm_sui_no": 0.875, "edge_sui_at_ks_mean": -0.0379}, {"minute": "02:33Z", "event": "SUI red card", "offset": 1, "ks_arg": {"open": 0.53, "high": 0.58, "low": 0.45, "close": 0.52, "mean": 0.5186, "vol": 147834.6}, "pm_arg_yes": 0.50875, "pm_arg_no": 0.49125, "edge_arg_at_ks_mean": -0.0448, "ks_draw": {"open": 0.35, "high": 0.47, "low": 0.33, "close": 0.43, "mean": 0.3955, "vol": 51323.72}, "pm_draw_yes": 0.43125, "pm_draw_no": 0.56875, "edge_draw_at_ks_mean": 0.0018, "ks_sui": {"open": 0.14, "high": 0.14, "low": 0.06, "close": 0.08, "mean": 0.1014, "vol": 150668.83}, "pm_sui_yes": 0.0625, "pm_sui_no": 0.9375, "edge_sui_at_ks_mean": -0.0494}, {"minute": "02:34Z", "event": "SUI red card", "offset": 2, "ks_arg": {"open": 0.52, "high": 0.54, "low": 0.49, "close": 0.52, "mean": 0.5189, "vol": 156472.38}, "pm_arg_yes": 0.48625, "pm_arg_no": 0.51375, "edge_arg_at_ks_mean": -0.0676, "ks_draw": {"open": 0.42, "high": 0.45, "low": 0.37, "close": 0.43, "mean": 0.4206, "vol": 76447.5}, "pm_draw_yes": 0.43875, "pm_draw_no": 0.56125, "edge_draw_at_ks_mean": -0.0161, "ks_sui": {"open": 0.07, "high": 0.08, "low": 0.05, "close": 0.06, "mean": 0.0588, "vol": 81411.71}, "pm_sui_yes": 0.05875, "pm_sui_no": 0.94125, "edge_sui_at_ks_mean": -0.0078}], "gap_peaks": {"arg": {"minute": "02:11Z", "gap": 0.051, "pm": 0.78125, "ks": 0.73}, "draw": {"minute": "02:11Z", "gap": -0.059, "pm": 0.18125, "ks": 0.24}, "sui": {"minute": "02:11Z", "gap": -0.029, "pm": 0.05125, "ks": 0.08}}, "refusal": {"window": "02:31Z-02:33Z", "reason": "AMBIGUOUS_OFFICIATING_EVIDENCE", "detail": "VAR MistakenIdentity review in progress; outcome overturned to red card. txBet execution gates fail closed: no pairing while settlement-relevant state is under review.", "ks_tie_range_during": [{"open": 0.5, "high": 0.52, "low": 0.5, "close": 0.51, "mean": 0.5105, "vol": 56322.44, "bid": 0.5, "ask": 0.51}, {"open": 0.5, "high": 0.53, "low": 0.16, "close": 0.38, "mean": 0.4407, "vol": 39416.88, "bid": 0.32, "ask": 0.35}, {"open": 0.35, "high": 0.47, "low": 0.33, "close": 0.43, "mean": 0.3955, "vol": 51323.72, "bid": 0.43, "ask": 0.44}]}, "fees_model": {"kalshi": "0.07 x p(1-p) per contract (published Jul 2026)", "polymarket": "0.04-0.07 x p(1-p); worst case 0.07 used", "qualify_rule": "all-in cost + fees < $1.000 payout (app guard rule)"}};
+
+    // Small DOM and formatting helpers keep every displayed case figure tied to DATA.
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[char]);
+    const money = (value, digits = 3) => `$${Number(value).toFixed(digits)}`;
+    const signedMoney = (value, digits = 3) => `${value >= 0 ? '+' : '−'}$${Math.abs(Number(value)).toFixed(digits)}`;
+    const integerMoney = (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    const volume = (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    const valueOrDash = (value, digits = 3) => value == null ? '—' : money(value, digits);
+    const formatIsoTime = (iso, seconds = true) => {
+      const date = new Date(iso);
+      const hh = String(date.getUTCHours()).padStart(2, '0');
+      const mm = String(date.getUTCMinutes()).padStart(2, '0');
+      const ss = String(date.getUTCSeconds()).padStart(2, '0');
+      return `${hh}:${mm}${seconds ? `:${ss}` : ''}Z`;
+    };
+    const formatMinute = (minute) => {
+      const date = new Date(minute * 60000);
+      return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}Z`;
+    };
+    const dayStartMinute = Math.floor(DATA.series.grid_start_min / 1440) * 1440;
+    const minuteFromLabel = (label) => {
+      const match = String(label).match(/(\d{2}):(\d{2})/);
+      return match ? dayStartMinute + Number(match[1]) * 60 + Number(match[2]) : null;
+    };
+    const eventByKey = (key) => DATA.events.find((event) => event.key === key);
+    const seriesIndex = (minute) => minute - DATA.series.grid_start_min;
+
+    const ICONS = {
+      check: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>',
+      shield: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="M12 8v4M12 16h.01"></path></svg>'
+    };
+
+    // The visual inspection window is the requested 00:30Z–04:35Z slice of the DATA grid.
+    const VIEW_START = DATA.series.grid_start_min + 30;
+    const VIEW_END = DATA.series.grid_end_min - 5;
+    const OUTCOMES = [
+      { key: 'arg', label: 'Argentina win' },
+      { key: 'draw', label: 'Draw' },
+      { key: 'sui', label: 'Switzerland win' }
+    ];
+
+    const reviewRows = DATA.shock_rows.filter((row) => row.event === 'VAR review window' || row.event === 'SUI red card');
+    const reviewMinutes = reviewRows.map((row) => minuteFromLabel(row.minute));
+    const REVIEW_START = Math.min(...reviewMinutes);
+    const REVIEW_END = Math.max(...reviewMinutes) + 1;
+
+    function renderHeader() {
+      $('#competition').textContent = DATA.fixture.comp;
+      $('#match-title').textContent = DATA.fixture.match;
+      const kickoff = new Date(DATA.fixture.kickoff_utc);
+      const kickoffDate = kickoff.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC'
+      });
+      $('#fixture-meta').innerHTML = `
+        <div><dt>Kickoff</dt><dd class="number">${esc(kickoffDate)} · ${esc(formatIsoTime(DATA.fixture.kickoff_utc))}</dd></div>
+        <div><dt>Regulation</dt><dd class="number">${esc(DATA.fixture.score_reg)}</dd></div>
+        <div><dt>Final</dt><dd class="number">${esc(DATA.fixture.score_final)}</dd></div>
+      `;
+    }
+
+    function lagForShock(eventKey, source) {
+      return Math.max(...OUTCOMES.map(({ key }) => DATA.reprice_lags[`${eventKey}|${key}`][source].lag_min));
+    }
+
+    function renderHero() {
+      const equalizer = DATA.shock_rows.find((row) => row.event === 'SUI equalizer' && row.offset === 1);
+      const refused = DATA.shock_rows.find((row) => row.event === 'VAR review window' && row.offset === 1);
+      const eventKeys = ['goal_arg_1', 'goal_sui_1', 'red_card_sui'];
+      const venueLag = Math.max(...eventKeys.flatMap((key) => ['pm', 'ks'].map((source) => lagForShock(key, source))));
+      const metrics = [
+        { label: 'Regulation result', value: DATA.fixture.score_reg, copy: 'Draw settled on both venues', tone: '' },
+        { label: 'Peak clean edge', value: `${signedMoney(equalizer.edge_draw_at_ks_mean)} / contract`, copy: `Equalizer confirmation · ${equalizer.minute}`, tone: 'success' },
+        { label: 'Refused VAR “edge”', value: signedMoney(refused.edge_arg_at_ks_mean), copy: DATA.refusal.reason, tone: 'warning' },
+        { label: 'Venue reprice lag', value: `≤ ${venueLag} min`, copy: 'Polymarket and Kalshi on every measured shock', tone: '' }
+      ];
+      $('#hero-metrics').innerHTML = metrics.map((metric, index) => `
+        <article class="metric ${metric.tone}">
+          <div class="metric-label"><span>${esc(metric.label)}</span><span class="metric-index">0${index + 1}</span></div>
+          <div class="metric-value">${esc(metric.value)}</div>
+          <div class="metric-copy">${esc(metric.copy)}</div>
+        </article>
+      `).join('');
+    }
+
+    // Shared scales and axes are used by both price and edge charts.
+    function createScales(width, height, margin, xStart, xEnd, yMin, yMax) {
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      return {
+        x: (minute) => margin.left + ((minute - xStart) / (xEnd - xStart)) * plotWidth,
+        y: (value) => margin.top + ((yMax - value) / (yMax - yMin)) * plotHeight,
+        left: margin.left,
+        right: margin.left + plotWidth,
+        top: margin.top,
+        bottom: margin.top + plotHeight,
+        plotWidth,
+        plotHeight
+      };
+    }
+
+    function timeTicks(step = 30) {
+      const ticks = [];
+      for (let minute = VIEW_START; minute <= VIEW_END; minute += step) ticks.push(minute);
+      return ticks;
+    }
+
+    function pathForSeries(values, scales, xStart = VIEW_START, xEnd = VIEW_END) {
+      let path = '';
+      let drawing = false;
+      for (let minute = xStart; minute <= xEnd; minute += 1) {
+        const value = values[seriesIndex(minute)];
+        if (value == null || Number.isNaN(value)) {
+          drawing = false;
+          continue;
+        }
+        path += `${drawing ? 'L' : 'M'}${scales.x(minute).toFixed(2)},${scales.y(value).toFixed(2)} `;
+        drawing = true;
+      }
+      return path.trim();
+    }
+
+    function lastPoint(values, xStart = VIEW_START, xEnd = VIEW_END) {
+      for (let minute = xEnd; minute >= xStart; minute -= 1) {
+        const value = values[seriesIndex(minute)];
+        if (value != null) return { minute, value };
+      }
+      return null;
+    }
+
+    function spreadLabels(points, top, bottom, gap = 15) {
+      const sorted = points.slice().sort((a, b) => a.actualY - b.actualY);
+      sorted.forEach((point, index) => {
+        point.labelY = Math.max(point.actualY, index ? sorted[index - 1].labelY + gap : top);
+      });
+      const overflow = sorted.length ? sorted[sorted.length - 1].labelY - bottom : 0;
+      if (overflow > 0) sorted.forEach((point) => { point.labelY -= overflow; });
+      if (sorted.length && sorted[0].labelY < top) {
+        const shift = top - sorted[0].labelY;
+        sorted.forEach((point) => { point.labelY += shift; });
+      }
+      return sorted;
+    }
+
+    function gridMarkup(scales, yTicks, showTimeLabels) {
+      const horizontal = yTicks.map((tick) => `
+        <line x1="${scales.left}" x2="${scales.right}" y1="${scales.y(tick)}" y2="${scales.y(tick)}" stroke="#1e1e1e"/>
+        <text x="${scales.left - 10}" y="${scales.y(tick) + 4}" fill="#6f6f6f" font-size="11" text-anchor="end">${tick.toFixed(2)}</text>
+      `).join('');
+      const vertical = timeTicks().map((tick) => `
+        <line x1="${scales.x(tick)}" x2="${scales.x(tick)}" y1="${scales.top}" y2="${scales.bottom}" stroke="#1e1e1e"/>
+        ${showTimeLabels ? `<text x="${scales.x(tick)}" y="${scales.bottom + 24}" fill="#6f6f6f" font-size="11" text-anchor="middle">${formatMinute(tick)}</text>` : ''}
+      `).join('');
+      return horizontal + vertical;
+    }
+
+    const EVENT_MARKERS = [
+      { key: 'goal_arg_1', short: 'GOAL ARG', row: 0, dx: 0, anchor: 'middle' },
+      { key: 'goal_sui_1', short: 'GOAL SUI', row: 0, dx: -10, anchor: 'end' },
+      { key: 'var_start', short: 'VAR', row: 1, dx: -2, anchor: 'middle' },
+      { key: 'red_card_sui', short: 'RED', row: 2, dx: 10, anchor: 'start' },
+      { key: 'reg_end', short: 'REG END', row: 0, dx: 0, anchor: 'middle' },
+      { key: 'goal_arg_2', short: 'ET GOAL', row: 0, dx: -5, anchor: 'end' },
+      { key: 'goal_arg_3', short: 'ET GOAL', row: 1, dx: 0, anchor: 'middle' },
+      { key: 'match_end', short: 'FT', row: 2, dx: 8, anchor: 'start' }
+    ];
+
+    function eventMarkup(scales, showLabels) {
+      return EVENT_MARKERS.map((marker) => {
+        const event = eventByKey(marker.key);
+        const x = scales.x(event.min);
+        const tone = marker.key === 'var_start' || marker.key === 'red_card_sui' ? '#b8862e' : '#4d4d4d';
+        const labelY = 15 + marker.row * 16;
+        return `
+          <line x1="${x}" x2="${x}" y1="${scales.top}" y2="${scales.bottom}" stroke="${tone}" stroke-width="1" stroke-dasharray="2 4"/>
+          ${showLabels ? `
+            <line x1="${x}" x2="${x + marker.dx}" y1="${scales.top}" y2="${labelY + 3}" stroke="${tone}" stroke-width="1"/>
+            <text x="${x + marker.dx}" y="${labelY}" fill="${tone === '#b8862e' ? '#d4a44d' : '#8a8a8a'}" font-size="9" font-weight="650" text-anchor="${marker.anchor}" letter-spacing=".04em">${marker.short} ${formatMinute(event.min)}</text>
+          ` : ''}
+        `;
+      }).join('');
+    }
+
+    function bandMarkup(scales, withLabel) {
+      const x = scales.x(REVIEW_START);
+      const width = scales.x(REVIEW_END) - x;
+      return `
+        <rect x="${x}" y="${scales.top}" width="${width}" height="${scales.plotHeight}" fill="#b8862e" opacity=".14"/>
+        ${withLabel ? `<text x="${x + width / 2}" y="${scales.top + 13}" fill="#d4a44d" font-size="8" font-weight="700" text-anchor="middle" letter-spacing=".04em">VAR — AGENT REFUSES</text>` : ''}
+      `;
+    }
+
+    function renderPricePanels() {
+      const container = $('#price-panels');
+      container.innerHTML = '';
+      OUTCOMES.forEach((outcome, panelIndex) => {
+        const width = 1040;
+        const height = panelIndex === 0 ? 244 : 210;
+        const margin = { left: 54, right: 150, top: panelIndex === 0 ? 62 : 22, bottom: panelIndex === 2 ? 38 : 18 };
+        const scales = createScales(width, height, margin, VIEW_START, VIEW_END, 0, 1);
+        const series = [
+          { key: 'pm', name: 'Polymarket', short: 'PM', color: '#2e5cff', values: DATA.series.pm[`${outcome.key}_yes`], dash: '' },
+          { key: 'ks', name: 'Kalshi close', short: 'KS', color: '#169c71', values: DATA.series.ks[`${outcome.key}_close`], dash: '' },
+          { key: 'fair', name: 'TxLINE consensus', short: 'TxLINE ref.', color: '#8a8a8a', values: DATA.series.fair[outcome.key], dash: '6 5' }
+        ];
+        const labelPoints = spreadLabels(series.map((line) => {
+          const last = lastPoint(line.values);
+          return { ...line, last, actualY: scales.y(last.value) };
+        }), scales.top + 8, scales.bottom - 8);
+        const lines = series.map((line) => `
+          <path d="${pathForSeries(line.values, scales)}" fill="none" stroke="${line.color}" stroke-width="${line.key === 'fair' ? 1.5 : 2}" ${line.dash ? `stroke-dasharray="${line.dash}"` : ''} stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        `).join('');
+        const directLabels = labelPoints.map((line) => `
+          <path d="M${scales.x(line.last.minute)},${line.actualY} L${scales.right + 10},${line.labelY}" fill="none" stroke="${line.color}" stroke-width="1" opacity=".7"/>
+          <text x="${scales.right + 15}" y="${line.labelY + 4}" fill="${line.color}" font-size="10" font-weight="650">${line.short} ${money(line.last.value, 3)}</text>
+        `).join('');
+        const panel = document.createElement('div');
+        panel.className = 'price-panel-wrap';
+        panel.innerHTML = `
+          <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(outcome.label)} minute price chart">
+            <rect width="${width}" height="${height}" fill="#0a0a0a"/>
+            <text x="${scales.left}" y="${panelIndex === 0 ? 15 : 16}" fill="#f8f8f8" font-size="12" font-weight="680" letter-spacing=".04em">${esc(outcome.label.toUpperCase())}</text>
+            ${gridMarkup(scales, [0, .25, .5, .75, 1], panelIndex === 2)}
+            ${bandMarkup(scales, panelIndex === 0)}
+            ${eventMarkup(scales, panelIndex === 0)}
+            ${lines}
+            ${directLabels}
+            <g class="crosshair" style="display:none">
+              <line class="crosshair-line" y1="${scales.top}" y2="${scales.bottom}" stroke="#d2d2d2" stroke-width="1" opacity=".5"/>
+              ${series.map((line) => `<circle data-series="${line.key}" r="3.5" fill="#0a0a0a" stroke="${line.color}" stroke-width="2"/>`).join('')}
+            </g>
+            <rect class="hover-target" x="${scales.left}" y="${scales.top}" width="${scales.plotWidth}" height="${scales.plotHeight}" fill="transparent" style="cursor:crosshair;touch-action:pan-y"/>
+          </svg>
+          <div class="chart-tooltip" role="status" aria-live="polite"></div>
+        `;
+        container.appendChild(panel);
+        attachPriceHover(panel, series, scales, width);
+      });
+      const caption = document.createElement('div');
+      caption.className = 'chart-caption';
+      caption.innerHTML = '<span>Contract identity: regulation result only.</span><span>Null observations are not interpolated.</span>';
+      container.parentElement.appendChild(caption);
+    }
+
+    function attachPriceHover(panel, series, scales, viewBoxWidth) {
+      const svg = $('svg', panel);
+      const target = $('.hover-target', panel);
+      const crosshair = $('.crosshair', panel);
+      const line = $('.crosshair-line', panel);
+      const tooltip = $('.chart-tooltip', panel);
+      const outcome = series[0].values === DATA.series.pm.arg_yes ? 'arg' : series[0].values === DATA.series.pm.draw_yes ? 'draw' : 'sui';
+      target.addEventListener('pointermove', (event) => {
+        const rect = svg.getBoundingClientRect();
+        const svgX = ((event.clientX - rect.left) / rect.width) * viewBoxWidth;
+        const ratio = Math.max(0, Math.min(1, (svgX - scales.left) / scales.plotWidth));
+        const minute = Math.round(VIEW_START + ratio * (VIEW_END - VIEW_START));
+        const index = seriesIndex(minute);
+        const x = scales.x(minute);
+        crosshair.style.display = '';
+        line.setAttribute('x1', x);
+        line.setAttribute('x2', x);
+        series.forEach((item) => {
+          const circle = crosshair.querySelector(`[data-series="${item.key}"]`);
+          const value = item.values[index];
+          if (value == null) {
+            circle.style.display = 'none';
+          } else {
+            circle.style.display = '';
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', scales.y(value));
+          }
+        });
+        const pmValue = DATA.series.pm[`${outcome}_yes`][index];
+        const ksValue = DATA.series.ks[`${outcome}_close`][index];
+        const fairValue = DATA.series.fair[outcome][index];
+        const bid = DATA.series.ks[`${outcome}_bid`][index];
+        const ask = DATA.series.ks[`${outcome}_ask`][index];
+        tooltip.innerHTML = `
+          <strong>${formatMinute(minute)}</strong>
+          <div class="tooltip-row"><span>Polymarket mid</span><span>${valueOrDash(pmValue)}</span></div>
+          <div class="tooltip-row"><span>Kalshi close</span><span>${valueOrDash(ksValue)}</span></div>
+          <div class="tooltip-row"><span>TxLINE ref.</span><span>${valueOrDash(fairValue)}</span></div>
+          <div class="tooltip-row"><span>Kalshi bid / ask</span><span>${valueOrDash(bid, 2)} / ${valueOrDash(ask, 2)}</span></div>
+        `;
+        tooltip.style.display = 'block';
+        if (window.innerWidth > 620) {
+          const localX = event.clientX - panel.getBoundingClientRect().left;
+          const localY = event.clientY - panel.getBoundingClientRect().top;
+          const left = Math.min(Math.max(8, localX + 14), panel.clientWidth - 210);
+          const top = Math.max(8, localY - 84);
+          tooltip.style.left = `${left}px`;
+          tooltip.style.top = `${top}px`;
+        }
+      });
+      target.addEventListener('pointerleave', () => {
+        crosshair.style.display = 'none';
+        tooltip.style.display = 'none';
+      });
+    }
+
+    function positiveAreaPath(values, scales) {
+      const paths = [];
+      let points = [];
+      const flush = () => {
+        if (!points.length) return;
+        const start = points[0];
+        const end = points[points.length - 1];
+        const startX = scales.x(Math.max(VIEW_START, start.minute - .5));
+        const endX = scales.x(Math.min(VIEW_END, end.minute + .5));
+        paths.push(`M${startX},${scales.y(0)} L${startX},${scales.y(start.value)} ${points.map((point) => `L${scales.x(point.minute)},${scales.y(point.value)}`).join(' ')} L${endX},${scales.y(end.value)} L${endX},${scales.y(0)} Z`);
+        points = [];
+      };
+      for (let minute = VIEW_START; minute <= VIEW_END; minute += 1) {
+        const value = values[seriesIndex(minute)];
+        if (value != null && value > 0) points.push({ minute, value });
+        else flush();
+      }
+      flush();
+      return paths.join(' ');
+    }
+
+    function renderEdgeChart() {
+      const width = 1040;
+      const height = 302;
+      const margin = { left: 64, right: 140, top: 24, bottom: 40 };
+      const edgeValues = OUTCOMES.flatMap(({ key }) => DATA.series.edge[key].slice(seriesIndex(VIEW_START), seriesIndex(VIEW_END) + 1).filter((value) => value != null));
+      const maxAbs = Math.max(...edgeValues.map(Math.abs));
+      const bound = Math.max(.05, Math.ceil(maxAbs * 20) / 20);
+      const scales = createScales(width, height, margin, VIEW_START, VIEW_END, -bound, bound);
+      const styles = [
+        { key: 'arg', label: 'ARG', color: '#d0d0d0', dash: '' },
+        { key: 'draw', label: 'DRAW', color: '#969696', dash: '10 6' },
+        { key: 'sui', label: 'SUI', color: '#6f6f6f', dash: '2 6' }
+      ];
+      const yTicks = [-bound, -bound / 2, 0, bound / 2, bound];
+      const labelPoints = spreadLabels(styles.map((item) => {
+        const last = lastPoint(DATA.series.edge[item.key]);
+        return { ...item, last, actualY: scales.y(last.value) };
+      }), scales.top + 8, scales.bottom - 8);
+      const fills = styles.map((item) => `<path d="${positiveAreaPath(DATA.series.edge[item.key], scales)}" fill="#3fa26c" opacity=".08"/>`).join('');
+      const lines = styles.map((item) => `<path d="${pathForSeries(DATA.series.edge[item.key], scales)}" fill="none" stroke="${item.color}" stroke-width="1.8" ${item.dash ? `stroke-dasharray="${item.dash}"` : ''} stroke-linecap="round" vector-effect="non-scaling-stroke"/>`).join('');
+      const entries = DATA.fills.map((fill) => {
+        const window = DATA.windows.find((candidate) => candidate.o === fill.outcome && candidate.start === candidate.end && formatMinute(candidate.peak_min) === fill.entry);
+        const minute = window ? window.peak_min : minuteFromLabel(fill.entry);
+        const value = DATA.series.edge[fill.outcome][seriesIndex(minute)];
+        const x = scales.x(minute);
+        const y = scales.y(value);
+        return `<path d="M${x},${y - 7} L${x - 5},${y + 3} L${x + 5},${y + 3} Z" fill="#3fa26c" stroke="#0a0a0a" stroke-width="1"><title>SHADOW entry ${fill.entry} · ${fill.outcome.toUpperCase()} · ${signedMoney(fill.edge_per_contract)}</title></path>`;
+      }).join('');
+      const directLabels = labelPoints.map((item) => `
+        <path d="M${scales.x(item.last.minute)},${item.actualY} L${scales.right + 10},${item.labelY}" fill="none" stroke="${item.color}" stroke-width="1" opacity=".7"/>
+        <text x="${scales.right + 15}" y="${item.labelY + 4}" fill="${item.color}" font-size="10" font-weight="680">${item.label} ${signedMoney(item.last.value)}</text>
+      `).join('');
+      $('#edge-chart').innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Cross-venue complement edge after fees">
+          <rect width="${width}" height="${height}" fill="#0a0a0a"/>
+          ${gridMarkup(scales, yTicks, true)}
+          ${bandMarkup(scales, true)}
+          ${fills}
+          <line x1="${scales.left}" x2="${scales.right}" y1="${scales.y(0)}" y2="${scales.y(0)}" stroke="#8a8a8a" stroke-width="1.5"/>
+          ${lines}
+          ${entries}
+          ${directLabels}
+        </svg>
+      `;
+    }
+
+    function renderEqualizerExhibit() {
+      const row = DATA.shock_rows.find((item) => item.event === 'SUI equalizer' && item.offset === 1);
+      const event = eventByKey('goal_sui_1');
+      const feeRate = Number(DATA.fees_model.kalshi.match(/[\d.]+/)[0]);
+      const payout = Number(DATA.fees_model.qualify_rule.match(/\$(\d+(?:\.\d+)?)/)[1]);
+      const ksCost = row.ks_draw.mean;
+      const pmCost = row.pm_draw_no;
+      const rawCost = ksCost + pmCost;
+      const fees = feeRate * ksCost * (1 - ksCost) + feeRate * pmCost * (1 - pmCost);
+      const allIn = rawCost + fees;
+      $('#equalizer-exhibit').innerHTML = `
+        <div class="exhibit-head">
+          <h3 class="exhibit-title">The equalizer complement</h3>
+          <span class="badge success">${ICONS.check}Qualified</span>
+        </div>
+        <div class="exhibit-layout">
+          <p class="exhibit-story">
+            Switzerland equalizes at <strong class="number">${formatIsoTime(event.iso)}</strong> on TxLINE detection. During the <strong>${row.minute}</strong> confirmation minute, Kalshi TIE trades at a mean <strong>${money(row.ks_draw.mean)}</strong> on <strong>${volume(row.ks_draw.vol)}</strong> volume while Polymarket draw-NO sits at <strong>${money(row.pm_draw_no)}</strong>. Buy both exact complements: one regulation-settlement leg pays <strong>${money(payout, 3)}</strong>. After the DATA fee model at <strong>${(feeRate * 100).toFixed(0)}% × p(1−p)</strong> on both venues, the net edge is <strong>${signedMoney(row.edge_draw_at_ks_mean)} per contract</strong>.
+          </p>
+          <div>
+            <p class="micro-label">Unit economics / one contract</p>
+            <table class="economics" aria-label="Equalizer complement economics">
+              <tr><th>Kalshi TIE mean cost</th><td>${money(ksCost, 4)}</td></tr>
+              <tr><th>Polymarket draw-NO cost</th><td>${money(pmCost, 4)}</td></tr>
+              <tr><th>Modeled fees</th><td>${money(fees, 4)}</td></tr>
+              <tr><th>All-in cost</th><td>${money(allIn, 4)}</td></tr>
+              <tr><th>Complement payout</th><td>${money(payout, 4)}</td></tr>
+              <tr><th>Net edge</th><td>${signedMoney(row.edge_draw_at_ks_mean, 4)}</td></tr>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function miniRangeSvg() {
+      const unique = new Map();
+      DATA.shock_rows
+        .filter((row) => row.event === 'SUI equalizer' || row.event === 'VAR review window' || row.event === 'SUI red card')
+        .forEach((row) => unique.set(row.minute, row));
+      const rows = [...unique.values()].sort((a, b) => minuteFromLabel(a.minute) - minuteFromLabel(b.minute));
+      const start = minuteFromLabel(rows[0].minute);
+      const end = minuteFromLabel(rows[rows.length - 1].minute) + 1;
+      const width = 500;
+      const height = 182;
+      const margin = { left: 38, right: 15, top: 15, bottom: 32 };
+      const lows = rows.map((row) => row.ks_draw.low);
+      const highs = rows.map((row) => row.ks_draw.high);
+      const dataMin = Math.min(...lows);
+      const dataMax = Math.max(...highs);
+      const padding = (dataMax - dataMin) * .14;
+      const scales = createScales(width, height, margin, start, end, Math.max(0, dataMin - padding), Math.min(1, dataMax + padding));
+      const redRow = DATA.shock_rows.find((row) => row.event === 'SUI red card' && row.offset === 0);
+      const redMinute = minuteFromLabel(redRow.minute);
+      const barWidth = Math.max(7, scales.plotWidth / (end - start + 1) * .23);
+      const ticks = [];
+      for (let minute = start; minute <= end; minute += 1) ticks.push(minute);
+      const bars = rows.map((row) => {
+        const minute = minuteFromLabel(row.minute);
+        const active = minute === redMinute;
+        const color = active ? '#d4a44d' : '#767676';
+        const x = scales.x(minute);
+        return `
+          <line x1="${x}" x2="${x}" y1="${scales.y(row.ks_draw.high)}" y2="${scales.y(row.ks_draw.low)}" stroke="${color}" stroke-width="${barWidth}" opacity="${active ? 1 : .75}"/>
+          <circle cx="${x}" cy="${scales.y(row.ks_draw.open)}" r="2.2" fill="#0a0a0a" stroke="${color}" stroke-width="1.3"/>
+          <circle cx="${x}" cy="${scales.y(row.ks_draw.close)}" r="2.2" fill="${color}"/>
+        `;
+      }).join('');
+      return `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Kalshi TIE intra-minute low to high ranges">
+          <rect width="${width}" height="${height}" fill="#0c0c0c"/>
+          <rect x="${scales.x(redMinute) - barWidth * 1.7}" y="${scales.top}" width="${barWidth * 3.4}" height="${scales.plotHeight}" fill="#b8862e" opacity=".1"/>
+          ${[dataMin, (dataMin + dataMax) / 2, dataMax].map((tick) => `
+            <line x1="${scales.left}" x2="${scales.right}" y1="${scales.y(tick)}" y2="${scales.y(tick)}" stroke="#1e1e1e"/>
+            <text x="${scales.left - 7}" y="${scales.y(tick) + 4}" fill="#6f6f6f" font-size="9" text-anchor="end">${money(tick, 2)}</text>
+          `).join('')}
+          ${ticks.map((minute) => `<text x="${scales.x(minute)}" y="${scales.bottom + 20}" fill="${minute === redMinute ? '#d4a44d' : '#6f6f6f'}" font-size="8" font-weight="650" text-anchor="middle">${formatMinute(minute).replace('Z','')}</text>`).join('')}
+          ${bars}
+          <text x="${scales.x(redMinute)}" y="${scales.top + 10}" fill="#d4a44d" font-size="8" font-weight="700" text-anchor="middle">WHIPSAW</text>
+        </svg>
+      `;
+    }
+
+    function renderVarExhibit() {
+      const varEvent = eventByKey('var_start');
+      const redEvent = eventByKey('red_card_sui');
+      const row = DATA.shock_rows.find((item) => item.event === 'SUI red card' && item.offset === 0);
+      $('#var-exhibit').innerHTML = `
+        <div class="exhibit-head">
+          <h3 class="exhibit-title">The VAR trap</h3>
+          <span class="badge warning">${ICONS.shield}Refused</span>
+        </div>
+        <p class="exhibit-story">
+          At <strong>${formatIsoTime(varEvent.iso)}</strong>, a MistakenIdentity VAR review begins; the state is overturned to a Switzerland red card at <strong>${formatIsoTime(redEvent.iso)}</strong>. Inside that minute, Kalshi TIE spans <strong>${money(row.ks_draw.low, 2)}–${money(row.ks_draw.high, 2)}</strong>. The naive ARG complement reads <strong>${signedMoney(row.edge_arg_at_ks_mean)}</strong>. txBet refuses: settlement-relevant evidence is still under review.
+        </p>
+        <span class="reason-code">${esc(DATA.refusal.reason)} · ${esc(DATA.refusal.detail)}</span>
+        <div class="mini-chart">
+          <p class="micro-label">Kalshi TIE / intraminute low–high range</p>
+          ${miniRangeSvg()}
+        </div>
+      `;
+    }
+
+    function renderIdentityExhibit() {
+      const goal = eventByKey('goal_arg_2');
+      const goalThree = eventByKey('goal_arg_3');
+      const end = eventByKey('match_end');
+      const targetMinute = goal.min + 3;
+      const etStart = eventByKey('et1_start');
+      const observedCloseMinute = Math.ceil(etStart.ts / 60000);
+      const score = goal.label.match(/(\d+-\d+)/)?.[1] || DATA.fixture.score_final;
+      const points = [goal.min, targetMinute, goalThree.min, end.min];
+      const targetValue = DATA.series.pm.arg_yes[seriesIndex(targetMinute)];
+      const ksClose = DATA.series.ks.arg_close[seriesIndex(observedCloseMinute)];
+      $('#identity-exhibit').innerHTML = `
+        <div class="exhibit-head">
+          <h3 class="exhibit-title">The settlement-identity trap</h3>
+          <span class="badge warning">${ICONS.shield}Refused pairing</span>
+        </div>
+        <p class="exhibit-story">
+          At <strong>${formatMinute(targetMinute)}</strong>, Argentina leads <strong>${esc(score)}</strong> in extra time while Polymarket ARG-YES prints <strong>${money(targetValue, 4)}</strong>. Kalshi’s regulation-result series is already pinned at its <strong>${formatMinute(observedCloseMinute)}</strong> close of <strong>${money(ksClose, 3)}</strong>. A title-matching bot can confuse “win” with an advance-style market; txBet pairs only contracts whose settlement identity matches exactly.
+        </p>
+        <div class="et-strip" aria-label="Polymarket Argentina yes values during extra time">
+          ${points.map((minute) => `
+            <div class="et-point">
+              <span class="et-time">${formatMinute(minute)} · PM ARG-YES</span>
+              <span class="et-value">${money(DATA.series.pm.arg_yes[seriesIndex(minute)], 4)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderLedger() {
+      $('#ledger-body').innerHTML = DATA.fills.map((fill) => `
+        <tr>
+          <td><span class="shadow-tag">SHADOW</span></td>
+          <td>${esc(fill.entry)}</td>
+          <td><strong>${esc(fill.outcome.toUpperCase())}</strong><br><span style="color:#6f6f6f">${esc(fill.strategy)}</span></td>
+          <td>${money(fill.cost_per_contract, 4)}</td>
+          <td>${money(fill.fees_per_contract, 4)}</td>
+          <td style="color:#72bf94">${signedMoney(fill.edge_per_contract, 4)}</td>
+          <td>${Number(fill.contracts).toLocaleString('en-US')}</td>
+          <td style="color:#72bf94">${money(fill.locked_profit, 2)}</td>
+        </tr>
+      `).join('');
+      const total = DATA.fills.reduce((sum, fill) => sum + fill.locked_profit, 0);
+      $('#ledger-total').innerHTML = `<span>Total locked profit</span><strong>${money(total, 2)}</strong>`;
+    }
+
+    function renderLagTable() {
+      const shocks = [
+        { key: 'goal_arg_1', label: 'Argentina goal', event: eventByKey('goal_arg_1') },
+        { key: 'goal_sui_1', label: 'Switzerland goal', event: eventByKey('goal_sui_1') },
+        { key: 'red_card_sui', label: 'Switzerland red card', event: eventByKey('red_card_sui') }
+      ];
+      const formatLag = (lag) => lag === 0 ? 'same minute' : `${lag} min`;
+      $('#lag-body').innerHTML = shocks.map((shock) => `
+        <tr>
+          <td><strong>${esc(shock.label)}</strong><br><span style="color:#6f6f6f">${formatIsoTime(shock.event.iso)}</span></td>
+          <td>${formatLag(lagForShock(shock.key, 'pm'))}</td>
+          <td>${formatLag(lagForShock(shock.key, 'ks'))}</td>
+          <td>${formatLag(lagForShock(shock.key, 'fair'))}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderMethod() {
+      const fixtureId = DATA.fixture.id;
+      $('#source-list').innerHTML = `
+        <li><strong>TxLINE</strong><br><code>/api/scores/historical/${fixtureId}</code> + <code>/api/odds/updates/${fixtureId}</code>; mainnet service level 12 free World Cup tier; on-chain subscribe tx <code>3tnXk6fSFESuKSckva15pesv5D6YYj3TBcDi9zbQMt4vkB8gkVcWZT7ZjvnFxDYc82bKtQJQRNR24WKRyZ92nZeJ</code>.</li>
+        <li><strong>Polymarket</strong><br>Gamma event <code>fifwc-arg-che-2026-07-11</code> + CLOB <code>prices-history</code>, fidelity <code>1m</code>.</li>
+        <li><strong>Kalshi</strong><br>Event <code>KXWCGAME-26JUL11ARGSUI</code>, one-minute candlesticks.</li>
+      `;
+      $('#caveat-list').innerHTML = `
+        <li><strong>Kalshi fees:</strong> ${esc(DATA.fees_model.kalshi)}.</li>
+        <li><strong>Polymarket fees:</strong> ${esc(DATA.fees_model.polymarket)}.</li>
+        <li><strong>Qualification:</strong> ${esc(DATA.fees_model.qualify_rule)}.</li>
+        <li>Polymarket history is printed mid, not executable ask. A one-cent adverse assumption still leaves the DATA equalizer complement positive.</li>
+        <li>Minute bucketing limits lag resolution to one minute. Fees use the published worst case. Officiating, freshness, liquidity, and execution ambiguity fail closed.</li>
+      `;
+    }
+
+    function init() {
+      renderHeader();
+      renderHero();
+      renderPricePanels();
+      renderEdgeChart();
+      renderEqualizerExhibit();
+      renderVarExhibit();
+      renderIdentityExhibit();
+      renderLedger();
+      renderLagTable();
+      renderMethod();
+    }
+
+    init();
+  </script>
+</body>
+</html>
