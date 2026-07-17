@@ -6,12 +6,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const deliveryStatus = [
-  ["Strategy core", "implemented", "good"],
-  ["Browser + terminal replay", "implemented", "good"],
-  ["TxLINE auth / snapshot / SSE", "smoke boundary", "feed"],
-  ["Live stream → strategy loop", "not wired", "open"],
-  ["Venue books + fills", "synthetic", "open"],
-  ["Live-money execution", "not included", "open"],
+  ["Strategy + execution safety kernel", "implemented", "good"],
+  ["Replay + source-status console", "implemented", "good"],
+  ["Google auth + embedded EVM / Solana", "operator config needed", "feed"],
+  ["TxLINE REST → browser", "operator config needed", "feed"],
+  ["Polymarket reviewed-pair shadow", "review config needed", "feed"],
+  ["TxLINE stream → strategy loop", "not wired", "open"],
+  ["Money-mutation routes", "none exposed", "open"],
 ] as const;
 
 export function DeliverySection() {

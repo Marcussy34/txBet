@@ -94,6 +94,9 @@ export function VenueSection() {
             Every venue.
             <span className="text-muted-foreground"> Every mispricing.</span>
           </h2>
+          <p className="mt-6 max-w-lg text-sm leading-7 text-muted-foreground">
+            Live mispricing capture across every prediction market — arbitrage included, never required.
+          </p>
         </Reveal>
 
         {/* Two capture modes: the gate is shared, arbitrage is only one of them. */}

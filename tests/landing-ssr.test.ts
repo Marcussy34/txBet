@@ -12,6 +12,7 @@ vi.mock("motion/react", async (importOriginal) => {
 });
 
 import nextConfig from "../next.config";
+import { deliveryStatus } from "../src/components/landing/sections/delivery";
 import { TxBetLanding } from "../src/components/landing/txbet-landing";
 
 describe("landing page resilience", () => {
@@ -52,6 +53,14 @@ describe("landing page resilience", () => {
     expect(markup).toContain('data-section-language="venue-coverage"');
     expect(markup).toContain("Polymarket");
     expect(markup).toContain("Hyperliquid");
+    expect(markup).toContain("venue fees");
+    expect(markup).toContain("$0.029");
+    expect(markup).toContain("+$0.031");
+    expect(markup).toContain(".969 &lt; 1.000");
+    expect(markup).toContain("Strategy + execution safety kernel");
+    expect(markup).toContain("operator config needed");
+    expect(markup).toContain("review config needed");
+    expect(markup).toContain("none exposed");
     expect(markup).not.toContain("Hydromancer");
     expect(markup).not.toContain(">Rain<");
     expect(markup).toContain('aria-label="Pause quote loop"');
@@ -59,6 +68,18 @@ describe("landing page resilience", () => {
     expect(markup).not.toContain("TxLINE smoke boundary / 001");
     expect(markup.match(/<h1/g)).toHaveLength(1);
     expect(markup).not.toContain("opacity:0");
+  });
+
+  it("keeps the honest-boundary panel aligned with the current MVP state", () => {
+    expect(deliveryStatus).toEqual([
+      ["Strategy + execution safety kernel", "implemented", "good"],
+      ["Replay + source-status console", "implemented", "good"],
+      ["Google auth + embedded EVM / Solana", "operator config needed", "feed"],
+      ["TxLINE REST → browser", "operator config needed", "feed"],
+      ["Polymarket reviewed-pair shadow", "review config needed", "feed"],
+      ["TxLINE stream → strategy loop", "not wired", "open"],
+      ["Money-mutation routes", "none exposed", "open"],
+    ]);
   });
 
   it("keeps the reduced-motion first render aligned with the server stage", () => {

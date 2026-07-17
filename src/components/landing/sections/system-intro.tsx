@@ -42,10 +42,13 @@ function EventLedgerRow({
   );
 }
 
+// Worked cross-venue example: YES on Polymarket (0.05 curve), NO on Kalshi (0.07 curve).
+// $0.940 bundle + $0.029 published fees = $0.969 all-in, still under the $1.000 payout.
 const metrics = [
   { label: "trigger", value: "63:00", key: "trigger", target: "63" },
   { label: "paired cost", value: "$0.940", key: "pair", target: "0.94" },
-  { label: "after costs", value: "+$0.048", key: "edge", target: "0.048" },
+  { label: "venue fees", value: "$0.029", key: "fees", target: "0.029" },
+  { label: "after fees", value: "+$0.031", key: "edge", target: "0.031" },
 ] as const;
 
 export function MarketSignalPreview() {
@@ -56,7 +59,7 @@ export function MarketSignalPreview() {
           <span className="size-2 bg-primary" />
           <MicroLabel className="text-foreground">Live reaction tape</MicroLabel>
           <span className="hidden h-px w-10 bg-border sm:block" />
-          <MicroLabel className="hidden sm:block">Event → edge</MicroLabel>
+          <MicroLabel className="hidden sm:block">Paired mode / worked example</MicroLabel>
         </div>
         <div className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.6875rem]">
           <button
@@ -97,12 +100,12 @@ export function MarketSignalPreview() {
             <EventEdgeRoute className="relative h-auto max-h-[18rem]" />
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-border bg-card/30 lg:grid-cols-1 lg:divide-x-0 lg:divide-y">
+          <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-1">
             {metrics.map((metric) => (
               <div
                 key={metric.label}
                 data-gsap-live-metric={metric.key}
-                className="flex min-h-24 flex-col justify-between px-3 py-4 sm:px-5 lg:min-h-0 lg:flex-row lg:items-end lg:gap-4"
+                className="flex min-h-24 flex-col justify-between bg-card px-3 py-4 sm:px-5 lg:min-h-0 lg:flex-row lg:items-end lg:gap-4"
               >
                 <div className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground sm:text-[0.6875rem]">
                   {metric.label}

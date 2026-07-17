@@ -69,9 +69,9 @@ export function animateExecutionProtocol(asset: SVGSVGElement): MotionCleanup {
   timeline.set(visibleLedgerRows, { opacity: 0.34, x: -3 }, 0);
   timeline.set(visibleLedgerPassGlyphs, { opacity: 0 }, 0);
   timeline.set(results, { opacity: 0, x: -8 }, 0);
-  // Pass cycles keep the refusal exit to a whisper; refused cycles light it fully.
-  timeline.set(refusals, { opacity: 0.06 }, 0);
-  timeline.set(refusalPackets, { opacity: 0.04, strokeDashoffset: 0 }, 0);
+  // The refusal exit is invisible on pass cycles; it exists only while the guard refuses.
+  timeline.set(refusals, { opacity: 0 }, 0);
+  timeline.set(refusalPackets, { opacity: 0, strokeDashoffset: 0 }, 0);
   if (guardLedgerWarning) timeline.set(guardLedgerWarning, { opacity: 0 }, 0);
   if (guardCardPass) timeline.set(guardCardPass, { opacity: 0 }, 0);
   if (guardCardWarning) timeline.set(guardCardWarning, { opacity: 0 }, 0);
@@ -185,11 +185,11 @@ export function animateExecutionProtocol(asset: SVGSVGElement): MotionCleanup {
     { opacity: () => (isRefusal() ? 0 : 1), x: () => (isRefusal() ? -8 : 0), duration: 0.28 },
     2.94,
   );
-  timeline.to(refusals, { opacity: () => (isRefusal() ? 1 : 0.06), duration: 0.24 }, 2.98);
+  timeline.to(refusals, { opacity: () => (isRefusal() ? 1 : 0), duration: 0.24 }, 2.98);
   timeline.to(
     refusalPackets,
     {
-      opacity: () => (isRefusal() ? 1 : 0.04),
+      opacity: () => (isRefusal() ? 1 : 0),
       strokeDashoffset: (_targetIndex, target: SVGPathElement) => (isRefusal() ? -target.getTotalLength() : 0),
       duration: 0.56,
       ease: "power2.out",
@@ -212,6 +212,9 @@ export function animateExecutionProtocol(asset: SVGSVGElement): MotionCleanup {
       2.9,
     );
   }
+
+  // The courier fades once delivered so no dash is left parked beside gate 04.
+  timeline.to(packets, { opacity: 0, duration: 0.28, ease: "power2.in" }, 3.3);
 
   timeline.call(
     () => ui.setReadout(isRefusal() ? "guard refused" : "route passed", "04 / 04"),

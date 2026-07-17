@@ -174,13 +174,6 @@ export function BrandSplash() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 border-t border-border/70 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:grid-cols-4 sm:text-[0.6875rem]">
-          {["TxLINE-format replay", "Synthetic venue books", "Simulated fills", "No live money"].map((item) => (
-            <div key={item} className="border-border/70 px-2 py-3 text-center odd:border-r sm:border-r sm:last:border-r-0">
-              {item}
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );

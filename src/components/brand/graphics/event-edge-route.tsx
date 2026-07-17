@@ -125,6 +125,16 @@ export function EventEdgeRoute({ className }: { className?: string }) {
         <SvgChip x={410} y={106} width={90} label="CAPTURE" />
         <SvgChip x={510} y={92} width={116} label="PAIR / $0.940" />
         <SvgChip x={604} y={176} width={110} label="COST GATE" />
+        {/* Worked example: each leg is venue-attributed and the gate carries its real fee load. */}
+        <text x={268} y={26} fill="currentColor" opacity="0.5" fontFamily="var(--font-data)" fontSize="10.5" letterSpacing="1.3">
+          POLYMARKET / 0.05 CURVE
+        </text>
+        <text x={268} y={262} fill="currentColor" opacity="0.5" fontFamily="var(--font-data)" fontSize="10.5" letterSpacing="1.3">
+          KALSHI / 0.07 CURVE
+        </text>
+        <text x={606} y={216} fill="currentColor" opacity="0.55" fontFamily="var(--font-data)" fontSize="10.5" letterSpacing="1.2">
+          FEES $0.029
+        </text>
       </g>
       <g className="sm:hidden">
         <SvgChip x={28} y={86} width={146} height={36} fontSize={20} label="EVENT / 63:00" />

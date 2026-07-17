@@ -6,17 +6,19 @@ import {
   type MotionCleanup,
 } from "@/components/landing/motion/live-loop";
 
-type MetricName = "trigger" | "pair" | "edge";
+type MetricName = "trigger" | "pair" | "fees" | "edge";
 
 const metricTargets: Record<MetricName, number> = {
   trigger: 63,
   pair: 0.94,
-  edge: 0.048,
+  // Published Jul 2026 schedules: Polymarket 0.05 + Kalshi 0.07 p(1−p) curves on the two legs.
+  fees: 0.029,
+  edge: 0.031,
 };
 
 function formatMetric(name: MetricName, value: number) {
   if (name === "trigger") return `${Math.round(value).toString().padStart(2, "0")}:00`;
-  if (name === "pair") return `$${value.toFixed(3)}`;
+  if (name === "pair" || name === "fees") return `$${value.toFixed(3)}`;
   return `+$${value.toFixed(3)}`;
 }
 
@@ -45,6 +47,7 @@ export function animateEventEdgeRoute(asset: SVGSVGElement): MotionCleanup {
   const metricValues: Record<MetricName, HTMLElement | null> = {
     trigger: ui.panel?.querySelector<HTMLElement>('[data-gsap-metric-value="trigger"]') ?? null,
     pair: ui.panel?.querySelector<HTMLElement>('[data-gsap-metric-value="pair"]') ?? null,
+    fees: ui.panel?.querySelector<HTMLElement>('[data-gsap-metric-value="fees"]') ?? null,
     edge: ui.panel?.querySelector<HTMLElement>('[data-gsap-metric-value="edge"]') ?? null,
   };
   const metrics = Object.values(metricValues).filter((metric): metric is HTMLElement => Boolean(metric));
@@ -148,6 +151,7 @@ export function animateEventEdgeRoute(asset: SVGSVGElement): MotionCleanup {
   }
   addMetricCount("pair", 1.54);
 
+  addMetricCount("fees", 1.7);
   timeline.call(() => ui.setReadout("cost gate passed", "T+412ms"), [], 1.9);
   if (gateNode) timeline.to(gateNode, { opacity: 1, scale: 1.08, duration: 0.16, repeat: 1, yoyo: true }, 1.82);
   if (passNode) {

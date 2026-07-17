@@ -31,10 +31,10 @@ type ProofWindow = {
   report:
     | {
         kind: "matched";
-        pnl: 4.8;
+        pnl: 3.08;
         route: "800 ms route";
         state: "captured";
-        capture: 5.03;
+        capture: 3.18;
       }
     | {
         kind: "no-trade";
@@ -57,12 +57,13 @@ const proofWindows = [
     label: "W1 MATCHED",
     outcome: "matched",
     gates: decisionGates.map(() => ({ state: "pass" as const })),
+    // 100-bundle window: $94.00 legs + $2.92 published fees vs $100 payout.
     report: {
       kind: "matched",
-      pnl: 4.8,
+      pnl: 3.08,
       route: "800 ms route",
       state: "captured",
-      capture: 5.03,
+      capture: 3.18,
     },
   },
   {
@@ -327,8 +328,8 @@ export function ProofSection() {
                       <MicroLabel>modeled matched P&amp;L</MicroLabel>
                       <div className="mt-6 font-mono text-5xl font-semibold tabular-nums text-success">{matchedPnl}</div>
                       <div className="mt-4 space-y-2 border-t border-border pt-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
-                        <div className="flex items-center justify-between gap-3"><span>yes leg / $0.540</span><span className="text-success">filled</span></div>
-                        <div className="flex items-center justify-between gap-3"><span>no leg / $0.400</span><span className="text-success">filled</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>yes / polymarket / $0.540</span><span className="text-success">filled</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>no / kalshi / $0.400</span><span className="text-success">filled</span></div>
                       </div>
                     </div>
                     <div style={tileDelay(1)} className={cn("bg-card p-5", tileClass)}>
@@ -339,7 +340,8 @@ export function ProofSection() {
                       <div className="mt-6 font-mono text-5xl font-semibold tabular-nums text-success">{capturedReturn}</div>
                       <div className="mt-4 space-y-2 border-t border-border pt-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
                         <div className="flex items-center justify-between gap-3"><span>bundle paid / $0.940</span><span>both legs</span></div>
-                        <div className="flex items-center justify-between gap-3"><span>payout / $1.000</span><span className="text-success">+$0.048 edge</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>venue fees / $0.029</span><span>0.05 + 0.07 curves</span></div>
+                        <div className="flex items-center justify-between gap-3"><span>payout / $1.000</span><span className="text-success">+$0.031 after fees</span></div>
                       </div>
                     </div>
                   </div>
