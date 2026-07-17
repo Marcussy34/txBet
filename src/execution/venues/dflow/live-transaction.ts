@@ -24,6 +24,8 @@ export interface InspectedDflowTransaction {
   readonly walletAddress: string;
   readonly inputTokenAccount: string;
   readonly outputTokenAccount: string;
+  /** Every writable account is simulated so no other user token account can change. */
+  readonly writableAccountAddresses: readonly string[];
   readonly recentBlockhash: string;
   readonly computeUnitLimit: number;
   readonly computeUnitPriceMicroLamports: string;
@@ -77,6 +79,19 @@ export function inspectUnsignedDflowTransaction(input: {
   if (requiredAccounts.some((address) => !staticAddresses.has(address))) {
     throw new Error("DFlow transaction is missing a user-bound mint or token account");
   }
+  const writableAccountAddresses = staticKeys
+    .filter((_key, index) => message.isAccountWritable(index))
+    .map((key) => key.toBase58());
+  const writable = new Set(writableAccountAddresses);
+  if (
+    writableAccountAddresses.length === 0 ||
+    writableAccountAddresses.length > 64 ||
+    !writable.has(wallet.toBase58()) ||
+    !writable.has(inputTokenAccount.toBase58()) ||
+    !writable.has(outputTokenAccount.toBase58())
+  ) {
+    throw new Error("DFlow transaction writable-account boundary is invalid");
+  }
 
   const instructions = message.version === "legacy"
     ? message.instructions
@@ -111,6 +126,7 @@ export function inspectUnsignedDflowTransaction(input: {
     walletAddress: wallet.toBase58(),
     inputTokenAccount: inputTokenAccount.toBase58(),
     outputTokenAccount: outputTokenAccount.toBase58(),
+    writableAccountAddresses: Object.freeze(writableAccountAddresses),
     recentBlockhash: message.recentBlockhash,
     computeUnitLimit: compute.limit,
     computeUnitPriceMicroLamports: compute.price.toString(),

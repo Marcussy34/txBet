@@ -34,6 +34,7 @@ function tokenAccount(mint: string, wallet: string, amount: bigint) {
   new PublicKey(mint).toBuffer().copy(data, 0);
   new PublicKey(wallet).toBuffer().copy(data, 32);
   data.writeBigUInt64LE(amount, 64);
+  data[108] = 1;
   return rpcAccount(2_039_280, data, CLASSIC_TOKEN_PROGRAM_ID);
 }
 
@@ -147,6 +148,7 @@ describe("DFlow Solana RPC boundary", () => {
         walletAddress: wallet,
         inputTokenAccount,
         outputTokenAccount,
+        writableAccountAddresses: [wallet, inputTokenAccount, outputTokenAccount],
         inputMint,
         outputMint,
         expectedInputDebitAtomic: "1000000",
@@ -161,6 +163,82 @@ describe("DFlow Solana RPC boundary", () => {
       },
     });
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects token-authority mutation and any other wallet-token debit", async () => {
+    const wallet = new PublicKey(Uint8Array.from({ length: 32 }, () => 13)).toBase58();
+    const inputMint = new PublicKey(Uint8Array.from({ length: 32 }, () => 14)).toBase58();
+    const outputMint = new PublicKey(Uint8Array.from({ length: 32 }, () => 15)).toBase58();
+    const otherMint = new PublicKey(Uint8Array.from({ length: 32 }, () => 16)).toBase58();
+    const inputTokenAccount = new PublicKey(Uint8Array.from({ length: 32 }, () => 17)).toBase58();
+    const outputTokenAccount = new PublicKey(Uint8Array.from({ length: 32 }, () => 18)).toBase58();
+    const otherTokenAccount = new PublicKey(Uint8Array.from({ length: 32 }, () => 19)).toBase58();
+    const pre = [
+      rpcAccount(1_000_000),
+      tokenAccount(inputMint, wallet, 2_000_000n),
+      null,
+      tokenAccount(otherMint, wallet, 700_000n),
+    ];
+    const guarded = (post: unknown[]) => {
+      const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+        const request = JSON.parse(String(init?.body)) as { method: string; id: string };
+        return request.method === "getMultipleAccounts"
+          ? response({
+              jsonrpc: "2.0",
+              id: request.id,
+              result: { context: { slot: 120 }, value: pre },
+            })
+          : response({
+              jsonrpc: "2.0",
+              id: request.id,
+              result: {
+                context: { slot: 121 },
+                value: { err: null, accounts: post },
+              },
+            });
+      });
+      return simulateDflowSignedTransaction({
+        rpcUrl: RPC_URL,
+        transactionBase64: TRANSACTION,
+        minimumContextSlot: 100,
+        operationId: "hostile-guard",
+        fetcher,
+        balanceGuard: {
+          walletAddress: wallet,
+          inputTokenAccount,
+          outputTokenAccount,
+          writableAccountAddresses: [
+            wallet,
+            inputTokenAccount,
+            outputTokenAccount,
+            otherTokenAccount,
+          ],
+          inputMint,
+          outputMint,
+          expectedInputDebitAtomic: "1000000",
+          minimumOutputCreditAtomic: "500000",
+          maximumLamportDebit: "5200",
+        },
+      });
+    };
+
+    const delegatedInput = tokenAccount(inputMint, wallet, 1_000_000n);
+    const delegatedData = Buffer.from(delegatedInput.data[0], "base64");
+    delegatedData.writeUInt32LE(1, 72);
+    delegatedInput.data[0] = delegatedData.toString("base64");
+    await expect(guarded([
+      rpcAccount(994_800),
+      delegatedInput,
+      tokenAccount(outputMint, wallet, 600_000n),
+      tokenAccount(otherMint, wallet, 700_000n),
+    ])).rejects.toThrow(/authority|metadata/i);
+
+    await expect(guarded([
+      rpcAccount(994_800),
+      tokenAccount(inputMint, wallet, 1_000_000n),
+      tokenAccount(outputMint, wallet, 600_000n),
+      tokenAccount(otherMint, wallet, 699_999n),
+    ])).rejects.toThrow(/another wallet-owned token account/i);
   });
 
   it("submits exactly once with no RPC retry and verifies the returned signature", async () => {

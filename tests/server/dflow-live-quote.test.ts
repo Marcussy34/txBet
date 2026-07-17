@@ -13,6 +13,7 @@ import {
 } from "@/server/execution/dflow-live-quote";
 
 const PRIVATE_KEY = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+const NOW = 1_784_270_000_000;
 const OUTCOME_MINT = new PublicKey(
   Uint8Array.from({ length: 32 }, () => 7),
 ).toBase58();
@@ -208,6 +209,34 @@ describe("live DFlow signed quote boundary", () => {
     expect(headers.get("x-api-key")).toBe(configBase.apiKey);
     expect(headers.get("x-sign-request")).toBe("true");
     expect(headers.get("x-request-id")).toBe(REQUEST_ID);
+  });
+
+  it("checks signature freshness when the complete response is received", async () => {
+    const url = buildDflowLiveOrderUrl(request, configBase);
+    const signed = await signedResponse({
+      url: url.toString(),
+      requestId: REQUEST_ID,
+      createdAt: new Date(NOW),
+    });
+    let receiptNowMs = NOW;
+    const fakeFetch = vi.fn<typeof fetch>().mockImplementation(async () => {
+      receiptNowMs = NOW + 121_000;
+      return signed.response;
+    });
+    const clock = vi.fn(() => receiptNowMs);
+    const dependencies = {
+      fetchImplementation: fakeFetch,
+      clock,
+      // This models the stale operation-start timestamp that must not govern freshness.
+      nowMs: NOW,
+    };
+
+    await expect(fetchDflowLiveQuote(
+      request,
+      { ...configBase, responsePublicKeyBase58: signed.publicKey },
+      dependencies,
+    )).rejects.toThrow(/verification/i);
+    expect(clock).toHaveBeenCalledTimes(1);
   });
 
   it("rejects invalid request controls before making a network request", async () => {

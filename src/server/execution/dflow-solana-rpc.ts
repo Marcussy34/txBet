@@ -81,6 +81,9 @@ export async function simulateDflowSignedTransaction(input: {
   const guard = input.balanceGuard === undefined
     ? null
     : validateBalanceGuard(input.balanceGuard);
+  const guardedAddresses = guard === null
+    ? Object.freeze([] as string[])
+    : guardedAccountAddresses(guard);
   let preAccounts: readonly (z.infer<typeof rpcAccountSchema> | null)[] | null = null;
   let simulationMinimumSlot = input.minimumContextSlot;
   if (guard !== null) {
@@ -92,14 +95,14 @@ export async function simulateDflowSignedTransaction(input: {
         jsonrpc: "2.0",
         id: preId,
         method: "getMultipleAccounts",
-        params: [[guard.walletAddress, guard.inputTokenAccount, guard.outputTokenAccount], {
+        params: [guardedAddresses, {
           encoding: "base64",
           commitment,
           minContextSlot: input.minimumContextSlot,
         }],
       },
     }));
-    if (pre.id !== preId || pre.result.value.length !== 3) {
+    if (pre.id !== preId || pre.result.value.length !== guardedAddresses.length) {
       throw new Error("DFlow balance snapshot is malformed");
     }
     preAccounts = pre.result.value;
@@ -123,11 +126,7 @@ export async function simulateDflowSignedTransaction(input: {
           ? {}
           : {
               accounts: {
-                addresses: [
-                  guard.walletAddress,
-                  guard.inputTokenAccount,
-                  guard.outputTokenAccount,
-                ],
+                addresses: guardedAddresses,
                 encoding: "base64",
               },
             }),
@@ -144,6 +143,7 @@ export async function simulateDflowSignedTransaction(input: {
     ? undefined
     : verifyBalanceDeltas(
         guard,
+        guardedAddresses,
         preAccounts!,
         value.result.value.accounts,
       );
@@ -158,6 +158,7 @@ export interface DflowSimulationBalanceGuard {
   readonly walletAddress: string;
   readonly inputTokenAccount: string;
   readonly outputTokenAccount: string;
+  readonly writableAccountAddresses: readonly string[];
   readonly inputMint: string;
   readonly outputMint: string;
   readonly expectedInputDebitAtomic: string;
@@ -308,6 +309,30 @@ function validateBalanceGuard(
       throw new Error(`DFlow simulation ${label} is invalid`, { cause: error });
     }
   }
+  if (
+    !Array.isArray(value.writableAccountAddresses) ||
+    value.writableAccountAddresses.length === 0 ||
+    value.writableAccountAddresses.length > 64
+  ) {
+    throw new Error("DFlow simulation writable-account boundary is invalid");
+  }
+  const writable = new Set<string>();
+  for (const address of value.writableAccountAddresses) {
+    try {
+      const canonical = new PublicKey(address).toBase58();
+      if (canonical !== address || writable.has(address)) throw new Error("noncanonical");
+      writable.add(address);
+    } catch (error) {
+      throw new Error("DFlow simulation writable account is invalid", { cause: error });
+    }
+  }
+  if (
+    !writable.has(value.walletAddress) ||
+    !writable.has(value.inputTokenAccount) ||
+    !writable.has(value.outputTokenAccount)
+  ) {
+    throw new Error("DFlow simulation omitted a protected writable account");
+  }
   for (const [label, amount] of [
     ["input debit", value.expectedInputDebitAtomic],
     ["minimum output credit", value.minimumOutputCreditAtomic],
@@ -323,34 +348,64 @@ function validateBalanceGuard(
   return value;
 }
 
+function guardedAccountAddresses(
+  guard: DflowSimulationBalanceGuard,
+): readonly string[] {
+  return Object.freeze([...guard.writableAccountAddresses]);
+}
+
 function verifyBalanceDeltas(
   guard: DflowSimulationBalanceGuard,
+  addresses: readonly string[],
   pre: readonly (z.infer<typeof rpcAccountSchema> | null)[],
   postUnknown: readonly unknown[] | undefined,
 ) {
-  if (postUnknown === undefined || postUnknown.length !== 3) {
+  if (
+    pre.length !== addresses.length ||
+    postUnknown === undefined ||
+    postUnknown.length !== addresses.length
+  ) {
     throw new Error("DFlow simulation omitted guarded account state");
   }
   const post = postUnknown.map((account) => rpcAccountSchema.nullable().parse(account));
-  const preWallet = pre[0];
-  const postWallet = post[0];
+  const indexByAddress = new Map(addresses.map((address, index) => [address, index]));
+  const walletIndex = indexByAddress.get(guard.walletAddress)!;
+  const inputIndex = indexByAddress.get(guard.inputTokenAccount)!;
+  const outputIndex = indexByAddress.get(guard.outputTokenAccount)!;
+  const preWallet = pre[walletIndex];
+  const postWallet = post[walletIndex];
   if (preWallet === null || preWallet === undefined || postWallet === null) {
     throw new Error("DFlow simulation omitted the fee-payer account");
   }
-  const preInput = tokenBalance(pre[1], guard.inputMint, guard.walletAddress, false);
-  const postInput = tokenBalance(post[1], guard.inputMint, guard.walletAddress, false);
-  const preOutput = tokenBalance(pre[2], guard.outputMint, guard.walletAddress, true);
-  const postOutput = tokenBalance(
-    post[2],
+  assertSameAccountExceptLamports(preWallet, postWallet, "fee payer");
+  const preInput = tokenState(pre[inputIndex], guard.inputMint, guard.walletAddress, false);
+  const postInput = tokenState(post[inputIndex], guard.inputMint, guard.walletAddress, false);
+  assertSameTokenStateExceptAmount(preInput, postInput, "input token account");
+  const preOutput = tokenState(pre[outputIndex], guard.outputMint, guard.walletAddress, true);
+  const postOutput = tokenState(
+    post[outputIndex],
     guard.outputMint,
     guard.walletAddress,
     guard.minimumOutputCreditAtomic === "0",
   );
-  if (postInput > preInput || postOutput < preOutput) {
+  assertAuthorizedOutputTransition(preOutput, postOutput);
+
+  for (let index = 0; index < addresses.length; index += 1) {
+    if (index === walletIndex || index === inputIndex || index === outputIndex) continue;
+    const before = walletOwnedTokenAccount(pre[index], guard.walletAddress);
+    const after = walletOwnedTokenAccount(post[index], guard.walletAddress);
+    if (before !== null || after !== null) {
+      if (before === null || after === null || !accountsEqual(before.account, after.account)) {
+        throw new Error("DFlow simulation changed another wallet-owned token account");
+      }
+    }
+  }
+
+  if (postInput.amount > preInput.amount || postOutput.amount < preOutput.amount) {
     throw new Error("DFlow simulation token balance direction is invalid");
   }
-  const inputDebit = preInput - postInput;
-  const outputCredit = postOutput - preOutput;
+  const inputDebit = preInput.amount - postInput.amount;
+  const outputCredit = postOutput.amount - preOutput.amount;
   const lamportDebit = BigInt(Math.max(0, preWallet.lamports - postWallet.lamports));
   if (inputDebit !== BigInt(guard.expectedInputDebitAtomic)) {
     throw new Error("DFlow simulation input debit does not equal the authorized amount");
@@ -368,14 +423,28 @@ function verifyBalanceDeltas(
   });
 }
 
-function tokenBalance(
+type RpcAccount = z.infer<typeof rpcAccountSchema>;
+type TokenState = Readonly<{ account: RpcAccount; bytes: Buffer; amount: bigint }>;
+
+function tokenState(
   account: z.infer<typeof rpcAccountSchema> | null | undefined,
   expectedMint: string,
   expectedOwner: string,
   allowMissing: boolean,
-): bigint {
+): TokenState {
   if (account === null || account === undefined) {
-    if (allowMissing) return 0n;
+    if (allowMissing) {
+      return Object.freeze({
+        account: rpcAccountSchema.parse({
+          data: ["", "base64"],
+          executable: false,
+          lamports: 0,
+          owner: CLASSIC_TOKEN_PROGRAM_ID,
+        }),
+        bytes: Buffer.alloc(0),
+        amount: 0n,
+      });
+    }
     throw new Error("DFlow simulation omitted a required token account");
   }
   if (account.executable || account.owner !== CLASSIC_TOKEN_PROGRAM_ID) {
@@ -383,7 +452,7 @@ function tokenBalance(
   }
   const encoded = account.data[0];
   const bytes = Buffer.from(encoded, "base64");
-  if (bytes.toString("base64") !== encoded || bytes.byteLength < 72) {
+  if (bytes.toString("base64") !== encoded || bytes.byteLength !== 165) {
     throw new Error("DFlow simulation token account data is malformed");
   }
   if (
@@ -392,5 +461,74 @@ function tokenBalance(
   ) {
     throw new Error("DFlow simulation token account binding changed");
   }
-  return bytes.readBigUInt64LE(64);
+  return Object.freeze({ account, bytes, amount: bytes.readBigUInt64LE(64) });
+}
+
+function assertSameTokenStateExceptAmount(
+  before: TokenState,
+  after: TokenState,
+  label: string,
+): void {
+  if (
+    before.bytes.byteLength !== 165 ||
+    after.bytes.byteLength !== 165 ||
+    before.account.lamports !== after.account.lamports ||
+    before.account.owner !== after.account.owner ||
+    before.account.executable !== after.account.executable ||
+    !before.bytes.subarray(0, 64).equals(after.bytes.subarray(0, 64)) ||
+    !before.bytes.subarray(72).equals(after.bytes.subarray(72))
+  ) {
+    throw new Error(`DFlow simulation changed ${label} authority or metadata`);
+  }
+}
+
+function assertAuthorizedOutputTransition(before: TokenState, after: TokenState): void {
+  if (before.bytes.byteLength === 165) {
+    assertSameTokenStateExceptAmount(before, after, "output token account");
+    return;
+  }
+  if (after.bytes.byteLength === 0) return;
+  if (
+    after.bytes.byteLength !== 165 ||
+    after.bytes.readUInt32LE(72) !== 0 ||
+    after.bytes[108] !== 1 ||
+    after.bytes.readUInt32LE(109) !== 0 ||
+    after.bytes.readBigUInt64LE(121) !== 0n ||
+    after.bytes.readUInt32LE(129) !== 0
+  ) {
+    throw new Error("DFlow simulation created an output token account with authority");
+  }
+}
+
+function walletOwnedTokenAccount(
+  account: RpcAccount | null | undefined,
+  walletAddress: string,
+): TokenState | null {
+  if (account === null || account === undefined || account.owner !== CLASSIC_TOKEN_PROGRAM_ID) {
+    return null;
+  }
+  const encoded = account.data[0];
+  const bytes = Buffer.from(encoded, "base64");
+  if (bytes.toString("base64") !== encoded || bytes.byteLength !== 165) return null;
+  if (new PublicKey(bytes.subarray(32, 64)).toBase58() !== walletAddress) return null;
+  return Object.freeze({ account, bytes, amount: bytes.readBigUInt64LE(64) });
+}
+
+function assertSameAccountExceptLamports(before: RpcAccount, after: RpcAccount, label: string): void {
+  if (
+    before.owner !== after.owner ||
+    before.executable !== after.executable ||
+    before.data[0] !== after.data[0] ||
+    before.data[1] !== after.data[1]
+  ) {
+    throw new Error(`DFlow simulation changed ${label} metadata`);
+  }
+}
+
+function accountsEqual(left: RpcAccount, right: RpcAccount): boolean {
+  return left.lamports === right.lamports &&
+    left.owner === right.owner &&
+    left.executable === right.executable &&
+    left.data[0] === right.data[0] &&
+    left.data[1] === right.data[1];
 }

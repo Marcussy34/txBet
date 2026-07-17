@@ -72,6 +72,7 @@ const preparedSchema = z.strictObject({
   walletAddress: z.string().min(32).max(44),
   inputTokenAccount: z.string().min(32).max(44),
   outputTokenAccount: z.string().min(32).max(44),
+  writableAccountAddresses: z.array(z.string().min(32).max(44)).min(1).max(64),
   transactionBase64: z.string().min(1).max(2_000),
   transactionHash: z.string().regex(HASH),
   messageHash: z.string().regex(HASH),
@@ -285,6 +286,7 @@ export async function submitDflowCanaryOrder(input: {
         walletAddress: prepared.order.walletAddress,
         inputTokenAccount: prepared.order.inputTokenAccount,
         outputTokenAccount: prepared.order.outputTokenAccount,
+        writableAccountAddresses: prepared.order.writableAccountAddresses,
         inputMint: DFLOW_CANONICAL_SOLANA_USDC_MINT,
         outputMint: binding.outcomeMint,
         expectedInputDebitAtomic: String(prepared.order.amountMicros),
@@ -493,7 +495,7 @@ async function resolveOrPrepare(input: {
         minimumOutputAtomic: parseAtomicAmount(input.order.minimumOutputAtomic),
       },
       liveQuoteConfig(input.env),
-      { nowMs: input.preparedAtMs },
+      { clock: input.dependencies?.now ?? Date.now },
     );
   } catch {
     throw new DflowCanaryError("QUOTE_REJECTED", 422);
@@ -554,6 +556,7 @@ async function resolveOrPrepare(input: {
     walletAddress: input.wallet.address,
     inputTokenAccount: inspected.inputTokenAccount,
     outputTokenAccount: inspected.outputTokenAccount,
+    writableAccountAddresses: [...inspected.writableAccountAddresses],
     transactionBase64: quote.transactionBase64,
     transactionHash: inspected.transactionHash,
     messageHash: inspected.messageHash,
@@ -652,6 +655,8 @@ function validatePrepared(
     inspected.recentBlockhash !== prepared.recentBlockhash ||
     inspected.inputTokenAccount !== prepared.inputTokenAccount ||
     inspected.outputTokenAccount !== prepared.outputTokenAccount ||
+    inspected.writableAccountAddresses.join("\u0000") !==
+      prepared.writableAccountAddresses.join("\u0000") ||
     inspected.computeUnitLimit !== prepared.computeUnitLimit ||
     inspected.priorityFeeLamports !== prepared.priorityFeeLamports ||
     inspected.programIds.join("\u0000") !== prepared.programIds.join("\u0000")

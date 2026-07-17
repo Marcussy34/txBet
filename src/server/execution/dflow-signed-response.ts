@@ -21,7 +21,7 @@ export interface VerifyDflowSignedJsonResponseInput {
   readonly rawBody: string;
   readonly requestId: string;
   readonly requestUrl: string;
-  readonly nowMs?: number;
+  readonly receivedAtMs: number;
   readonly publicKeyBase58: string;
 }
 
@@ -29,9 +29,8 @@ export interface VerifyDflowSignedJsonResponseInput {
 export async function verifyDflowSignedJsonResponse(
   input: VerifyDflowSignedJsonResponseInput,
 ): Promise<unknown> {
-  const nowMs = input.nowMs ?? Date.now();
-  if (!Number.isSafeInteger(nowMs) || nowMs < 0) {
-    throw new Error("DFlow response verification time is invalid");
+  if (!Number.isSafeInteger(input.receivedAtMs) || input.receivedAtMs < 0) {
+    throw new Error("DFlow response receipt time is invalid");
   }
   if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) {
     throw new Error("DFlow signed response status is invalid");
@@ -67,7 +66,7 @@ export async function verifyDflowSignedJsonResponse(
   }
   const createdSeconds = Number(profile[1]);
   const keyId = profile[2];
-  const nowSeconds = Math.floor(nowMs / 1_000);
+  const nowSeconds = Math.floor(input.receivedAtMs / 1_000);
   if (!Number.isSafeInteger(createdSeconds)) {
     throw new Error("DFlow signed response creation time is invalid");
   }

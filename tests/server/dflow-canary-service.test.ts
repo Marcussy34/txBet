@@ -129,6 +129,11 @@ function harness(store: BlobJournalObjectStore) {
     walletAddress: WALLET,
     inputTokenAccount: new PublicKey(Uint8Array.from({ length: 32 }, () => 8)).toBase58(),
     outputTokenAccount: new PublicKey(Uint8Array.from({ length: 32 }, () => 9)).toBase58(),
+    writableAccountAddresses: [
+      WALLET,
+      new PublicKey(Uint8Array.from({ length: 32 }, () => 8)).toBase58(),
+      new PublicKey(Uint8Array.from({ length: 32 }, () => 9)).toBase58(),
+    ],
     recentBlockhash: BLOCKHASH,
     computeUnitLimit: 200_000,
     computeUnitPriceMicroLamports: "1000",

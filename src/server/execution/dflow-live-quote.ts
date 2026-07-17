@@ -41,7 +41,7 @@ export interface DflowLiveQuoteConfig {
 
 export interface DflowLiveQuoteDependencies {
   readonly fetchImplementation?: typeof fetch;
-  readonly nowMs?: number;
+  readonly clock?: () => number;
 }
 
 /** Builds the only credential-bearing DFlow URL accepted by the live canary. */
@@ -123,13 +123,15 @@ export async function fetchDflowLiveQuote(
 
   let signedJson: unknown;
   try {
+    // Evaluate freshness only after the complete signed response has arrived.
+    const receivedAtMs = (dependencies.clock ?? Date.now)();
     signedJson = await verifyDflowSignedJsonResponse({
       status: response.status,
       headers: responseHeaders(response),
       rawBody,
       requestId: validated.requestId,
       requestUrl: url.toString(),
-      nowMs: dependencies.nowMs,
+      receivedAtMs,
       publicKeyBase58: config.responsePublicKeyBase58,
     });
   } catch {

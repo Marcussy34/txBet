@@ -64,7 +64,7 @@ describe("DFlow signed JSON responses", () => {
       rawBody: signed.body,
       requestId: REQUEST_ID,
       requestUrl: REQUEST_URL,
-      nowMs: NOW + 1_000,
+      receivedAtMs: NOW + 1_000,
       publicKeyBase58: signed.publicKey,
     })).resolves.toEqual({ ok: true });
   });
@@ -77,7 +77,7 @@ describe("DFlow signed JSON responses", () => {
       rawBody: signed.body,
       requestId: REQUEST_ID,
       requestUrl: REQUEST_URL,
-      nowMs: NOW + 1_000,
+      receivedAtMs: NOW + 1_000,
       publicKeyBase58: signed.publicKey,
     } as const;
 
@@ -91,7 +91,7 @@ describe("DFlow signed JSON responses", () => {
     })).rejects.toThrow(/request/i);
     await expect(verifyDflowSignedJsonResponse({
       ...common,
-      nowMs: NOW + 121_000,
+      receivedAtMs: NOW + 121_000,
     })).rejects.toThrow(/time|stale/i);
     await expect(verifyDflowSignedJsonResponse({
       ...common,
@@ -109,7 +109,7 @@ describe("DFlow signed JSON responses", () => {
       rawBody: signed.body,
       requestId: REQUEST_ID,
       requestUrl: REQUEST_URL,
-      nowMs: NOW,
+      receivedAtMs: NOW,
       publicKeyBase58: signed.publicKey,
     })).rejects.toThrow(/signed response/i);
 
@@ -127,7 +127,7 @@ describe("DFlow signed JSON responses", () => {
       rawBody: signed.body,
       requestId: REQUEST_ID,
       requestUrl: REQUEST_URL,
-      nowMs: NOW,
+      receivedAtMs: NOW,
       publicKeyBase58: signed.publicKey,
     })).rejects.toThrow(/profile/i);
   });

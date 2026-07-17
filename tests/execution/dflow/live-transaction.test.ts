@@ -34,6 +34,7 @@ function unsignedFixture(options: {
   wallet?: Keypair;
   program?: PublicKey;
   extraSigner?: PublicKey;
+  extraWritable?: PublicKey;
   includeExpectedAccounts?: boolean;
   lookup?: AddressLookupTableAccount;
 } = {}) {
@@ -50,6 +51,9 @@ function unsignedFixture(options: {
       ];
   if (options.extraSigner) {
     keys.push({ pubkey: options.extraSigner, isSigner: true, isWritable: false });
+  }
+  if (options.extraWritable) {
+    keys.push({ pubkey: options.extraWritable, isSigner: false, isWritable: true });
   }
   const message = new TransactionMessage({
     payerKey: wallet.publicKey,
@@ -96,6 +100,19 @@ describe("live DFlow transaction validation", () => {
     });
     expect(result.messageHash).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(result.transactionHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(result.writableAccountAddresses).toEqual([
+      fixture.wallet.publicKey.toBase58(),
+      ata(fixture.wallet.publicKey, new PublicKey(USDC)).toBase58(),
+      ata(fixture.wallet.publicKey, OUTCOME).toBase58(),
+    ]);
+  });
+
+  it("enumerates every writable account for the RPC state-change proof", () => {
+    const extraWritable = Keypair.generate().publicKey;
+    const fixture = unsignedFixture({ extraWritable });
+    const result = inspect(fixture.base64, fixture.wallet.publicKey);
+
+    expect(result.writableAccountAddresses).toContain(extraWritable.toBase58());
   });
 
   it("rejects extra signers, unexpected programs, missing bound accounts, and lookup tables", () => {
