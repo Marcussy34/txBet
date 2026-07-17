@@ -1054,7 +1054,7 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                 World Cup
               </p>
               <h1 className="font-serif text-3xl font-normal leading-none tracking-[-0.03em] sm:text-4xl">
-                Pick the match. <span className="text-muted-foreground">Agents work inside.</span>
+                Pick your agent. <span className="text-muted-foreground">It trades the match.</span>
               </h1>
             </section>
 
@@ -1238,7 +1238,7 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                     );
                   })}
                   <div className="pt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                    tape asks / yes price per outcome
+                    model asks / yes price per outcome
                   </div>
                 </CardContent>
               </Card>
@@ -1283,7 +1283,7 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                           +{formatUsd(railCandidate.netProfitMicros)}
                         </div>
                         <div className="mt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                          {formatBps(railCandidate.netReturnBps)} net · modeled on the {railScenario?.name} tape
+                          {formatBps(railCandidate.netReturnBps)} net · modeled on the {railScenario?.name} run
                         </div>
                       </div>
                     ) : railRefusal ? (
@@ -1292,14 +1292,14 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                       </div>
                     ) : (
                       <div className="grid min-h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                        tape in production
+                        strategy pending
                       </div>
                     )}
                   </div>
 
                   <div>
                     <div className="mb-1.5 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
-                      Historical P&L / replay windows
+                      Modeled P&L / strategy windows
                     </div>
                     {railWindows.length > 0 ? (
                       <div className="border border-border">
@@ -1346,11 +1346,11 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                       </div>
                     ) : (
                       <div className="grid min-h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                        no replay windows yet
+                        no strategy windows yet
                       </div>
                     )}
                     <p className="mt-1.5 text-[0.625rem] leading-4 text-muted-foreground">
-                      Synthetic replay evidence only; not a prediction of real returns.
+                      Strategy-run evidence only; not a prediction of real returns.
                     </p>
                   </div>
 
@@ -1364,7 +1364,7 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                     </Button>
                   ) : (
                     <div className="grid h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                      tape in production
+                      strategy pending
                     </div>
                   )}
                 </div>

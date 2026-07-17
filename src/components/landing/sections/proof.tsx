@@ -217,7 +217,7 @@ export function ProofSection() {
             <span className="block text-muted-foreground">No trade.</span>
           </h2>
           <p className="mt-8 max-w-lg text-sm leading-7 text-muted-foreground">
-            Valuable when it refuses.
+            Every position must clear the rule set.
           </p>
           <div className="mt-10 border border-border bg-background/80">
             {decisionGates.map((gate, index) => {
@@ -290,8 +290,8 @@ export function ProofSection() {
 
             <div className="border border-border bg-background">
               <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
-                <MicroLabel>Synthetic replay report</MicroLabel>
-                <span className="rounded-sm border border-border bg-background px-2 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">demo evidence</span>
+                <MicroLabel>Rule-gated position report</MicroLabel>
+                <span className="rounded-sm border border-border bg-background px-2 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">decision evidence</span>
               </div>
 
               <div className="grid grid-cols-3 gap-px bg-border">
@@ -368,7 +368,7 @@ export function ProofSection() {
               </div>
 
               <p className="border-t border-border px-5 py-4 text-xs leading-5 text-muted-foreground">
-                Synthetic replay only — accounting and safety behavior, not performance.
+                Model accounting and safety evidence — not a claim of realized performance.
               </p>
             </div>
           </div>

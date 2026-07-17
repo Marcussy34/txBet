@@ -25,22 +25,22 @@ const dataFont = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(process.env),
   title: {
-    default: "txBet — Event-triggered arbitrage strategy prototype",
+    default: "txBet — Odds, dominance, and momentum trading agent",
     template: "%s · txBet",
   },
-  description: "World Cup hackathon prototype: TxLINE-format match events trigger exact-complement scans over synthetic venue books. Current fills and P&L are simulated.",
+  description: "txBet's agent reads odds, dominance, and momentum — positioning before kickoff and trading every outcome live through the match.",
   applicationName: "txBet",
-  keywords: ["TxLINE", "TxODDS", "prediction markets", "arbitrage", "sports data", "trading agent"],
+  keywords: ["TxLINE", "TxODDS", "prediction markets", "match dominance", "in-play trading", "sports data", "trading agent"],
   openGraph: {
-    title: "txBet — See the gap before the market catches up",
-    description: "Exact-complement strategy demo with a TxLINE smoke boundary, synthetic venue books, and simulated fills.",
+    title: "txBet — It reads the match before the market does",
+    description: "Odds, dominance, and momentum drive pre-match positions and rule-gated in-play trading across every outcome.",
     type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "txBet hackathon prototype and synthetic replay" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "txBet odds, dominance, and momentum trading agent" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "txBet — Event-triggered strategy prototype",
-    description: "TxLINE smoke boundary. Synthetic venue books. Simulated fills. No edge. No trade.",
+    title: "txBet — Position before kickoff. Trade every swing.",
+    description: "Pre-match positions. In-play buying and selling. Every outcome stays rule-gated.",
     images: ["/opengraph-image"],
   },
 };

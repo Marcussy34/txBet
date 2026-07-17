@@ -12,7 +12,7 @@ export const protocol = [
   {
     index: "01",
     title: "Wake",
-    signal: "TxLINE event",
+    signal: "momentum signal",
     tone: "text-primary",
   },
   {
@@ -99,7 +99,7 @@ export function ProtocolSection() {
                 <button
                   type="button"
                   data-gsap-live-toggle
-                  aria-label="Pause protocol loop"
+                  aria-label="Pause execution loop"
                   className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
                 >
                   <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
@@ -107,8 +107,8 @@ export function ProtocolSection() {
                 </button>
                 <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
                 <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
-                <span className="shrink-0 sm:hidden">/ sim</span>
-                <span className="hidden shrink-0 sm:inline">/ synthetic</span>
+                <span className="shrink-0 sm:hidden">/ model</span>
+                <span className="hidden shrink-0 sm:inline">/ model</span>
               </div>
             </div>
 
@@ -152,8 +152,8 @@ export function ProtocolSection() {
             </ol>
 
             <div className="flex items-center justify-between gap-4 border-t border-border bg-background/80 px-4 py-3 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground sm:text-[0.6875rem]">
-              <span>synthetic sequence</span>
-              <span className="text-right"><span data-gsap-live-clock>sequence idle</span> / simulated</span>
+              <span>rule-gated sequence</span>
+              <span className="text-right"><span data-gsap-live-clock>sequence idle</span> / operator-gated</span>
             </div>
           </div>
         </Reveal>

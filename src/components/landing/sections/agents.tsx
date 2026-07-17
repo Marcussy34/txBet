@@ -16,10 +16,10 @@ export function AgentSection() {
     <section id="agents" className="border-b border-border py-24 sm:py-32">
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <Reveal>
-          <MicroLabel className="text-primary">04 / selectable operators</MicroLabel>
+          <MicroLabel className="text-primary">04 / match-trading agents</MicroLabel>
           <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.6rem)] font-normal leading-[0.84] tracking-[-0.045em]">
-            Pick the match
-            <span className="block text-muted-foreground">signal.</span>
+            Pick the agent.
+            <span className="block text-muted-foreground">It trades the match.</span>
           </h2>
         </Reveal>
 
@@ -62,7 +62,7 @@ export function AgentSection() {
           </div>
         </div>
         <p className="mt-5 font-mono text-[0.6875rem] uppercase leading-5 tracking-[0.1em] text-muted-foreground">
-          deterministic replay inputs / live enrichment not wired
+          deterministic odds + dominance model / live momentum feed pending
         </p>
       </div>
     </section>

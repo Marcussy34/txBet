@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 /* VENUE COVERAGE
  * The txBet target roster is shown whether or not an adapter exists yet. Fee
- * figures are published venue schedules, not measurements; the replay's books
- * stay synthetic regardless of venue.
+ * figures are published venue schedules, not measurements; the model books
+ * stay operator-gated regardless of venue.
  */
 
 type VenueStatus = "adapter" | "roadmap";
@@ -42,8 +42,8 @@ const venues: readonly Venue[] = [
 ] as const;
 
 const captureModes = [
-  ["paired", "two legs / bundle below payout"],
-  ["directional", "one leg / quote vs event-adjusted fair"],
+  ["paired", "two outcomes / bundle below payout"],
+  ["directional", "one outcome / price vs momentum-adjusted fair"],
 ] as const;
 
 function VenueWordmark({ venue, size }: { venue: Venue; size: "row" | "tile" }) {
@@ -95,7 +95,7 @@ export function VenueSection() {
             <span className="text-muted-foreground"> Every mispricing.</span>
           </h2>
           <p className="mt-6 max-w-lg text-sm leading-7 text-muted-foreground">
-            Live mispricing capture across every prediction market — arbitrage included, never required.
+            Pre-match odds set the opening position. In-play momentum moves exposure across outcomes and venues.
           </p>
         </Reveal>
 
@@ -155,7 +155,7 @@ export function VenueSection() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground sm:text-[0.6875rem]">
           <span>published venue fee schedules / jul 2026</span>
           <span>taker peaks at mid-price on p(1−p) venues / makers free on most books</span>
-          <span>replay books stay synthetic</span>
+          <span>model venue books / operator-gated execution</span>
         </div>
       </div>
     </section>

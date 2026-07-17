@@ -40,7 +40,7 @@ export function connectLiveLoop(
   timeline: LiveLoopTimeline,
   ui: LiveLoopUi,
   initialStatus = "loop ready",
-  initialClock = "synthetic",
+  initialClock = "model",
 ): MotionCleanup {
   const pauseLabel = ui.toggle?.getAttribute("aria-label") ?? "Pause animation";
   const resumeLabel = pauseLabel.startsWith("Pause ") ? `Resume ${pauseLabel.slice(6)}` : "Resume animation";

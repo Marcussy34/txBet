@@ -23,9 +23,9 @@ export function TensionSection() {
     >
       <div className="mx-auto w-full max-w-[1500px] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-6">
         <Reveal className="mx-auto max-w-[1280px] text-center">
-          <MicroLabel className="text-primary">01 / the market tension</MicroLabel>
+          <MicroLabel className="text-primary">01 / live match pricing</MicroLabel>
           <h2 className="mt-5 font-serif text-[clamp(3.8rem,6.4vw,6.8rem)] font-normal leading-[0.86] tracking-[-0.045em]">
-            One event. <span className="text-muted-foreground">Many clocks.</span> One payout.
+            One match. <span className="text-muted-foreground">Three outcomes.</span> Every swing priced.
           </h2>
         </Reveal>
 
@@ -35,13 +35,13 @@ export function TensionSection() {
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-border py-3">
               <div className="flex shrink-0 items-center gap-2">
                 <span className="size-2 bg-primary" />
-                <MicroLabel className="text-foreground">Venue repricing window</MicroLabel>
+                <MicroLabel className="text-foreground">In-play repricing window</MicroLabel>
               </div>
               <div className="flex w-full items-center gap-2 border-t border-border/60 pt-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground sm:w-auto sm:border-0 sm:pt-0">
                 <button
                   type="button"
                   data-gsap-live-toggle
-                  aria-label="Pause quote loop"
+                  aria-label="Pause pricing loop"
                   className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
                 >
                   <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
@@ -49,8 +49,8 @@ export function TensionSection() {
                 </button>
                 <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
                 <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
-                <span className="shrink-0 sm:hidden">/ sim</span>
-                <span className="hidden shrink-0 sm:inline">/ synthetic</span>
+                <span className="shrink-0 sm:hidden">/ model</span>
+                <span className="hidden shrink-0 sm:inline">/ model</span>
               </div>
             </div>
 
@@ -101,7 +101,7 @@ export function TensionSection() {
 
                     <div className={`${chipClassName} relative z-30 min-w-0 justify-self-start px-1.5 sm:px-2`}>
                       <span className="block text-foreground">{venue.label}</span>
-                      <span className="block truncate text-[0.6875rem] tracking-[0.08em] text-muted-foreground">synthetic</span>
+                      <span className="block truncate text-[0.6875rem] tracking-[0.08em] text-muted-foreground">model</span>
                     </div>
 
                     <span aria-hidden="true" />
@@ -133,7 +133,7 @@ export function TensionSection() {
                 <div className="relative">
                   <MicroLabel>
                     <span className="sm:hidden">event</span>
-                    <span className="hidden sm:inline">T+0 / event received</span>
+                    <span className="hidden sm:inline">T+0 / momentum received</span>
                   </MicroLabel>
                   <div data-gsap-live-metric-value className="mt-2 whitespace-nowrap font-mono text-base font-semibold tabular-nums sm:text-3xl">0 ms</div>
                 </div>
@@ -153,7 +153,7 @@ export function TensionSection() {
                 <div className="relative">
                   <MicroLabel>
                     <span className="sm:hidden">settled</span>
-                    <span className="hidden sm:inline">pair normalized</span>
+                    <span className="hidden sm:inline">outcomes repriced</span>
                   </MicroLabel>
                   <div data-gsap-live-metric-value className="mt-2 whitespace-nowrap font-mono text-base font-semibold tabular-nums text-warning sm:text-3xl">3,000 ms</div>
                 </div>
@@ -161,8 +161,8 @@ export function TensionSection() {
             </div>
 
             <div className="flex items-center justify-between gap-4 pt-3 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-muted-foreground">
-              <span>demonstration timing only</span>
-              <span className="text-right"><span data-gsap-live-clock>synthetic</span> / not measured venue latency</span>
+              <span>model timing only</span>
+              <span className="text-right"><span data-gsap-live-clock>model</span> / not measured venue latency</span>
             </div>
           </div>
         </Reveal>

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "txBet hackathon prototype — synthetic event-triggered exact-complement replay";
+export const alt = "txBet odds, dominance, and momentum trading agent";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,17 +42,17 @@ export default function OpenGraphImage() {
             <div style={{ display: "flex", fontSize: 54, fontWeight: 700, letterSpacing: -3 }}>txBet</div>
           </div>
           <div style={{ display: "flex", border: "1px solid #4A4A4A", borderRadius: 5, padding: "10px 14px", fontSize: 14, letterSpacing: 2.6, textTransform: "uppercase", color: "#B8B8B8" }}>
-            Event-driven trading infrastructure
+            Match-trading agent
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 48, position: "relative" }}>
           <div style={{ display: "flex", flexDirection: "column", width: 690 }}>
             <div style={{ fontSize: 82, lineHeight: 0.92, letterSpacing: -4.5, fontFamily: "Georgia, serif" }}>
-              See the gap before the market catches up.
+              It reads the match before the market does.
             </div>
             <div style={{ marginTop: 22, color: "#A8A8A8", fontSize: 19, lineHeight: 1.45 }}>
-              Event-triggered exact-complement strategy prototype.
+              Positions before kickoff. Buys and sells every outcome in play.
             </div>
           </div>
 
@@ -65,7 +65,7 @@ export default function OpenGraphImage() {
               <circle cx="160" cy="84" r="5" fill="#FAFAFA" />
               <circle cx="224" cy="126" r="5" fill="#FAFAFA" />
             </svg>
-            <div style={{ position: "absolute", left: 24, top: 12, color: "#9B9B9B", fontFamily: "monospace", fontSize: 12, letterSpacing: 1.4 }}>LATENCY CORRIDOR</div>
+            <div style={{ position: "absolute", left: 24, top: 12, color: "#9B9B9B", fontFamily: "monospace", fontSize: 12, letterSpacing: 1.4 }}>MATCH POSITIONING</div>
             <div style={{ position: "absolute", left: 72, bottom: 8, color: "#9B9B9B", fontFamily: "monospace", fontSize: 12 }}>T+0</div>
             <div style={{ position: "absolute", left: 142, top: 58, color: "#9B9B9B", fontFamily: "monospace", fontSize: 12 }}>V01</div>
             <div style={{ position: "absolute", left: 206, top: 100, color: "#9B9B9B", fontFamily: "monospace", fontSize: 12 }}>V02</div>
@@ -74,8 +74,8 @@ export default function OpenGraphImage() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #3A3A3A", paddingTop: 18, fontSize: 14, color: "#A8A8A8", letterSpacing: 1.8, textTransform: "uppercase", position: "relative" }}>
           <span>TxLINE smoke boundary</span>
-          <span>Synthetic venue books</span>
-          <span>Simulated fills</span>
+          <span>Model venue books</span>
+          <span>Operator-gated execution</span>
           <span style={{ color: "#FAFAFA" }}>No edge. No trade.</span>
         </div>
       </div>

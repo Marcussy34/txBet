@@ -144,12 +144,9 @@ Two restrained monochrome gradients are exposed as `bg-brand-bg` and `bg-brand-a
 
 ## Messaging hierarchy
 
-- **Category:** Event-driven trading infrastructure.
-- **Promise:** “See the gap before the market catches up.”
+- **Promise:** “It reads the match before the market does.”
 - **Operating rule:** “No edge. No trade.”
-- **Current product:** TxLINE-format replay core, synthetic venue books, simulated fills.
-- **Evidence:** deterministic safety and accounting behavior, not historical profitability.
-- **Live boundary:** a credentialed TxLINE smoke client exists separately; live events are not yet wired into the strategy loop.
+- **Current product:** Odds/dominance-model agent: pre-match positioning plus live in-play buying and selling per outcome.
 
 Do not claim “only,” “fastest,” “lowest latency,” “guaranteed,” or “risk-free” without approved evidence and reconciled live fills.
 

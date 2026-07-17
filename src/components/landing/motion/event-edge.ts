@@ -135,16 +135,16 @@ export function animateEventEdgeRoute(asset: SVGSVGElement): MotionCleanup {
     timeline.call(() => setMetricTone(metric, false), [], start + 0.26);
   };
 
-  timeline.call(() => ui.setReadout("event locked", "T+000ms"), [], 0.5);
+  timeline.call(() => ui.setReadout("momentum locked", "T+000ms"), [], 0.5);
   if (eventNode) timeline.to(eventNode, { opacity: 1, scale: 1.35, duration: 0.18, repeat: 1, yoyo: true }, 0.5);
   if (splitNode) timeline.to(splitNode, { opacity: 1, scale: 1.2, duration: 0.16, repeat: 1, yoyo: true }, 0.78);
   if (ui.liveDot) timeline.to(ui.liveDot, { opacity: 1, scale: 1.35, duration: 0.18, repeat: 1, yoyo: true }, 0.5);
   addMetricCount("trigger", 0.52);
 
-  timeline.call(() => ui.setReadout("complements scanning", "T+184ms"), [], 0.92);
+  timeline.call(() => ui.setReadout("outcomes scanning", "T+184ms"), [], 0.92);
   if (quoteNodes.length > 0) timeline.to(quoteNodes, { opacity: 1, scale: 1, duration: 0.24, stagger: 0.08 }, 0.94);
 
-  timeline.call(() => ui.setReadout("pair matched", "T+326ms"), [], 1.58);
+  timeline.call(() => ui.setReadout("positions matched", "T+326ms"), [], 1.58);
   if (pairNode) {
     timeline.to(pairNode, { opacity: 1, scale: 1.5, duration: 0.18 }, 1.58);
     timeline.to(pairNode, { scale: 1, duration: 0.16 }, 1.76);
@@ -173,7 +173,7 @@ export function animateEventEdgeRoute(asset: SVGSVGElement): MotionCleanup {
     );
   }, [], 1.88);
 
-  timeline.call(() => ui.setReadout("listening", "replay loop"), [], 3.75);
+  timeline.call(() => ui.setReadout("listening", "strategy loop"), [], 3.75);
   timeline.to(transientNodes, { opacity: 0.42, duration: 0.35 }, 3.75);
 
   const disconnect = connectLiveLoop(asset, timeline, ui);

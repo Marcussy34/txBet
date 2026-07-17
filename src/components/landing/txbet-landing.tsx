@@ -47,7 +47,7 @@ function LandingHeader() {
               "h-9 rounded-md px-4 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.12em]",
             )}
           >
-            Launch console
+            Launch app
             <span aria-hidden="true">↗</span>
           </Link>
         </nav>
@@ -62,8 +62,8 @@ function LandingFooter() {
         <TxBetLockup compact />
         <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[0.6875rem] uppercase tracking-[0.11em] text-muted-foreground">
           <span>TxLINE smoke boundary</span>
-          <span>Synthetic venue books</span>
-          <span>Simulated execution</span>
+          <span>Model venue books</span>
+          <span>Operator-gated execution</span>
           <span>MIT licensed</span>
         </div>
       </div>

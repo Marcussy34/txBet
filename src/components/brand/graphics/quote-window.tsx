@@ -15,9 +15,9 @@ export function QuoteWindowGraphic({ className }: { className?: string }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <title id="quote-window-title">Quote convergence window for synthetic venues</title>
+        <title id="quote-window-title">In-play outcome pricing window</title>
         <desc id="quote-window-description">
-          Two synthetic quote traces begin apart, converge between 600 and 1,100 milliseconds, then settle together by 3,000 milliseconds.
+          Two model quote traces move as momentum shifts, converge between 600 and 1,100 milliseconds, then settle together by 3,000 milliseconds.
         </desc>
 
         <path d="M0 36H1200M0 72H1200M0 108H1200" stroke="currentColor" strokeOpacity="0.10" vectorEffect="non-scaling-stroke" />
@@ -56,15 +56,15 @@ export function QuoteWindowGraphic({ className }: { className?: string }) {
       {/* HTML chips stay readable when the trace field compresses on mobile. */}
       <span className={`${traceLabelClassName} pointer-events-none absolute left-2 top-2`}>
         <span className="sm:hidden">T+0</span>
-        <span className="hidden sm:inline">EVENT / T+0</span>
+        <span className="hidden sm:inline">MOMENTUM / T+0</span>
       </span>
       <span className={`${traceLabelClassName} pointer-events-none absolute bottom-2 left-[27.5%] -translate-x-1/2`}>
         <span className="sm:hidden">SYNC</span>
-        <span className="hidden sm:inline">QUOTES CONVERGE</span>
+        <span className="hidden sm:inline">POSITIONS REPRICE</span>
       </span>
       <span className={`${traceLabelClassName} pointer-events-none absolute right-2 top-2`}>
         <span className="sm:hidden">SETTLED</span>
-        <span className="hidden sm:inline">PAIR NORMALIZED</span>
+        <span className="hidden sm:inline">OUTCOMES PRICED</span>
       </span>
     </div>
   );

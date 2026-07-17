@@ -52,9 +52,9 @@ export function EventEdgeRoute({ className }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title id="event-edge-title">Event-to-edge route</title>
+      <title id="event-edge-title">Momentum-to-position route</title>
       <desc id="event-edge-description">
-        A qualifying synthetic red-card event splits into complementary YES and NO rails, reunites as an exact pair, and passes through a two-slab after-cost gate.
+        A qualifying red-card momentum shift opens complementary YES and NO outcome positions, joins them as an exact pair, and passes through a two-slab after-cost gate.
       </desc>
 
       <defs>
@@ -137,7 +137,7 @@ export function EventEdgeRoute({ className }: { className?: string }) {
         </text>
       </g>
       <g className="sm:hidden">
-        <SvgChip x={28} y={86} width={146} height={36} fontSize={20} label="EVENT / 63:00" />
+        <SvgChip x={28} y={86} width={146} height={36} fontSize={20} label="MOMENTUM / 63:00" />
         <SvgChip x={28} y={158} width={136} height={36} fontSize={20} label="CARD / H2" />
         <SvgChip x={242} y={24} width={132} height={36} fontSize={20} label="YES / .540" />
         <SvgChip x={242} y={220} width={128} height={36} fontSize={20} label="NO / .400" />

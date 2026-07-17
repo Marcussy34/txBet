@@ -57,15 +57,15 @@ export function MarketSignalPreview() {
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-y border-border py-3">
         <div className="flex shrink-0 items-center gap-3">
           <span className="size-2 bg-primary" />
-          <MicroLabel className="text-foreground">Live reaction tape</MicroLabel>
+          <MicroLabel className="text-foreground">Live momentum feed</MicroLabel>
           <span className="hidden h-px w-10 bg-border sm:block" />
-          <MicroLabel className="hidden sm:block">Paired mode / worked example</MicroLabel>
+          <MicroLabel className="hidden sm:block">Outcome positions / worked example</MicroLabel>
         </div>
         <div className="flex items-center gap-2 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.6875rem]">
           <button
             type="button"
             data-gsap-live-toggle
-            aria-label="Pause event loop"
+            aria-label="Pause momentum loop"
             className="grid size-11 shrink-0 place-items-center rounded-sm border border-border/80 text-muted-foreground transition-colors hover:border-foreground/35 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hidden sm:size-7"
           >
             <Pause data-gsap-live-pause aria-hidden="true" className="size-4 sm:size-3" />
@@ -73,7 +73,7 @@ export function MarketSignalPreview() {
           </button>
           <span data-gsap-live-dot aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
           <span data-gsap-live-status="true" className="whitespace-nowrap">loop ready</span>
-          <span>/ synthetic</span>
+          <span>/ model</span>
         </div>
       </div>
 
@@ -147,11 +147,11 @@ export function MarketSignalPreview() {
           <span data-gsap-status-glyph className="inline-flex">
             <StatusGlyph state="locked" />
           </span>
-          <span className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.13em] sm:text-[0.6875rem]">exact pair matched</span>
+          <span className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.13em] sm:text-[0.6875rem]">outcome positions matched</span>
         </div>
         <span className="text-right font-mono text-[0.625rem] uppercase tracking-wider sm:text-[0.6875rem]">
-          <span data-gsap-live-clock>synthetic</span>
-          <span className="hidden sm:inline"> / simulated fills</span>
+          <span data-gsap-live-clock>model</span>
+          <span className="hidden sm:inline"> / operator-gated fills</span>
         </span>
       </div>
     </div>
@@ -167,10 +167,10 @@ export function SystemIntro() {
     >
       <div className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-12">
         <Reveal className="relative z-10">
-          <MicroLabel className="text-primary">How txBet reacts</MicroLabel>
+          <MicroLabel className="text-primary">How txBet trades</MicroLabel>
           <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.5rem)] font-normal leading-[0.84] tracking-[-0.05em]">
-            Event in.
-            <span className="text-muted-foreground"> Edge checked.</span>
+            Momentum in.
+            <span className="text-muted-foreground"> Positions out.</span>
           </h2>
         </Reveal>
 

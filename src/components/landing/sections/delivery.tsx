@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const deliveryStatus = [
   ["Strategy + execution safety kernel", "implemented", "good"],
-  ["Replay + source-status console", "implemented", "good"],
+  ["Strategy run + source-status console", "implemented", "good"],
   ["Google auth + embedded EVM / Solana", "operator config needed", "feed"],
   ["TxLINE REST → browser", "operator config needed", "feed"],
   ["Polymarket reviewed-pair shadow", "review config needed", "feed"],
@@ -53,12 +53,12 @@ export function FinalCta() {
     <section className="relative isolate overflow-hidden py-28 sm:py-40">
       <Reveal className="mx-auto max-w-[1500px] px-4 text-center sm:px-6 lg:px-8">
         <div className="mx-auto grid size-20 place-items-center rounded-lg border border-border bg-card"><TxBetMark className="size-12" /></div>
-        <MicroLabel className="mt-8 text-primary">Replay the whole decision</MicroLabel>
+        <MicroLabel className="mt-8 text-primary">Trade the whole match</MicroLabel>
         <h2 className="mx-auto mt-5 max-w-6xl font-serif text-[clamp(4.5rem,9vw,9rem)] font-normal leading-[0.82] tracking-[-0.05em]">
-          The tape is ready.
+          Position before kickoff. Trade every swing.
         </h2>
         <p className="mx-auto mt-8 max-w-xl text-sm leading-7 text-muted-foreground">
-          Three outcomes. One core. Full disclosure.
+          Every outcome stays under the same cost and execution rules.
         </p>
         <Link
           href="/console"

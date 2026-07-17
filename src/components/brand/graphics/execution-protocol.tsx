@@ -48,9 +48,9 @@ export function ExecutionProtocolGraphic({ className }: { className?: string }) 
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title id="execution-protocol-title">Execution protocol route — gate interlock</title>
+      <title id="execution-protocol-title">Rule-gated execution route</title>
       <desc id="execution-protocol-description">
-        Four paired gate slabs admit a synthetic event when wake, exact terms, equal depth, and net edge pass. On refused cycles a warning route lights up to record the correct no-trade exit.
+        Four paired gate slabs admit a position when the momentum signal, exact terms, equal depth, and net edge pass. Refused cycles route to the correct no-trade exit.
       </desc>
 
       <path d="M54 72H1066M54 130H1066M54 248H1066M54 306H1066" stroke="currentColor" strokeOpacity="0.08" />
@@ -149,7 +149,7 @@ export function ExecutionProtocolMobileGraphic({ className }: { className?: stri
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title id="execution-protocol-mobile-title">Vertical execution protocol gate interlock</title>
+      <title id="execution-protocol-mobile-title">Vertical rule-gated execution route</title>
       <desc id="execution-protocol-mobile-description">
         A mobile view of four paired gate slabs with a complete pass route; on refused cycles a lower warning exit lights up to record the correct no-trade refusal.
       </desc>

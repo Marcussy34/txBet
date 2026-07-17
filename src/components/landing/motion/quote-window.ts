@@ -69,7 +69,7 @@ export function animateQuoteWindow(asset: SVGSVGElement): MotionCleanup {
     timeline.to(path, { strokeDashoffset: 0, opacity: 1, duration: 0.88 }, 0.16 + index * 0.08);
   });
 
-  timeline.call(() => ui.setReadout("event received", "T+000ms"), [], 0);
+  timeline.call(() => ui.setReadout("momentum received", "T+000ms"), [], 0);
   if (eventNode) timeline.to(eventNode, { opacity: 1, scale: 1.35, duration: 0.075, repeat: 1, yoyo: true }, 0.04);
   if (eventMetric) timeline.to(eventMetric, { opacity: 1, duration: 0.15 }, 0.04);
   if (ui.liveDot) timeline.to(ui.liveDot, { opacity: 1, scale: 1.35, duration: 0.075, repeat: 1, yoyo: true }, 0.04);
@@ -142,12 +142,12 @@ export function animateQuoteWindow(asset: SVGSVGElement): MotionCleanup {
   animateMetric(captureMetric, 800, sweepStart + (800 / 3000) * sweepDuration - 0.52);
   animateMetric(normalizedMetric, 3000, sweepStart + sweepDuration - 0.52);
 
-  timeline.call(() => ui.setReadout("pair normalized", "T+3,000ms"), [], 3.66);
+  timeline.call(() => ui.setReadout("outcomes repriced", "T+3,000ms"), [], 3.66);
   if (normalizedNode) timeline.to(normalizedNode, { opacity: 1, scale: 1.45, duration: 0.075, repeat: 1, yoyo: true }, 3.66);
   if (ui.liveDot) timeline.to(ui.liveDot, { opacity: 1, scale: 1.22, duration: 0.075, repeat: 1, yoyo: true }, 3.66);
 
   // Hold the complete state before the replay gap.
-  timeline.call(() => ui.setReadout("listening", "replay loop"), [], 4.2);
+  timeline.call(() => ui.setReadout("listening", "model loop"), [], 4.2);
   timeline.to(nodes, { opacity: 0.62, duration: 0.15 }, 4.2);
   timeline.call(() => undefined, [], 4.35);
 

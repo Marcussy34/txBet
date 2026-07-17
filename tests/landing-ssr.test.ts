@@ -23,31 +23,39 @@ describe("landing page resilience", () => {
   it("keeps core content visible before client hydration", () => {
     const markup = renderToStaticMarkup(createElement(TxBetLanding));
 
-    expect(markup).toContain("The match moves");
+    expect(markup).toContain("It reads odds, dominance, and momentum — and trades every outcome, before kickoff and all match long.");
     expect(markup).toContain("TxLINE smoke boundary");
+    expect(markup).toContain("Model venue books");
+    expect(markup).toContain("Operator-gated execution");
     expect(markup).toContain('href="#system"');
-    expect(markup).toContain("Event in.");
-    expect(markup).toContain("Event-to-edge route");
+    expect(markup).toContain("Momentum in.");
+    expect(markup).toContain("Positions out.");
+    expect(markup).toContain("Momentum-to-position route");
     expect(markup).toContain('data-gsap-loop="event-edge"');
     expect(markup).toContain('data-section-language="reaction-tape"');
     expect(markup).toContain('data-gsap-live-status="true"');
     expect(markup).toContain("loop ready");
-    expect(markup).toContain('aria-label="Pause event loop"');
+    expect(markup).toContain('aria-label="Pause momentum loop"');
     expect(markup).toContain("Speed finds it");
-    expect(markup).toContain("Execution protocol route");
+    expect(markup).toContain("Rule-gated execution route");
     expect(markup).toContain('data-gsap-loop="execution-protocol"');
     expect(markup).toContain('data-section-language="execution-interlock"');
     expect(markup.match(/data-gsap-asset="execution-protocol"/g)).toHaveLength(1);
     expect(markup.match(/data-gsap-protocol-view="true"/g)).toHaveLength(2);
-    expect(markup).toContain('aria-label="Pause protocol loop"');
+    expect(markup).toContain('aria-label="Pause execution loop"');
     expect(markup).toContain('id="protocol"');
     expect(markup).toContain('data-gsap-beam="true"');
     expect(markup).toContain('data-gsap-flank="match"');
     expect(markup).toContain('data-gsap-flank="reprice"');
+    expect(markup).toContain("IN-PLAY");
+    expect(markup).toContain("MODEL");
     expect(markup).toContain("T+800");
     expect(markup).not.toContain("data-gsap-beam-arcs");
     expect(markup).toContain('data-gsap-reveal="true"');
-    expect(markup).toContain("Quote convergence window");
+    expect(markup).toContain("In-play outcome pricing window");
+    expect(markup).toContain("One match.");
+    expect(markup).toContain("Three outcomes.");
+    expect(markup).toContain("Every swing priced.");
     expect(markup).toContain('data-gsap-loop="quote-window"');
     expect(markup).toContain('data-section-language="timing-corridor"');
     expect(markup).toContain('data-section-language="venue-coverage"');
@@ -58,14 +66,18 @@ describe("landing page resilience", () => {
     expect(markup).toContain("+$0.031");
     expect(markup).toContain(".969 &lt; 1.000");
     expect(markup).toContain("Strategy + execution safety kernel");
+    expect(markup).toContain("Pick the agent.");
+    expect(markup).toContain("It trades the match.");
+    expect(markup).toContain("Position before kickoff. Trade every swing.");
     expect(markup).toContain("operator config needed");
     expect(markup).toContain("review config needed");
     expect(markup).toContain("none exposed");
     expect(markup).not.toContain("Hydromancer");
     expect(markup).not.toContain(">Rain<");
-    expect(markup).toContain('aria-label="Pause quote loop"');
+    expect(markup).toContain('aria-label="Pause pricing loop"');
     expect(markup).toContain('id="market-window"');
     expect(markup).not.toContain("TxLINE smoke boundary / 001");
+    expect(markup.replace('data-section-language="reaction-tape"', "")).not.toMatch(/\b(?:replay|synthetic|simulated|demo|fake|tape)\b/i);
     expect(markup.match(/<h1/g)).toHaveLength(1);
     expect(markup).not.toContain("opacity:0");
   });
@@ -73,7 +85,7 @@ describe("landing page resilience", () => {
   it("keeps the honest-boundary panel aligned with the current MVP state", () => {
     expect(deliveryStatus).toEqual([
       ["Strategy + execution safety kernel", "implemented", "good"],
-      ["Replay + source-status console", "implemented", "good"],
+      ["Strategy run + source-status console", "implemented", "good"],
       ["Google auth + embedded EVM / Solana", "operator config needed", "feed"],
       ["TxLINE REST → browser", "operator config needed", "feed"],
       ["Polymarket reviewed-pair shadow", "review config needed", "feed"],

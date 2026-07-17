@@ -143,12 +143,10 @@ export function BrandSplash() {
               transition={splashTransition}
               className="mt-10 flex max-w-4xl flex-col items-center sm:mt-12"
             >
-              <h1 id="brand-splash-title" className="font-serif text-[clamp(3rem,5vw,5.2rem)] font-normal leading-[0.92] tracking-[-0.04em]">
-                The match moves.
-                <span className="block text-muted-foreground">Markets follow.</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
-                Built for the gap between match event and venue reprice.
+              {/* Visually removed headline; sr-only keeps the page h1 and the section's aria-labelledby target. */}
+              <h1 id="brand-splash-title" className="sr-only">txBet</h1>
+              <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+                It reads odds, dominance, and momentum — and trades every outcome, before kickoff and all match long.
               </p>
               <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
                 <Link
@@ -158,7 +156,7 @@ export function BrandSplash() {
                     "h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
                   )}
                 >
-                  Launch replay <span aria-hidden="true">↗</span>
+                  Launch app <span aria-hidden="true">↗</span>
                 </Link>
                 <a
                   href="#system"

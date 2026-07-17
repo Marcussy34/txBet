@@ -8,17 +8,30 @@ describe("synthetic backtest report", () => {
 
   it("counts matched, unhedged, and blocked windows separately", () => {
     expect(report).toMatchObject({
-      windows: 4,
-      candidateCount: 2,
-      matchedCount: 1,
+      windows: 7,
+      candidateCount: 3,
+      matchedCount: 2,
       unhedgedCount: 1,
-      noTradeCount: 2,
+      noTradeCount: 4,
     });
   });
 
   it("counts only fully matched bundles in locked P&L", () => {
-    expect(report.lockedProfitMicros).toBe(dollarsToMicros(4.7958));
-    expect(report.lockedReturnBps).toBe(503);
+    // Red-card bundle ($4.7958) plus the goal-reaction bundle ($5.8001).
+    expect(report.lockedProfitMicros).toBe(dollarsToMicros(10.5959));
+    expect(report.lockedReturnBps).toBe(559);
+  });
+
+  it("keeps the roster-completing windows honest", () => {
+    const injury = report.traces.find((trace) => trace.id === "injury-no-edge")!;
+    const goal = report.traces.find((trace) => trace.id === "goal-reaction-fast")!;
+    const freeKick = report.traces.find((trace) => trace.id === "free-kick-margin")!;
+    expect(injury.scan.decision).toBe("NO_TRADE");
+    expect(injury.scan.reasons).toContain("COMBINED_COST_GTE_PAYOUT");
+    expect(goal.scan.decision).toBe("EXECUTE");
+    expect(goal.execution?.state).toBe("MATCHED");
+    expect(freeKick.scan.decision).toBe("NO_TRADE");
+    expect(freeKick.scan.reasons).toContain("MIN_RETURN_NOT_MET");
   });
 
   it("shows that a three-second recheck misses the synthetic red-card gap", () => {

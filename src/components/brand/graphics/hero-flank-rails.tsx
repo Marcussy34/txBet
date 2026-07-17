@@ -2,10 +2,10 @@ import { cn } from "@/lib/utils";
 
 /* HERO FLANK RAILS
  * Two quiet timing instruments frame the opening beam on wide viewports:
- * left, the synthetic match clock ticking to the 63:00 red card; right, the
+ * left, the in-play match clock ticking to the 63:00 red card; right, the
  * venue reprice scale whose cursor settles at T+800 inside the capture band.
  * Server HTML always shows the resolved rest state; the beam-pulse loop
- * rewinds and replays them on the same randomized cadence as the packet.
+ * restarts them on the same randomized cadence as the packet.
  */
 
 const RAIL_TOP = 60;
@@ -106,7 +106,7 @@ export function MatchClockRail({ className }: { className?: string }) {
       />
 
       <text x="8" y="534" fill="currentColor" opacity="0.3" fontFamily="var(--font-data)" fontSize="8" letterSpacing="1.2">
-        REPLAY
+        IN-PLAY
       </text>
     </svg>
   );
@@ -191,7 +191,7 @@ export function VenueRepriceRail({ className }: { className?: string }) {
       </g>
 
       <text x="8" y="534" fill="currentColor" opacity="0.3" fontFamily="var(--font-data)" fontSize="8" letterSpacing="1.2">
-        SYNTHETIC
+        MODEL
       </text>
     </svg>
   );
