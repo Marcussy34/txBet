@@ -10,7 +10,9 @@ It proceeds only when it can pair exact opposite outcomes for less than their co
 
 **No edge. No trade.**
 
-> The browser and terminal demonstrations currently use synthetic TxLINE-format events, synthetic venue books, and simulated fills. A separate credentialed client can authenticate to TxLINE, read a score snapshot, and observe its live SSE stream, but that live stream is not yet wired into the strategy loop or browser. The repository does not place real-money orders.
+> The strategy walkthrough remains a deterministic synthetic replay with simulated books and fills. The console can also show a credential-safe TxLINE REST observation as **live-unverified** and feed one explicitly reviewed Polymarket public book into a **shadow-only** scan. Those read-only panels do not feed the replay strategy or expose an order action. The repository does not place real-money orders.
+
+Detailed delivery status, blockers, and later milestones are tracked in [`currentstate.md`](currentstate.md).
 
 ## Why txBet exists
 
@@ -50,21 +52,25 @@ This is not a directional prediction about Argentina. If both complementary legs
 
 | Area | Current status |
 |---|---|
-| TxLINE guest auth, score snapshot, and authenticated SSE client | Implemented as a standalone smoke boundary |
-| Live TxLINE events feeding the strategy loop and browser | Not yet wired |
+| TxLINE guest auth, score snapshot, and authenticated SSE client | Implemented and credential-safe |
+| TxLINE browser status | No-store route; confirmed observations at most 30 seconds old are live-unverified, with bounded upstream reads |
+| Live TxLINE events feeding the strategy loop | Deferred to the full World Cup shadow-coverage milestone |
+| Google login and embedded wallets | Privy provider creates one EVM and one Solana wallet automatically when a txBet Privy app is configured |
 | Six replay-ready trigger configurations | Implemented and tested; live enrichment remains incomplete for injury and corner pressure |
 | Exact settlement and complementary-outcome matching | Implemented |
 | Depth, fees, capital, exposure, freshness, and return optimizer | Implemented |
 | Browser and terminal walkthroughs | Deterministic synthetic replay |
 | Synthetic replay report and latency comparison | Synthetic demonstration data |
-| Prediction-venue books and order fills | Simulated |
-| Live prediction-market order placement | Adapter interface only; not included |
+| Polymarket public World Cup scan | One explicitly reviewed pair at a time; public read and shadow evidence only |
+| Replay venue books and order fills | Simulated |
+| Live prediction-market order placement | Disabled; no MVP browser or API route can approve, sign, submit, or cancel |
 
 The [`VenueAdapter`](src/adapters/venue.ts) contract defines the future `discover → quote → preflight → IOC → reconcile` integration boundary without pretending separate platforms provide atomic execution.
 
 ## Run the demo
 
-Requirements: Node.js 20.9+ and pnpm 10.
+Requirements: Node.js 24+ and pnpm 10. The official unified Polymarket SDK
+requires Node.js 24, and installs fail closed on older runtimes.
 
 ```bash
 pnpm install
@@ -72,6 +78,10 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) for the dedicated landing page, then choose **Launch console**. The replay console is also available directly at [http://localhost:3000/console](http://localhost:3000/console).
+
+No credentials are required for the deterministic replay. Without service
+configuration, the live-status panel explicitly shows `DETERMINISTIC REPLAY`
+and `POLYMARKET REVIEW REQUIRED`.
 
 The landing page uses native smooth anchor scrolling plus GSAP ScrollTrigger as progressive enhancement for the split-window beam, event-to-edge route, quote rails, execution interlock, and telemetry traces. The synthetic event-to-edge, quote-convergence, and four-gate protocol previews loop only while visible, include independent pause/resume controls, and demonstrate pipeline state without implying a live feed or measured venue latency. Reduced-motion preferences keep every asset static and fully visible.
 
@@ -156,7 +166,7 @@ Add an activated TxLINE token and fixture ID, then run:
 pnpm txline:smoke -- --fixture YOUR_FIXTURE_ID --seconds 15
 ```
 
-This command authenticates, fetches the score snapshot, listens to the live stream for the requested window, normalizes supported actions, and prints a credential-safe summary. It does not currently send those events into `runPipeline()` or the browser UI.
+This command authenticates, fetches the score snapshot, listens to the live stream for the requested window, normalizes supported actions, and prints a credential-safe summary. The browser separately reads a bounded score snapshot through `/api/world-cup`; neither path currently sends live events into `runPipeline()`.
 
 The smoke command uses:
 
@@ -190,6 +200,8 @@ Important modules:
 - [`src/components/landing/use-landing-motion.ts`](src/components/landing/use-landing-motion.ts) — scoped GSAP ScrollTrigger choreography and reduced-motion handling.
 - [`src/app/console`](src/app/console) — the deterministic interactive replay route.
 - [`src/lib/txline`](src/lib/txline) — authenticated TxLINE transport and event normalization.
+- [`src/server/txline/world-cup-status.ts`](src/server/txline/world-cup-status.ts) — credential-safe browser status boundary.
+- [`src/server/polymarket/world-cup-shadow.ts`](src/server/polymarket/world-cup-shadow.ts) — one-pair, reviewed-identity public-book shadow scan.
 - [`src/agents`](src/agents) — trigger definitions and routing.
 - [`src/core/pipeline.ts`](src/core/pipeline.ts) — event, fixture, and market-family scoping.
 - [`src/core/settlement.ts`](src/core/settlement.ts) — exact settlement compatibility.
@@ -207,7 +219,7 @@ See the [architecture notes](docs/architecture.md) and [90-second demo runbook](
 - Three-way winners, push-capable lines, differing regulation or extra-time scopes, currencies, void rules, and resolution sources fail closed.
 - Separate venue orders are not atomic. A partial fill is `UNHEDGED`, never `MATCHED`.
 - Invalid execution quantities activate the kill switch and never contribute to P&L.
-- Real platform names and logos are not used in the bundled simulation.
+- The replay venue matrix remains fictional. Named TxLINE and Polymarket panels are explicit read-only source-status boundaries, not simulated venue identities.
 - This is hackathon software, not financial or gambling advice.
 - Operators are responsible for venue terms and applicable laws.
 
