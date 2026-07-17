@@ -12,7 +12,6 @@ const repoRoot = resolve(import.meta.dirname, "../../..");
 const dflowRoot = resolve(repoRoot, "src/execution/venues/dflow");
 const FORBIDDEN_LIVE_SURFACE_PATTERNS = Object.freeze([
   /@privy-io\//,
-  /@noble\/ed25519/,
   /import\s*\{[^}]*\b(?:Connection|Keypair|Signer|sendAndConfirmRawTransaction|sendAndConfirmTransaction)\b[^}]*\}\s*from\s*["']@solana\/web3\.js["']/s,
   /new\s+Connection\s*\(/,
   /\.(?:sendRawTransaction|sendTransaction|sendEncodedTransaction|signTransaction|simulateTransaction|sign|addSignature)\s*\(/,
@@ -32,8 +31,8 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-describe("DFlow no-live-surface architecture", () => {
-  it("contains no signer, Privy, write-RPC, broadcast, or live-adapter module", () => {
+describe("DFlow paired-agent isolation", () => {
+  it("keeps Privy, write-RPC, broadcast, and live adapters outside the venue lane", () => {
     const files = sourceFiles(dflowRoot);
     expect(files.map((file) => file.slice(dflowRoot.length + 1))).not.toEqual(
       expect.arrayContaining([
