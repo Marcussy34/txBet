@@ -210,7 +210,7 @@ export function ProofSection() {
     <section id="proof" className="border-b border-border bg-card/25 py-24 sm:py-32">
       <div className="mx-auto grid max-w-[1500px] gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
         <Reveal className="min-w-0">
-          <MicroLabel className="text-success">04 / decision evidence</MicroLabel>
+          <MicroLabel className="text-success">05 / decision evidence</MicroLabel>
           <h2 className="mt-5 font-serif text-[clamp(4.5rem,8.5vw,8.7rem)] font-normal leading-[0.82] tracking-[-0.05em]">
             No edge.
             <span className="block text-muted-foreground">No trade.</span>

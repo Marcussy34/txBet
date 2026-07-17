@@ -49,6 +49,11 @@ describe("landing page resilience", () => {
     expect(markup).toContain("Quote convergence window");
     expect(markup).toContain('data-gsap-loop="quote-window"');
     expect(markup).toContain('data-section-language="timing-corridor"');
+    expect(markup).toContain('data-section-language="venue-coverage"');
+    expect(markup).toContain("Polymarket");
+    expect(markup).toContain("Hyperliquid");
+    expect(markup).not.toContain("Hydromancer");
+    expect(markup).not.toContain(">Rain<");
     expect(markup).toContain('aria-label="Pause quote loop"');
     expect(markup).toContain('id="market-window"');
     expect(markup).not.toContain("TxLINE smoke boundary / 001");

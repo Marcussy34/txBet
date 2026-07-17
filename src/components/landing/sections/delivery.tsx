@@ -19,7 +19,7 @@ export function DeliverySection() {
     <section className="border-b border-border py-24 sm:py-32">
       <div className="mx-auto grid max-w-[1500px] gap-14 px-4 sm:px-6 lg:grid-cols-[0.7fr_1.3fr] lg:px-8">
         <Reveal>
-          <MicroLabel className="text-signal">05 / honest boundary</MicroLabel>
+          <MicroLabel className="text-signal">06 / honest boundary</MicroLabel>
           <h2 className="mt-5 font-serif text-[clamp(3.8rem,6.8vw,6.8rem)] font-normal leading-[0.86] tracking-[-0.04em]">
             Built now.
             <span className="block text-muted-foreground">Wired next.</span>

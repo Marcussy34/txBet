@@ -44,7 +44,7 @@ export function ProtocolSection() {
     >
       <div className="mx-auto grid w-full max-w-[1500px] items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,0.72fr)_minmax(580px,1.28fr)] lg:gap-16 lg:px-8 lg:py-12 xl:gap-20">
         <Reveal className="max-w-[600px]">
-          <MicroLabel className="text-signal">02 / execution protocol</MicroLabel>
+          <MicroLabel className="text-signal">03 / execution protocol</MicroLabel>
           <h2 className="mt-6 font-serif text-[clamp(4.2rem,6.5vw,7rem)] font-normal leading-[0.84] tracking-[-0.045em]">
             Speed finds it.
             <span className="block text-muted-foreground">Rules decide it.</span>

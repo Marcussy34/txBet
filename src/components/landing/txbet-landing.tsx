@@ -18,6 +18,7 @@ import { ProofSection } from "@/components/landing/sections/proof";
 import { ProtocolSection } from "@/components/landing/sections/protocol";
 import { SystemIntro } from "@/components/landing/sections/system-intro";
 import { TensionSection } from "@/components/landing/sections/tension";
+import { VenueSection } from "@/components/landing/sections/venues";
 import { useLandingMotion } from "@/components/landing/use-landing-motion";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ export function TxBetLanding() {
         <BrandSplash />
         <SystemIntro />
         <TensionSection />
+        <VenueSection />
         <ProtocolSection />
         <AgentSection />
         <ProofSection />
