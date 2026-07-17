@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ConsoleAccessGate } from "@/components/auth/console-access-gate";
 import { TxBetConsole } from "@/components/dashboard/txbet-console";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ConsolePage() {
-  return <TxBetConsole />;
+  return (
+    <ConsoleAccessGate>
+      <TxBetConsole />
+    </ConsoleAccessGate>
+  );
 }

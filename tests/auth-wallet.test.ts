@@ -6,9 +6,11 @@ import {
 } from "@/components/auth/privy-auth";
 
 describe("Privy MVP configuration", () => {
-  it("uses Google-only login and automatically creates both embedded wallets", () => {
+  it("delegates login methods to the dashboard and automatically creates both embedded wallets", () => {
+    // Login methods come from the Privy dashboard so enabling Google there
+    // requires no client change; the client must not restrict the list.
+    expect(PRIVY_MVP_CONFIG).not.toHaveProperty("loginMethods");
     expect(PRIVY_MVP_CONFIG).toMatchObject({
-      loginMethods: ["google"],
       externalWallets: { disableAllExternalWallets: true },
       embeddedWallets: {
         ethereum: { createOnLogin: "all-users" },

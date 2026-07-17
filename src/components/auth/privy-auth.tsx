@@ -17,12 +17,13 @@ import { isAddress } from "viem";
 import { Button } from "@/components/ui/button";
 
 export const PRIVY_MVP_CONFIG = Object.freeze({
-  loginMethods: ["google"],
+  // No loginMethods override: the modal offers whatever the Privy dashboard
+  // enables (email + wallet today; Google appears once enabled there).
   appearance: {
     theme: "dark",
     accentColor: "#63E6BE",
     landingHeader: "Sign in to txBet",
-    loginMessage: "Google login creates your embedded EVM and Solana wallets.",
+    loginMessage: "Signing in creates your embedded EVM and Solana wallets.",
     showWalletLoginFirst: false,
   },
   externalWallets: {
@@ -127,6 +128,11 @@ export function summarizeEmbeddedWallets(
 
 const PrivyConfiguredContext = createContext(false);
 
+/** True when a Privy app ID is configured and the provider is live. */
+export function usePrivyConfigured(): boolean {
+  return useContext(PrivyConfiguredContext);
+}
+
 export function TxBetPrivyProvider({
   appId,
   nonce,
@@ -175,10 +181,10 @@ function ConfiguredAuthWalletControl() {
         type="button"
         size="sm"
         variant="outline"
-        onClick={() => login({ loginMethods: ["google"] })}
+        onClick={() => login()}
       >
         <LogIn aria-hidden="true" />
-        Continue with Google
+        Sign in
       </Button>
     );
   }
@@ -188,7 +194,7 @@ function ConfiguredAuthWalletControl() {
     <div className="flex items-center gap-2">
       <div className="hidden min-w-0 text-right lg:block">
         <p className="truncate text-xs font-medium text-foreground">
-          {user.google?.email ?? "Google account"}
+          {user.google?.email ?? user.email?.address ?? "Signed in"}
         </p>
         {wallets.status === "ready" ? (
           <p className="font-mono text-[0.625rem] text-muted-foreground">
