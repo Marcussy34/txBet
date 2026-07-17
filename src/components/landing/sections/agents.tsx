@@ -15,17 +15,12 @@ export function AgentSection() {
   return (
     <section id="agents" className="border-b border-border py-24 sm:py-32">
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8">
-        <Reveal className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
-          <div>
-            <MicroLabel className="text-primary">03 / selectable operators</MicroLabel>
-            <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.6rem)] font-normal leading-[0.84] tracking-[-0.045em]">
-              Pick the match
-              <span className="block text-muted-foreground">signal.</span>
-            </h2>
-          </div>
-          <p className="max-w-lg text-sm leading-7 text-muted-foreground lg:justify-self-end">
-            Six trigger configurations. One shared settlement matcher, optimizer, and execution-state engine. No agent bypasses the same risk gate.
-          </p>
+        <Reveal>
+          <MicroLabel className="text-primary">03 / selectable operators</MicroLabel>
+          <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.6rem)] font-normal leading-[0.84] tracking-[-0.045em]">
+            Pick the match
+            <span className="block text-muted-foreground">signal.</span>
+          </h2>
         </Reveal>
 
         <div className="relative mt-16">
@@ -43,10 +38,9 @@ export function AgentSection() {
                   className="group flex h-full flex-col overflow-hidden border border-b-0 border-border bg-card/85 motion-safe:transition-colors motion-safe:duration-150 hover:border-foreground/35 focus-within:border-foreground/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <AgentTelemetry agent={agent.id} className="aspect-[4/5] border-0 border-b border-border" />
-                  <div className="min-h-36 flex-1 p-3">
+                  <div className="flex-1 p-3">
                     <div className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Agent 0{index + 1}</div>
                     <h3 className="mt-2 text-xs font-semibold leading-4 text-foreground">{agent.shortName}</h3>
-                    <p className="mt-2 line-clamp-3 text-[0.7rem] leading-5 text-muted-foreground">{agent.description}</p>
                   </div>
                   <footer className="border-t border-border p-3">
                     <div className="flex min-h-10 flex-wrap content-start items-center gap-x-1 gap-y-0.5 font-mono text-[0.625rem] uppercase leading-4 tracking-[0.08em] text-muted-foreground opacity-0 translate-y-1 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-safe:transition-[opacity,transform] motion-safe:duration-150 motion-safe:ease-out [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100">
@@ -67,8 +61,8 @@ export function AgentSection() {
             ))}
           </div>
         </div>
-        <p className="mt-5 max-w-3xl font-mono text-[0.6875rem] uppercase leading-5 tracking-[0.1em] text-muted-foreground">
-          Live player-importance and pressure-window enrichment is not yet wired; those inputs are deterministic in the current replay.
+        <p className="mt-5 font-mono text-[0.6875rem] uppercase leading-5 tracking-[0.1em] text-muted-foreground">
+          deterministic replay inputs / live enrichment not wired
         </p>
       </div>
     </section>

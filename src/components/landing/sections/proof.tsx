@@ -82,7 +82,7 @@ const proofWindows = [
       route: "3,000 ms route",
       state: "missed",
       value: "No trade",
-      reason: "The after-cost pair is no longer below payout.",
+      reason: "after-cost pair above payout",
     },
   },
   {
@@ -216,7 +216,7 @@ export function ProofSection() {
             <span className="block text-muted-foreground">No trade.</span>
           </h2>
           <p className="mt-8 max-w-lg text-sm leading-7 text-muted-foreground">
-            txBet is valuable when it refuses. Every blocked state is visible, attributable, and replayable.
+            Valuable when it refuses.
           </p>
           <div className="mt-10 border border-border bg-background/80">
             {decisionGates.map((gate, index) => {
@@ -289,10 +289,7 @@ export function ProofSection() {
 
             <div className="border border-border bg-background">
               <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
-                <div>
-                  <MicroLabel>Synthetic replay report</MicroLabel>
-                  <div className="mt-2 text-sm font-semibold">Four deterministic windows</div>
-                </div>
+                <MicroLabel>Synthetic replay report</MicroLabel>
                 <span className="rounded-sm border border-border bg-background px-2 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">demo evidence</span>
               </div>
 
@@ -329,7 +326,6 @@ export function ProofSection() {
                     <div style={tileDelay(0)} className={cn("bg-card p-5", tileClass)}>
                       <MicroLabel>modeled matched P&amp;L</MicroLabel>
                       <div className="mt-6 font-mono text-5xl font-semibold tabular-nums text-success">{matchedPnl}</div>
-                      <p className="mt-2 text-xs text-muted-foreground">Synthetic modeled result for the matched window.</p>
                       <div className="mt-4 space-y-2 border-t border-border pt-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
                         <div className="flex items-center justify-between gap-3"><span>yes leg / $0.540</span><span className="text-success">filled</span></div>
                         <div className="flex items-center justify-between gap-3"><span>no leg / $0.400</span><span className="text-success">filled</span></div>
@@ -341,7 +337,6 @@ export function ProofSection() {
                         <span className="font-mono text-[0.6875rem] uppercase text-success">{activeWindow.report.state}</span>
                       </div>
                       <div className="mt-6 font-mono text-5xl font-semibold tabular-nums text-success">{capturedReturn}</div>
-                      <p className="mt-2 text-xs text-muted-foreground">Modeled net return in the synthetic matched window.</p>
                       <div className="mt-4 space-y-2 border-t border-border pt-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
                         <div className="flex items-center justify-between gap-3"><span>bundle paid / $0.940</span><span>both legs</span></div>
                         <div className="flex items-center justify-between gap-3"><span>payout / $1.000</span><span className="text-success">+$0.048 edge</span></div>
@@ -371,7 +366,7 @@ export function ProofSection() {
               </div>
 
               <p className="border-t border-border px-5 py-4 text-xs leading-5 text-muted-foreground">
-                Synthetic replay only. This demonstrates accounting and safety behavior—not historical performance or future returns.
+                Synthetic replay only — accounting and safety behavior, not performance.
               </p>
             </div>
           </div>

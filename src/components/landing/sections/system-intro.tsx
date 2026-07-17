@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Pause, Play } from "lucide-react";
 
 import {
@@ -6,7 +5,6 @@ import {
   StatusGlyph,
 } from "@/components/brand/txbet-brand";
 import { MicroLabel, Reveal } from "@/components/landing/shared";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const eventRows = [
@@ -165,28 +163,12 @@ export function SystemIntro() {
       className="relative isolate overflow-hidden border-b border-border"
     >
       <div className="mx-auto max-w-[1500px] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-12">
-        <Reveal className="relative z-10 grid items-end gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.58fr)] lg:gap-16">
-          <div>
-            <MicroLabel className="text-primary">How txBet reacts</MicroLabel>
-            <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.5rem)] font-normal leading-[0.84] tracking-[-0.05em]">
-              Event in.
-              <span className="text-muted-foreground"> Edge checked.</span>
-            </h2>
-          </div>
-          <div className="border-l border-border pl-5 sm:pl-7">
-            <p className="max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
-              A TxLINE-format action starts the scan. txBet pairs exact opposites and proceeds only when the modeled edge survives costs.
-            </p>
-            <Link
-              href="/console"
-              className={cn(
-                buttonVariants({ variant: "default" }),
-                "mt-6 h-12 rounded-md px-6 font-mono text-xs font-semibold uppercase tracking-[0.14em]",
-              )}
-            >
-              Run the replay <span aria-hidden="true">↗</span>
-            </Link>
-          </div>
+        <Reveal className="relative z-10">
+          <MicroLabel className="text-primary">How txBet reacts</MicroLabel>
+          <h2 className="mt-5 font-serif text-[clamp(4rem,7.5vw,7.5rem)] font-normal leading-[0.84] tracking-[-0.05em]">
+            Event in.
+            <span className="text-muted-foreground"> Edge checked.</span>
+          </h2>
         </Reveal>
 
         <Reveal className="relative z-10 mt-12 sm:mt-14 lg:mt-8">

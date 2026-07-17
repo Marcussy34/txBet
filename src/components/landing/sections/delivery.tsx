@@ -24,9 +24,6 @@ export function DeliverySection() {
             Built now.
             <span className="block text-muted-foreground">Wired next.</span>
           </h2>
-          <p className="mt-7 max-w-md text-sm leading-7 text-muted-foreground">
-            The strategy core is real code. The current product boundary is explicit so judges and builders can tell implemented behavior from the target system.
-          </p>
         </Reveal>
         <Reveal>
           <div className="border border-border bg-card/55">
@@ -60,7 +57,7 @@ export function FinalCta() {
           The tape is ready.
         </h2>
         <p className="mx-auto mt-8 max-w-xl text-sm leading-7 text-muted-foreground">
-          Step through a matched pair, a rejected edge, and an intentionally unhedged fill. Same core. Three outcomes. Full disclosure.
+          Three outcomes. One core. Full disclosure.
         </p>
         <Link
           href="/console"

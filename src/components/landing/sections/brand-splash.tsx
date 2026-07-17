@@ -7,6 +7,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 
+import { MatchClockRail, VenueRepriceRail } from "@/components/brand/graphics/hero-flank-rails";
 import { TxBetMark } from "@/components/brand/txbet-brand";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,11 +81,6 @@ export function BrandSplash() {
           transition={splashTransition}
           className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-foreground/75 shadow-[0_0_18px_4px_color-mix(in_oklch,var(--foreground),transparent_55%)]"
         />
-        <canvas
-          data-gsap-beam-arcs
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-1/2 h-full w-[clamp(6rem,10vw,10rem)] -translate-x-1/2 text-foreground opacity-0"
-        />
         <div
           data-gsap-beam-pulse
           aria-hidden="true"
@@ -95,6 +91,23 @@ export function BrandSplash() {
           aria-hidden="true"
           className="pointer-events-none absolute bottom-[6%] left-1/2 h-px w-16 -ml-8 bg-foreground/50 opacity-0"
         />
+      </div>
+
+      {/* Flank rails are scale furniture, not claims: fixed-height wrappers own layout
+          so GSAP can own the transform (scroll drift) without fighting a CSS translate. */}
+      <div
+        data-gsap-flank="match"
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[clamp(1.25rem,3vw,4rem)] top-[calc(50%-270px)] -z-10 hidden xl:block [@media(max-height:680px)]:xl:hidden"
+      >
+        <MatchClockRail />
+      </div>
+      <div
+        data-gsap-flank="reprice"
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[clamp(1.25rem,3vw,4rem)] top-[calc(50%-270px)] -z-10 hidden xl:block [@media(max-height:680px)]:xl:hidden"
+      >
+        <VenueRepriceRail />
       </div>
 
       <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] max-w-[1500px] flex-col px-4 sm:px-6 lg:px-8">
@@ -135,7 +148,7 @@ export function BrandSplash() {
                 <span className="block text-muted-foreground">Markets follow.</span>
               </h1>
               <p className="mt-6 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
-                txBet models the brief gap between a TxLINE-format match event and venue repricing.
+                Built for the gap between match event and venue reprice.
               </p>
               <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
                 <Link

@@ -27,9 +27,6 @@ export function TensionSection() {
           <h2 className="mt-5 font-serif text-[clamp(3.8rem,6.4vw,6.8rem)] font-normal leading-[0.86] tracking-[-0.045em]">
             One event. <span className="text-muted-foreground">Many clocks.</span> One payout.
           </h2>
-          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-            Sports truth updates once. Market prices update venue by venue. txBet is designed for the interval between those two moments.
-          </p>
         </Reveal>
 
         <Reveal className="mt-10 min-w-0 lg:mt-5">

@@ -49,10 +49,6 @@ export function ProtocolSection() {
             Speed finds it.
             <span className="block text-muted-foreground">Rules decide it.</span>
           </h2>
-          <p className="mt-7 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
-            Equivalent pairs pass only after cost and risk checks.
-          </p>
-
           <div className="mt-10 hidden border-t border-border lg:block">
             <div className="flex items-center justify-between border-b border-border py-3">
               <MicroLabel className="text-foreground">Live protocol ledger</MicroLabel>

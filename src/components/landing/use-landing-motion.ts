@@ -28,9 +28,11 @@ function setupLandingMotion(root: HTMLDivElement): MotionCleanup {
     const splash = root.querySelector<HTMLElement>("[data-brand-splash]");
     const beam = root.querySelector<HTMLElement>("[data-gsap-beam]");
     const lockup = root.querySelector<HTMLElement>("[data-gsap-lockup]");
+    const flankMatch = root.querySelector<HTMLElement>('[data-gsap-flank="match"]');
+    const flankReprice = root.querySelector<HTMLElement>('[data-gsap-flank="reprice"]');
 
     if (splash && beam && lockup) {
-      gsap
+      const splashScrub = gsap
         .timeline({
           scrollTrigger: {
             trigger: splash,
@@ -41,6 +43,10 @@ function setupLandingMotion(root: HTMLDivElement): MotionCleanup {
         })
         .to(beam, { opacity: 0.34, scaleX: 0.18, transformOrigin: "center center", ease: "none" }, 0)
         .to(lockup, { opacity: 0.72, scale: 0.965, yPercent: -6, ease: "none" }, 0);
+
+      // Flank rails shear apart and dim out as the corridor narrows into the system.
+      if (flankMatch) splashScrub.to(flankMatch, { y: -36, autoAlpha: 0, ease: "none" }, 0);
+      if (flankReprice) splashScrub.to(flankReprice, { y: 36, autoAlpha: 0, ease: "none" }, 0);
     }
 
     const reveals = Array.from(root.querySelectorAll<HTMLElement>("[data-gsap-reveal]"));

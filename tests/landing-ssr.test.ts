@@ -41,6 +41,10 @@ describe("landing page resilience", () => {
     expect(markup).toContain('aria-label="Pause protocol loop"');
     expect(markup).toContain('id="protocol"');
     expect(markup).toContain('data-gsap-beam="true"');
+    expect(markup).toContain('data-gsap-flank="match"');
+    expect(markup).toContain('data-gsap-flank="reprice"');
+    expect(markup).toContain("T+800");
+    expect(markup).not.toContain("data-gsap-beam-arcs");
     expect(markup).toContain('data-gsap-reveal="true"');
     expect(markup).toContain("Quote convergence window");
     expect(markup).toContain('data-gsap-loop="quote-window"');

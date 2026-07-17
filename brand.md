@@ -97,7 +97,7 @@ The mark combines two ideas:
 
 The mark is always monochrome and uses `currentColor` in product UI. The wordmark is `txBet` in Inter Semibold. Do not add balls, trophies, betting chips, FIFA marks, national crests, real venue logos, or multicolor legs.
 
-The signature landing composition is one optically centered Split-Window Gate lockup over a full-height silver beam. The mark and wordmark stay together as one unit. The beam uses a crisp center rail, a narrow silver band, and one diffuse outer corridor, then fades behind the identity and copy so no keyline crosses text. Keep this opening surface free of cards, telemetry, micro-label rails, and extra claims; the product interface starts after the first scroll.
+The signature landing composition is one optically centered Split-Window Gate lockup over a full-height silver beam. The mark and wordmark stay together as one unit. The beam uses a crisp center rail, a narrow silver band, and one diffuse outer corridor, then fades behind the identity and copy so no keyline crosses text. Keep this opening surface free of cards, telemetry, and extra claims; the product interface starts after the first scroll. The only permitted furniture is one pair of whisper-contrast timing rails on wide viewports — the synthetic match clock left, the venue reprice scale right — built from mono microtype and hairline ticks, carrying no product claims, never louder than the lockup, and hidden on narrow or short viewports.
 
 The Latency Corridor is the supporting brand image: one event at `T+0`, followed by staggered synthetic venue repricing stations. It must always be labeled as illustrative when timing is not measured.
 
@@ -172,7 +172,7 @@ Avoid hype, emojis, exclamation marks, “unlock,” “seamless,” “free mon
 - Use danger for unhedged, invalid, or kill-switch states.
 - Keep the replay and execution disclosure visible.
 - Keep core copy and controls visible before client hydration; motion must never own content visibility.
-- Let the landing beam resolve once on page load. After it resolves, a single restrained monochrome event pulse may traverse the beam on a low, randomized cadence: it must never cross text (the corridor mask owns occlusion), never strobe or add color, pause off-screen and when the tab is hidden, and disappear entirely under reduced motion. The beam must never compete with the wordmark.
+- Let the landing beam resolve once on page load. After it resolves, a single restrained monochrome event pulse may traverse the beam on a low, randomized cadence: it must never cross text (the corridor mask owns occlusion), never strobe or add color, pause off-screen and when the tab is hidden, and disappear entirely under reduced motion. The beam must never compete with the wordmark. The flank timing rails ride the same cadence — the match clock rewinds two seconds and ticks into 63:00 as the pulse fires; the reprice cursor sweeps from T+000 to its T+800 snap as it lands — always at whisper contrast, drifting apart and dimming under the scroll scrub. Reduced motion leaves both rails in their resolved rest state.
 - Use native smooth scrolling and GSAP only as progressive enhancement. Do not pin sections, replace the browser scroll, or hide core copy before a trigger fires.
 - Test both light and dark tokens, even though the product defaults to dark.
 
