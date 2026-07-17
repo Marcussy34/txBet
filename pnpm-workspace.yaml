@@ -1,3 +1,9 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# Pin patched releases across transitive SDK paths. Keep these until every upstream
+# package resolves an equal or newer version on its own.
+overrides:
+  "postcss@<8.5.10": 8.5.19
+  "ws@>=8.0.0 <8.21.0": 8.21.1

@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -19,6 +21,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -49,3 +52,4 @@ output/
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+/supabase/.temp
