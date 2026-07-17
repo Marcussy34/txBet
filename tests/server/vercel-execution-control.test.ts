@@ -69,6 +69,10 @@ describe("Vercel-only execution control", () => {
         mode: "shadow",
         executable: false,
         blocker: "DFLOW_EXACT_OUTPUT_AND_PRODUCTION_ELIGIBILITY_UNPROVEN",
+        manualExactInputCanary: {
+          candidate: true,
+          authorized: false,
+        },
       },
       pairedExecution: {
         executable: false,

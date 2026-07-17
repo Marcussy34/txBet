@@ -1,9 +1,12 @@
 import { Buffer } from "node:buffer";
+import { generateKeyPairSync } from "node:crypto";
 
+import { PublicKey } from "@solana/web3.js";
 import { describe, expect, it } from "vitest";
 
 import {
   loadVercelCronEnv,
+  loadVercelDflowCanaryEnv,
   loadVercelExecutionEnv,
   loadVercelWebEnv,
 } from "@/server/config/env";
@@ -11,6 +14,11 @@ import {
 const FUTURE = "2099-01-01T00:00:00.000Z";
 const HASH = `sha256:${"a".repeat(64)}`;
 const KEY = Buffer.alloc(32, 7).toString("base64");
+const PRIVY_AUTHORIZATION_KEY = generateKeyPairSync("ec", {
+  namedCurve: "prime256v1",
+}).privateKey.export({ format: "der", type: "pkcs8" }).toString("base64");
+const OUTCOME_MINT = new PublicKey(Uint8Array.from({ length: 32 }, () => 7)).toBase58();
+const PROGRAM_ID = new PublicKey(Uint8Array.from({ length: 32 }, () => 8)).toBase58();
 
 const web = {
   NEXT_PUBLIC_SITE_URL: "https://txbet.example",
@@ -81,6 +89,41 @@ const execution = {
   CANARY_MAX_TOTAL_MICROS: "10000000",
 };
 
+const dflowCanary = {
+  ...web,
+  PRIVY_AUTHORIZATION_PRIVATE_KEY: PRIVY_AUTHORIZATION_KEY,
+  PRIVY_KEY_QUORUM_ID: "quorum-1",
+  PRIVY_DFLOW_POLICY_ID: "policy-dflow-1",
+  DFLOW_API_BASE_URL: "https://quote-api.dflow.net",
+  DFLOW_API_KEY: "dflow-key",
+  DFLOW_WORLD_CUP_BINDINGS_JSON: JSON.stringify({
+    schemaVersion: "txbet-dflow-world-cup-bindings-v1",
+    bindings: [{
+      id: "world-cup-winner-argentina-yes",
+      competition: "fifa-world-cup",
+      edition: 2026,
+      title: "Will Argentina win the 2026 FIFA World Cup?",
+      outcome: "YES",
+      marketKey: "kalshi-world-cup-winner-argentina",
+      outcomeMint: OUTCOME_MINT,
+      evidenceUrl: "https://example.test/review/argentina",
+      evidenceHash: HASH,
+      reviewedAtMs: 1_700_000_000_000,
+      validUntilMs: 4_000_000_000_000,
+    }],
+  }),
+  DFLOW_PROGRAM_ALLOWLIST_JSON: JSON.stringify([PROGRAM_ID]),
+  DFLOW_LIVE_SLIPPAGE_BPS: "50",
+  DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS: "100",
+  DFLOW_MAX_PRIORITY_FEE_LAMPORTS: "100000",
+  DFLOW_MAX_INIT_COST_LAMPORTS: "3000000",
+  DFLOW_BASE_FEE_LAMPORTS: "5000",
+  SOLANA_RPC_URL: "https://solana-rpc.example/mainnet?api-key=private",
+  SOLANA_NATIVE_USD_UPPER_BOUND_MICROS: "1000000000",
+  SOLANA_NETWORK_COST_POLICY_VALID_UNTIL: FUTURE,
+  CANARY_MAX_TOTAL_MICROS: "10000000",
+};
+
 describe("Vercel-only MVP configuration", () => {
   it("loads web auth and Blob state without any Supabase variable", () => {
     const env = loadVercelWebEnv(web);
@@ -98,6 +141,32 @@ describe("Vercel-only MVP configuration", () => {
     expect(env.RECOVERY_ACTION_MODE).toBe("frozen");
     expect(env.CRON_SECRET).toBe(execution.CRON_SECRET);
     expect(env).not.toHaveProperty("SUPABASE_EXECUTION_DATABASE_URL");
+  });
+
+  it("loads only the reviewed World Cup DFlow canary boundary", () => {
+    const env = loadVercelDflowCanaryEnv(dflowCanary);
+
+    expect(env.DFLOW_LIVE_SLIPPAGE_BPS).toBe(50);
+    expect(env.dflowProgramAllowlist).toEqual([PROGRAM_ID]);
+    expect(env.dflowWorldCupBindings.bindings[0]?.outcomeMint).toBe(OUTCOME_MINT);
+    expect(env).not.toHaveProperty("DFLOW_WORLD_CUP_BINDINGS_JSON");
+    expect(env).not.toHaveProperty("DFLOW_PROGRAM_ALLOWLIST_JSON");
+    expect(Object.isFrozen(env)).toBe(true);
+  });
+
+  it("rejects an invalid signer key, duplicate programs, and inverted DFlow slippage", () => {
+    expect(() => loadVercelDflowCanaryEnv({
+      ...dflowCanary,
+      PRIVY_AUTHORIZATION_PRIVATE_KEY: "not-a-pkcs8-key",
+    })).toThrow(/PKCS8|private key/i);
+    expect(() => loadVercelDflowCanaryEnv({
+      ...dflowCanary,
+      DFLOW_PROGRAM_ALLOWLIST_JSON: JSON.stringify([PROGRAM_ID, PROGRAM_ID]),
+    })).toThrow(/unique/i);
+    expect(() => loadVercelDflowCanaryEnv({
+      ...dflowCanary,
+      DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS: "49",
+    })).toThrow(/slippage/i);
   });
 
   it("loads the cron wakeup with only Blob and cron credentials", () => {

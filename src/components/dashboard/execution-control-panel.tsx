@@ -59,6 +59,10 @@ export function ExecutionControlStatus(
       <div className="bg-background/90 px-3 py-2 text-right text-foreground">
         {formatControlExpiry(control.expiresAtMs)}
       </div>
+      <div className="bg-background/90 px-3 py-2 text-muted-foreground">manual DFlow</div>
+      <div className="bg-background/90 px-3 py-2 text-right text-foreground">
+        {control.kalshiDflow.manualExactInputCanary.authorized ? "authorized" : "not armed"}
+      </div>
     </div>
   );
 }
@@ -205,7 +209,7 @@ function ConfiguredExecutionControlPanel() {
         <p className="mt-2 text-[0.6875rem] text-danger">{error}</p>
       ) : null}
       <p className="mt-3 text-[0.6875rem] leading-5 text-warning">
-        DFlow lacks production exact-output and eligibility contracts. No paired live order can be sent.
+        Manual DFlow exact-input canaries can use this grant. The paired agent stays shadow-only because exact output is not guaranteed.
       </p>
     </div>
   );

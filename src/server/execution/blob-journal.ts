@@ -53,6 +53,17 @@ export interface BlobExecutionJournal {
   readonly events: readonly BlobJournalEvent[];
 }
 
+/** Distinguishes the one CAS winner from safe retries of identical evidence. */
+export type BlobJournalClaimResult =
+  | Readonly<{
+      status: "claimed";
+      journal: BlobExecutionJournal;
+    }>
+  | Readonly<{
+      status: "already_started";
+      journal: BlobExecutionJournal;
+    }>;
+
 function pathnameFor(profileId: string): string {
   assertProfileId(profileId);
   return `txbet/execution/${encodeURIComponent(profileId)}/journal.json`;
@@ -239,6 +250,7 @@ function eventInputsEqual(
 function appendEvent(
   journal: BlobExecutionJournal,
   event: BlobJournalEventInput,
+  validate?: (journal: BlobExecutionJournal) => void,
 ): BlobExecutionJournal {
   const existing = journal.events.find((entry) => entry.id === event.id);
   if (existing !== undefined) {
@@ -246,6 +258,12 @@ function appendEvent(
       throw new Error("Execution journal event ID was reused with different evidence");
     }
     return journal;
+  }
+  if (validate !== undefined) {
+    const validationResult: unknown = validate(journal);
+    if (validationResult !== undefined) {
+      throw new Error("Execution journal claim validation must be synchronous");
+    }
   }
   if (journal.events.length >= BLOB_JOURNAL_EVENT_LIMIT) {
     throw new Error("Execution journal reached its bounded event capacity");
@@ -293,12 +311,23 @@ export async function readBlobJournal(
   return (await readWithEtag(store, profileId)).journal;
 }
 
-/** Appends one event using Blob ETag compare-and-swap and a bounded conflict retry. */
-export async function appendBlobJournalEvent(input: {
+/** Shared write shape for ordinary appends and execution-start claims. */
+type BlobJournalWriteInput = Readonly<{
   readonly store: BlobJournalObjectStore;
   readonly profileId: string;
   readonly event: BlobJournalEventInput;
-}): Promise<BlobExecutionJournal> {
+}>;
+
+type BlobJournalClaimInput = BlobJournalWriteInput &
+  Readonly<{
+    /** Runs against the latest journal after exact-replay detection and before CAS. */
+    validate?: (journal: BlobExecutionJournal) => void;
+  }>;
+
+async function writeBlobJournalEvent(
+  input: BlobJournalWriteInput,
+  validate?: (journal: BlobExecutionJournal) => void,
+): Promise<Readonly<{ appended: boolean; journal: BlobExecutionJournal }>> {
   assertProfileId(input.profileId);
   assertEventInput(input.event);
   const normalizedEvent = Object.freeze({
@@ -309,8 +338,10 @@ export async function appendBlobJournalEvent(input: {
 
   for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt += 1) {
     const current = await readWithEtag(input.store, input.profileId);
-    const next = appendEvent(current.journal, normalizedEvent);
-    if (next === current.journal) return current.journal;
+    const next = appendEvent(current.journal, normalizedEvent, validate);
+    if (next === current.journal) {
+      return Object.freeze({ appended: false, journal: current.journal });
+    }
 
     try {
       if (current.etag === null) {
@@ -318,11 +349,32 @@ export async function appendBlobJournalEvent(input: {
       } else {
         await input.store.replace(pathname, serializeJournal(next), current.etag);
       }
-      return next;
+      return Object.freeze({ appended: true, journal: next });
     } catch (error) {
       if (!(error instanceof BlobJournalConflictError)) throw error;
     }
   }
 
   throw new BlobJournalConflictError();
+}
+
+/** Appends one event using Blob ETag compare-and-swap and a bounded conflict retry. */
+export async function appendBlobJournalEvent(
+  input: BlobJournalWriteInput,
+): Promise<BlobExecutionJournal> {
+  return (await writeBlobJournalEvent(input)).journal;
+}
+
+/**
+ * Atomically persists execution-start evidence and reports which caller won.
+ * Identical retries are safe; reusing the event ID with other evidence fails closed.
+ */
+export async function claimBlobJournalEvent(
+  input: BlobJournalClaimInput,
+): Promise<BlobJournalClaimResult> {
+  const result = await writeBlobJournalEvent(input, input.validate);
+  return Object.freeze({
+    status: result.appended ? "claimed" : "already_started",
+    journal: result.journal,
+  });
 }

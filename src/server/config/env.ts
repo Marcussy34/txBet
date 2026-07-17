@@ -1,8 +1,14 @@
 import { Buffer } from "node:buffer";
+import { createPrivateKey } from "node:crypto";
 
+import { PublicKey } from "@solana/web3.js";
 import { getAddress } from "viem";
 import { z } from "zod";
 
+import {
+  parseDflowWorldCupBindings,
+  type DflowWorldCupBindings,
+} from "@/execution/venues/dflow/live-binding";
 import { parseOperatorEmails } from "@/server/auth/privy-session";
 
 type EnvSource = Readonly<Record<string, string | undefined>>;
@@ -84,6 +90,42 @@ const vercelWebSchema = webSchema
 const vercelCronSchema = z.strictObject({
   BLOB_READ_WRITE_TOKEN: requiredString,
   CRON_SECRET: z.string().min(32),
+});
+
+const canonicalNonnegativeIntegerString = requiredString.regex(/^(0|[1-9][0-9]*)$/);
+const unsigned16String = canonicalNonnegativeIntegerString
+  .transform(Number)
+  .refine((value) => Number.isSafeInteger(value) && value <= 65_535, {
+    message: "Must be an unsigned 16-bit integer",
+  });
+const privyAuthorizationPrivateKey = requiredString.refine((value) => {
+  try {
+    const bytes = Buffer.from(value, "base64");
+    if (bytes.byteLength === 0 || bytes.toString("base64") !== value) return false;
+    const key = createPrivateKey({ key: bytes, format: "der", type: "pkcs8" });
+    return key.asymmetricKeyType === "ec" && key.asymmetricKeyDetails?.namedCurve === "prime256v1";
+  } catch {
+    return false;
+  }
+}, "Must be a canonical base64 PKCS8 P-256 private key");
+
+const vercelDflowCanarySchema = vercelWebSchema.extend({
+  PRIVY_AUTHORIZATION_PRIVATE_KEY: privyAuthorizationPrivateKey,
+  PRIVY_KEY_QUORUM_ID: requiredString.max(256),
+  PRIVY_DFLOW_POLICY_ID: requiredString.max(256),
+  DFLOW_API_BASE_URL: z.literal("https://quote-api.dflow.net"),
+  DFLOW_API_KEY: requiredString,
+  DFLOW_WORLD_CUP_BINDINGS_JSON: requiredString,
+  DFLOW_PROGRAM_ALLOWLIST_JSON: requiredString,
+  DFLOW_LIVE_SLIPPAGE_BPS: unsigned16String,
+  DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS: unsigned16String,
+  DFLOW_MAX_PRIORITY_FEE_LAMPORTS: canonicalNonnegativeIntegerString,
+  DFLOW_MAX_INIT_COST_LAMPORTS: canonicalNonnegativeIntegerString,
+  DFLOW_BASE_FEE_LAMPORTS: canonicalNonnegativeIntegerString,
+  SOLANA_RPC_URL: httpsUrl,
+  SOLANA_NATIVE_USD_UPPER_BOUND_MICROS: positiveIntegerString,
+  SOLANA_NETWORK_COST_POLICY_VALID_UNTIL: futureTimestamp,
+  CANARY_MAX_TOTAL_MICROS: canaryCeiling,
 });
 
 const marketSchema = z.strictObject({
@@ -263,6 +305,16 @@ export type VercelWebEnv = Readonly<
   }
 >;
 export type VercelCronEnv = Readonly<z.infer<typeof vercelCronSchema>>;
+export type VercelDflowCanaryEnv = Readonly<
+  Omit<
+    z.infer<typeof vercelDflowCanarySchema>,
+    "OPERATOR_EMAILS" | "DFLOW_WORLD_CUP_BINDINGS_JSON" | "DFLOW_PROGRAM_ALLOWLIST_JSON"
+  > & {
+    readonly operatorEmails: readonly string[];
+    readonly dflowWorldCupBindings: DflowWorldCupBindings;
+    readonly dflowProgramAllowlist: readonly string[];
+  }
+>;
 export type AssetValuePolicy = Readonly<
   z.infer<typeof assetValuePolicySchema>
 >;
@@ -418,6 +470,90 @@ export function loadVercelCronEnv(
     BLOB_READ_WRITE_TOKEN: source.BLOB_READ_WRITE_TOKEN,
     CRON_SECRET: source.CRON_SECRET,
   }));
+}
+
+/** Live DFlow canary configuration is isolated from Cron and the deferred SQL worker. */
+export function loadVercelDflowCanaryEnv(
+  source: EnvSource = process.env,
+): VercelDflowCanaryEnv {
+  const raw = vercelDflowCanarySchema.parse({
+    NEXT_PUBLIC_SITE_URL: source.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_PRIVY_APP_ID: source.NEXT_PUBLIC_PRIVY_APP_ID,
+    PRIVY_APP_ID: source.PRIVY_APP_ID,
+    PRIVY_APP_SECRET: source.PRIVY_APP_SECRET,
+    PRIVY_VERIFICATION_KEY: source.PRIVY_VERIFICATION_KEY,
+    OPERATOR_EMAILS: source.OPERATOR_EMAILS,
+    BLOB_READ_WRITE_TOKEN: source.BLOB_READ_WRITE_TOKEN,
+    PRIVY_AUTHORIZATION_PRIVATE_KEY: source.PRIVY_AUTHORIZATION_PRIVATE_KEY,
+    PRIVY_KEY_QUORUM_ID: source.PRIVY_KEY_QUORUM_ID,
+    PRIVY_DFLOW_POLICY_ID: source.PRIVY_DFLOW_POLICY_ID,
+    DFLOW_API_BASE_URL: source.DFLOW_API_BASE_URL,
+    DFLOW_API_KEY: source.DFLOW_API_KEY,
+    DFLOW_WORLD_CUP_BINDINGS_JSON: source.DFLOW_WORLD_CUP_BINDINGS_JSON,
+    DFLOW_PROGRAM_ALLOWLIST_JSON: source.DFLOW_PROGRAM_ALLOWLIST_JSON,
+    DFLOW_LIVE_SLIPPAGE_BPS: source.DFLOW_LIVE_SLIPPAGE_BPS,
+    DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS:
+      source.DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS,
+    DFLOW_MAX_PRIORITY_FEE_LAMPORTS: source.DFLOW_MAX_PRIORITY_FEE_LAMPORTS,
+    DFLOW_MAX_INIT_COST_LAMPORTS: source.DFLOW_MAX_INIT_COST_LAMPORTS,
+    DFLOW_BASE_FEE_LAMPORTS: source.DFLOW_BASE_FEE_LAMPORTS,
+    SOLANA_RPC_URL: source.SOLANA_RPC_URL,
+    SOLANA_NATIVE_USD_UPPER_BOUND_MICROS:
+      source.SOLANA_NATIVE_USD_UPPER_BOUND_MICROS,
+    SOLANA_NETWORK_COST_POLICY_VALID_UNTIL:
+      source.SOLANA_NETWORK_COST_POLICY_VALID_UNTIL,
+    CANARY_MAX_TOTAL_MICROS: source.CANARY_MAX_TOTAL_MICROS,
+  });
+  if (
+    raw.DFLOW_LIVE_PREDICTION_MARKET_SLIPPAGE_BPS <
+    raw.DFLOW_LIVE_SLIPPAGE_BPS
+  ) {
+    throw new Error("DFlow prediction-market slippage cannot be below routing slippage");
+  }
+
+  const dflowWorldCupBindings = parseDflowWorldCupBindings(
+    raw.DFLOW_WORLD_CUP_BINDINGS_JSON,
+  );
+  const dflowProgramAllowlist = parseSolanaProgramAllowlist(
+    raw.DFLOW_PROGRAM_ALLOWLIST_JSON,
+  );
+  const {
+    OPERATOR_EMAILS,
+    DFLOW_WORLD_CUP_BINDINGS_JSON: _bindings,
+    DFLOW_PROGRAM_ALLOWLIST_JSON: _programs,
+    ...safeRaw
+  } = raw;
+  void _bindings;
+  void _programs;
+  return Object.freeze({
+    ...safeRaw,
+    operatorEmails: parseOperatorEmails(OPERATOR_EMAILS),
+    dflowWorldCupBindings,
+    dflowProgramAllowlist,
+  });
+}
+
+function parseSolanaProgramAllowlist(value: string): readonly string[] {
+  const parsed = parseJson(value, "DFLOW_PROGRAM_ALLOWLIST_JSON");
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 64) {
+    throw new Error("DFlow program allowlist must be a bounded non-empty JSON array");
+  }
+  const programs = parsed.map((entry) => {
+    if (typeof entry !== "string") throw new Error("DFlow program allowlist is malformed");
+    try {
+      const key = new PublicKey(entry);
+      if (key.toBase58() !== entry) throw new Error("not canonical");
+      return entry;
+    } catch (error) {
+      throw new Error("DFlow program allowlist contains an invalid Solana address", {
+        cause: error,
+      });
+    }
+  });
+  if (new Set(programs).size !== programs.length) {
+    throw new Error("DFlow program allowlist entries must be unique");
+  }
+  return Object.freeze([...programs].sort());
 }
 
 export function loadMarketWorkerEnv(

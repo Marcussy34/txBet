@@ -60,6 +60,10 @@ export interface VercelExecutionControlView {
     mode: "shadow";
     executable: false;
     blocker: typeof DFLOW_BLOCKER;
+    manualExactInputCanary: Readonly<{
+      candidate: true;
+      authorized: boolean;
+    }>;
   }>;
   readonly pairedExecution: Readonly<{
     executable: false;
@@ -155,6 +159,10 @@ function viewFromStored(
       mode: "shadow",
       executable: false,
       blocker: DFLOW_BLOCKER,
+      manualExactInputCanary: Object.freeze({
+        candidate: true,
+        authorized: requestedMode === "canary",
+      }),
     }),
     pairedExecution: Object.freeze({
       executable: false,
@@ -242,7 +250,7 @@ export function vercelExecutionControlViewFromJournal(
   return viewFromStored(latestStoredControl(journal), nowMs);
 }
 
-/** Persists a user-owned, versioned control update; DFlow remains structurally shadow-only. */
+/** Persists user authority; the paired DFlow agent remains structurally shadow-only. */
 export async function updateVercelExecutionControl(input: {
   readonly store: BlobJournalObjectStore;
   readonly profileId: string;
