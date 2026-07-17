@@ -1,0 +1,14 @@
+{
+  "inputMint": "So11111111111111111111111111111111111111112",
+  "inAmount": "1000000",
+  "outputMint": "11111111111111111111111111111111",
+  "outAmount": "2000000",
+  "otherAmountThreshold": "1900000",
+  "minOutAmount": "1900000",
+  "slippageBps": 50,
+  "predictionMarketSlippageBps": 50,
+  "priceImpactPct": "0.01",
+  "contextSlot": 123,
+  "executionMode": "async",
+  "revertMint": "So11111111111111111111111111111111111111112"
+}
