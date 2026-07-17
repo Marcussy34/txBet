@@ -1,11 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ChevronDown, Pause, Play, RotateCcw, StepForward } from "lucide-react";
 
-import { AGENTS, getAgent, type AgentDefinition } from "@/agents/definitions";
+import { AGENTS, getAgent } from "@/agents/definitions";
 import { runBacktest } from "@/core/backtest";
 import { simulateBundleExecution, settlementBranches } from "@/core/executor";
 import { dollarsToMicros, formatBps, formatPrice, formatUsd } from "@/core/money";
@@ -21,8 +22,10 @@ import {
 import { cn } from "@/lib/utils";
 import { AgentGlyph, agentTelemetry, StatusGlyph, TxBetLockup, TxBetMark } from "@/components/brand/txbet-brand";
 import { AuthWalletControl } from "@/components/auth/privy-auth";
+import { ConsoleBackdrop } from "@/components/dashboard/console-backdrop";
 import { ExecutionControlPanel } from "@/components/dashboard/execution-control-panel";
 import { PolymarketShadowStatus } from "@/components/dashboard/polymarket-shadow-status";
+import { StadiumPitch } from "@/components/dashboard/stadium-pitch";
 import { WorldCupLiveStatus } from "@/components/dashboard/world-cup-live-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,13 +50,391 @@ const VENUES = [
   { id: "atlas", name: "Atlas" },
 ] as const;
 
-// Agents with a deterministic replay tape today. The rest of the roster is
-// shown honestly as roadmap and cannot be launched yet.
+// Every agent carries a deterministic replay tape, so the full roster is
+// launchable: three profitable/risk stories and three honest refusal scans.
 const AGENT_TAPES: Partial<Record<AgentId, DemoScenarioId>> = {
   "red-card": "red-card-profit",
   "corner-pressure": "corner-no-edge",
   "penalty-var": "penalty-partial",
+  injury: "injury-no-edge",
+  "goal-reaction": "goal-reaction-profit",
+  "dangerous-free-kick": "free-kick-margin",
 };
+
+type ReplayMatch = {
+  fixture: (typeof DEMO_SCENARIOS)[number]["fixture"];
+  scenarios: (typeof DEMO_SCENARIOS)[number][];
+};
+
+// One entry per fixture. Every current tape shares the synthetic Spain–Argentina
+// fixture, so today this yields a single enterable match; live fixtures join the
+// list only once the TxLINE feed is configured (no invented schedules).
+const REPLAY_MATCHES: readonly ReplayMatch[] = (() => {
+  const byFixture = new Map<string, ReplayMatch>();
+  for (const scenario of DEMO_SCENARIOS) {
+    const entry = byFixture.get(scenario.fixture.id) ?? { fixture: scenario.fixture, scenarios: [] };
+    entry.scenarios.push(scenario);
+    byFixture.set(scenario.fixture.id, entry);
+  }
+  return [...byFixture.values()];
+})();
+
+type BoardTeam = { name: string; flag: string };
+
+type BoardFixture = {
+  id: string;
+  home: BoardTeam;
+  away: BoardTeam;
+  kickoffDate: string;
+  kickoffTime: string;
+  kickoffISO: string;
+  /** Synthetic pre-match book, percent chances; multipliers derive as 100/p. */
+  book: { home: number; draw: number; away: number };
+};
+
+// Fixture board. Flags are self-hosted Flagpedia SVGs under /public/flags.
+// wc-demo-001 carries the replay tapes and is enterable; the other fixture
+// stays awaiting-feed until TxLINE is configured. Books are synthetic.
+const WORLD_CUP_BOARD: readonly BoardFixture[] = [
+  {
+    id: "wc-demo-001",
+    home: { name: "Spain", flag: "/flags/es.svg" },
+    away: { name: "Argentina", flag: "/flags/ar.svg" },
+    kickoffDate: "Mon, Jul 20",
+    kickoffTime: "03:00 AM",
+    kickoffISO: "2026-07-20T03:00:00",
+    book: { home: 42.8, draw: 32.5, away: 26.9 },
+  },
+  {
+    id: "wc-demo-002",
+    home: { name: "France", flag: "/flags/fr.svg" },
+    away: { name: "England", flag: "/flags/gb-eng.svg" },
+    kickoffDate: "Sun, Jul 19",
+    kickoffTime: "05:00 AM",
+    kickoffISO: "2026-07-19T05:00:00",
+    book: { home: 51, draw: 25, away: 25.6 },
+  },
+];
+
+const TEAM_COLORS: Record<string, string> = {
+  Spain: "#d92b2b",
+  Argentina: "#6cace4",
+  France: "#1d3f8f",
+  England: "#ffffff",
+};
+
+function bookMultiplier(percent: number): string {
+  return `${(100 / percent).toFixed(2)}x`;
+}
+
+// Each agent owns one watch market, rendered Predictefy-style: named outcomes
+// with one yes-ask each (no yes/no columns). Prices are the asks from each
+// agent's tape decision frame; `lead` marks the side the agent enters first
+// and gets the filled price pill.
+type AgentOutcome = { label: string; price: number; flag?: string; lead?: boolean };
+const AGENT_MARKET_LINES: Record<AgentId, { market: string; outcomes: readonly AgentOutcome[] }> = {
+  "red-card": {
+    market: "Match winner after dismissal",
+    outcomes: [
+      { label: "Spain", price: 54, flag: "/flags/es.svg", lead: true },
+      { label: "Argentina", price: 40, flag: "/flags/ar.svg" },
+    ],
+  },
+  "penalty-var": {
+    market: "Next goal on penalty",
+    outcomes: [
+      { label: "Goal", price: 58, lead: true },
+      { label: "No goal", price: 35 },
+    ],
+  },
+  "corner-pressure": {
+    market: "Next goal in pressure window",
+    outcomes: [
+      { label: "Goal", price: 72, lead: true },
+      { label: "No goal", price: 34 },
+    ],
+  },
+  "goal-reaction": {
+    market: "Totals after a goal",
+    outcomes: [
+      { label: "Over 2.5", price: 51, lead: true },
+      { label: "Under 2.5", price: 42 },
+    ],
+  },
+  injury: {
+    market: "Match winner after key sub",
+    outcomes: [
+      { label: "Spain", price: 58, flag: "/flags/es.svg", lead: true },
+      { label: "Argentina", price: 45, flag: "/flags/ar.svg" },
+    ],
+  },
+  "dangerous-free-kick": {
+    market: "Next goal from set piece",
+    outcomes: [
+      { label: "Goal", price: 33, lead: true },
+      { label: "No goal", price: 65 },
+    ],
+  },
+};
+
+// Backtest windows carry their owning agent; traces reuse the window ids.
+const WINDOW_AGENT_BY_ID = new Map(SYNTHETIC_BACKTEST_WINDOWS.map((window) => [window.id, window.agentId]));
+
+type PastFixture = {
+  id: string;
+  home: BoardTeam;
+  away: BoardTeam;
+  date: string;
+  score: { home: number; away: number };
+};
+
+// Archive row: settled synthetic fixtures; no agents attach to finished matches.
+const PAST_WORLD_CUP: readonly PastFixture[] = [
+  {
+    id: "wc-demo-000",
+    home: { name: "Argentina", flag: "/flags/ar.svg" },
+    away: { name: "Switzerland", flag: "/flags/ch.svg" },
+    date: "Wed, Jul 15",
+    score: { home: 2, away: 1 },
+  },
+];
+
+/* MATCH HUB
+ * Inside a match, four tabs: the agent roster plus market, venue odds, and
+ * match details. The fixture supplies its market series, books, and stats;
+ * the timeline markers derive from the actual replay tape events.
+ */
+type MatchTab = "market" | "odds" | "details";
+
+const MATCH_TABS: readonly { id: MatchTab; label: string }[] = [
+  { id: "market", label: "Market" },
+  { id: "odds", label: "Compare odds" },
+  { id: "details", label: "Details" },
+];
+
+// Synthetic pre-match probability series; each line ends on the board book.
+const MATCH_MARKET_SERIES: readonly { label: string; dash?: boolean; muted?: boolean; labelDy?: number; points: readonly number[] }[] = [
+  { label: "Spain", points: [45, 44.4, 44.8, 44.1, 43.5, 43.8, 43, 42.4, 42.8] },
+  { label: "Draw", dash: true, muted: true, labelDy: -5, points: [30, 30.5, 30.2, 31, 31.4, 31.1, 31.8, 32.2, 32.5] },
+  { label: "Argentina", muted: true, labelDy: 8, points: [25, 25.3, 24.9, 25.2, 25.5, 25.7, 25.9, 26.5, 26.9] },
+];
+
+// Synthetic asks in cents per outcome; the cheapest ask per column is marked.
+const MATCH_VENUE_ODDS: readonly {
+  venue: string;
+  icon?: string;
+  flatten?: boolean;
+  prices: { home: number | null; draw: number | null; away: number | null };
+}[] = [
+  { venue: "Polymarket", icon: "/venues/polymarket-blue.svg", prices: { home: 43, draw: 33, away: 27 } },
+  { venue: "Kalshi", icon: "/venues/kalshi.svg", prices: { home: 44, draw: 32, away: 27 } },
+  { venue: "SX Bet", icon: "/venues/sxbet.png", flatten: true, prices: { home: 43, draw: 34, away: 28 } },
+  { venue: "Predict.fun", icon: "/venues/predictfun.svg", prices: { home: 44, draw: 33, away: 26 } },
+  { venue: "Limitless", icon: "/venues/limitless.svg", prices: { home: 45, draw: 33, away: 27 } },
+  { venue: "Opinion", icon: "/venues/opinion.webp", prices: { home: 43, draw: null, away: null } },
+];
+
+// Synthetic snapshot at the 63:00 trigger minute.
+const MATCH_STATS: readonly { label: string; home: number; away: number; suffix?: string }[] = [
+  { label: "Ball possession", home: 54, away: 46, suffix: "%" },
+  { label: "Shots", home: 9, away: 7 },
+  { label: "Shots on target", home: 4, away: 3 },
+  { label: "Attacks", home: 38, away: 31 },
+  { label: "Corners", home: 5, away: 3 },
+  { label: "Cards", home: 2, away: 1 },
+];
+
+// Every marker comes from a real tape frame, so the timeline stays truthful.
+const TIMELINE_EVENTS: readonly { minute: number; label: string }[] = DEMO_SCENARIOS.flatMap((scenario) =>
+  scenario.frames
+    .filter((frame) => frame.event)
+    .map((frame) => ({ minute: Number.parseInt(frame.clock, 10), label: frame.label })),
+).sort((a, b) => a.minute - b.minute);
+
+function MarketChartCard() {
+  const width = 640;
+  const height = 210;
+  const top = 14;
+  const bottom = 26;
+  const left = 44;
+  const right = 110;
+  const plotW = width - left - right;
+  const plotH = height - top - bottom;
+  const yFor = (percent: number) => top + plotH - (percent / 100) * plotH;
+  const xFor = (index: number, count: number) => left + (index / (count - 1)) * plotW;
+  return (
+    <Card className="gap-0 bg-card/85 py-0">
+      <PanelHeading index="MK" title="Match-winner market" aside="market series" />
+      <CardContent className="px-4 py-4">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Match-winner probability series" className="h-auto w-full">
+          {[25, 50, 75].map((percent) => (
+            <g key={percent}>
+              <line x1={left} x2={left + plotW} y1={yFor(percent)} y2={yFor(percent)} stroke="currentColor" strokeOpacity="0.08" />
+              <text x={left - 8} y={yFor(percent) + 3} textAnchor="end" fill="currentColor" fillOpacity="0.35" fontSize="9" className="font-mono">
+                {percent}%
+              </text>
+            </g>
+          ))}
+          {MATCH_MARKET_SERIES.map((series) => {
+            const count = series.points.length;
+            const points = series.points.map((percent, index) => `${xFor(index, count)},${yFor(percent)}`).join(" ");
+            const endX = xFor(count - 1, count);
+            const endPercent = series.points[count - 1]!;
+            return (
+              <g key={series.label} className={series.muted ? "text-muted-foreground" : "text-foreground"}>
+                <polyline
+                  points={points}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeDasharray={series.dash ? "5 4" : undefined}
+                  strokeLinecap="square"
+                  strokeLinejoin="miter"
+                />
+                <circle cx={endX} cy={yFor(endPercent)} r="3" fill="currentColor" />
+                <text x={endX + 8} y={yFor(endPercent) + 3 + (series.labelDy ?? 0)} fill="currentColor" fontSize="10" className="font-mono">
+                  {series.label} {endPercent}%
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+        <div className="mt-2 flex items-center justify-between font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+          <span>book opened</span>
+          <span>now</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OddsCell({ value, best }: { value: number | null; best: number }) {
+  if (value === null) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className={cn("font-mono tabular-nums", value === best ? "font-semibold text-success" : "text-foreground")}>
+      {value}¢
+    </span>
+  );
+}
+
+function VenueOddsCard({ homeName, awayName }: { homeName: string; awayName: string }) {
+  const bestOf = (key: "home" | "draw" | "away") =>
+    Math.min(...MATCH_VENUE_ODDS.flatMap((row) => (row.prices[key] === null ? [] : [row.prices[key]!])));
+  const best = { home: bestOf("home"), draw: bestOf("draw"), away: bestOf("away") };
+  return (
+    <Card className="gap-0 bg-card/85 py-0">
+      <PanelHeading index="BK" title="Venue books" aside="match winner" />
+      <CardContent className="px-0 py-0">
+        <div className="grid grid-cols-[minmax(7rem,1.4fr)_1fr_1fr_1fr] items-center gap-3 border-b border-border px-4 py-2.5 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+          <span>venue</span>
+          <span className="text-right">{homeName}</span>
+          <span className="text-right">draw</span>
+          <span className="text-right">{awayName}</span>
+        </div>
+        {MATCH_VENUE_ODDS.map((row) => (
+          <div
+            key={row.venue}
+            className="grid min-h-12 grid-cols-[minmax(7rem,1.4fr)_1fr_1fr_1fr] items-center gap-3 border-b border-border/60 px-4 py-2 last:border-0"
+          >
+            {row.icon ? (
+              <Image
+                src={row.icon}
+                alt={row.venue}
+                width={110}
+                height={20}
+                className={cn("h-4 w-auto max-w-full object-contain object-left", row.flatten && "brightness-0 invert")}
+              />
+            ) : (
+              <span className="font-mono text-xs uppercase tracking-[0.12em]">{row.venue}</span>
+            )}
+            <span className="text-right"><OddsCell value={row.prices.home} best={best.home} /></span>
+            <span className="text-right"><OddsCell value={row.prices.draw} best={best.draw} /></span>
+            <span className="text-right"><OddsCell value={row.prices.away} best={best.away} /></span>
+          </div>
+        ))}
+        <div className="px-4 py-2.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+          market books / best ask per outcome in green
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MatchDetailsCards({
+  homeName,
+  awayName,
+  kickoffISO,
+}: {
+  homeName: string;
+  awayName: string;
+  kickoffISO: string | null;
+}) {
+  return (
+    <div className="space-y-4">
+      <StadiumPitch
+        home={{ name: homeName, logo: null, color: TEAM_COLORS[homeName] ?? null }}
+        away={{ name: awayName, logo: null, color: TEAM_COLORS[awayName] ?? null }}
+        score={null}
+        kickoffISO={kickoffISO}
+        notStarted={true}
+      />
+      <Card className="gap-0 bg-card/85 py-0">
+        <PanelHeading index="TL" title="Match timeline" aside="match events" />
+        <CardContent className="px-4 pb-4 pt-8">
+          <div className="relative mx-1 h-px bg-border">
+            {TIMELINE_EVENTS.map((event) => (
+              <div
+                key={`${event.minute}-${event.label}`}
+                title={`${event.minute}' ${event.label}`}
+                className="absolute -top-[3px] size-[7px] -translate-x-1/2 border border-primary bg-primary"
+                style={{ left: `${(event.minute / 95) * 100}%` }}
+              />
+            ))}
+            {[0, 45, 90].map((minute) => (
+              <span
+                key={minute}
+                className="absolute top-2 -translate-x-1/2 font-mono text-[0.625rem] text-muted-foreground"
+                style={{ left: `${(minute / 95) * 100}%` }}
+              >
+                {minute}&apos;
+              </span>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-1 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+            {TIMELINE_EVENTS.map((event) => (
+              <span key={`${event.minute}-${event.label}-legend`}>
+                <span className="text-foreground">{event.minute}&apos;</span> {event.label}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="gap-0 bg-card/85 py-0">
+        <PanelHeading index="ST" title="Match statistics" aside="63:00 snapshot" />
+        <CardContent className="px-0 py-0">
+          {MATCH_STATS.map((stat) => {
+            const total = stat.home + stat.away;
+            const homeShare = total === 0 ? 50 : (stat.home / total) * 100;
+            return (
+              <div key={stat.label} className="border-b border-border/60 px-4 py-2.5 last:border-0">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-mono font-semibold tabular-nums">{stat.home}{stat.suffix ?? ""}</span>
+                  <span className="text-muted-foreground">{stat.label}</span>
+                  <span className="font-mono font-semibold tabular-nums">{stat.away}{stat.suffix ?? ""}</span>
+                </div>
+                <div className="mt-1.5 flex h-0.5 overflow-hidden bg-border/50" aria-hidden="true">
+                  <div className="bg-foreground" style={{ width: `${homeShare}%` }} />
+                  <div className="bg-foreground/30" style={{ width: `${100 - homeShare}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 const reasonCopy: Record<ScanReason, string> = {
   NO_APPROVED_QUOTES: "Two approved, fresh venue quotes are required.",
@@ -203,54 +584,115 @@ function AgentTraceStrip({ agent }: { agent: AgentId }) {
   );
 }
 
-/* One agent on the roster, compact enough for a six-up single screen. The
- * glyph tile plus the trigger headline say what it plays at a glance; the
- * strategy stays to one line; launch starts the tape immediately. */
-function AgentRosterCard({
-  agent,
-  onLaunch,
-}: {
-  agent: AgentDefinition;
-  onLaunch: (id: AgentId) => void;
-}) {
-  const ready = Boolean(AGENT_TAPES[agent.id]);
+function TeamBadge({ team, align }: { team: BoardTeam; align: "left" | "right" }) {
   return (
-    // The full strategy sentence lives in the tooltip; the desk shows it after launch.
-    <article title={agent.description} className="flex min-w-0 flex-col gap-2 border border-border bg-card/60 p-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="grid size-9 shrink-0 place-items-center border border-border bg-background/60">
-          <AgentGlyph agent={agent.id} className="size-4.5 text-primary" />
+    <div className={cn("flex min-w-0 flex-col gap-1.5", align === "right" && "items-end text-right")}>
+      <Image src={team.flag} alt={`${team.name} flag`} width={48} height={32} className="h-8 w-12 border border-border object-cover" />
+      <span className="truncate text-sm font-semibold">{team.name}</span>
+    </div>
+  );
+}
+
+function PriceBox({ label, percent }: { label?: string; percent: number }) {
+  return (
+    <div className="flex flex-col items-center gap-1 border border-border bg-background/60 px-2 py-2">
+      <span className="whitespace-nowrap font-mono text-sm font-semibold uppercase tabular-nums">
+        {label ? `${label} ` : ""}
+        {percent}%
+      </span>
+      <span className="font-mono text-[0.625rem] tabular-nums text-muted-foreground">{bookMultiplier(percent)}</span>
+    </div>
+  );
+}
+
+/* One fixture on the board: flags, kickoff, and the synthetic three-way book.
+ * Enterable only when the fixture has replay tapes behind it. */
+function FixtureCard({
+  fixture,
+  replay,
+  onOpen,
+}: {
+  fixture: BoardFixture;
+  replay?: ReplayMatch;
+  onOpen?: () => void;
+}) {
+  const enterable = Boolean(replay && onOpen);
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <TeamBadge team={fixture.home} align="left" />
+        <div className="flex flex-col items-center pt-0.5 text-center">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">{fixture.kickoffDate}</span>
+          <span className="font-mono text-lg font-semibold tabular-nums">{fixture.kickoffTime}</span>
         </div>
-        <span
-          className={cn(
-            "shrink-0 border px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.08em]",
-            ready
-              ? "border-success/35 bg-success/[0.045] text-success"
-              : "border-border bg-background/80 text-muted-foreground",
-          )}
-        >
-          {ready ? "replay ready" : "roadmap"}
-        </span>
+        <TeamBadge team={fixture.away} align="right" />
       </div>
-      <div className="truncate font-mono text-[0.8125rem] font-semibold uppercase tracking-[0.06em]">{agent.shortName}</div>
-      <AgentTraceStrip agent={agent.id} />
-      <div className="mt-auto">
-        {ready ? (
-          <Button
-            type="button"
-            aria-label={`Launch ${agent.name}`}
-            onClick={() => onLaunch(agent.id)}
-            className="h-8 w-full rounded-md font-mono text-[0.625rem] font-semibold uppercase tracking-[0.1em]"
-          >
-            Launch <span aria-hidden="true">↗</span>
-          </Button>
+      <div className="grid grid-cols-3 gap-2">
+        <PriceBox percent={fixture.book.home} />
+        <PriceBox label="draw" percent={fixture.book.draw} />
+        <PriceBox percent={fixture.book.away} />
+      </div>
+      <div className="flex items-center justify-between gap-3 font-mono text-[0.625rem] uppercase tracking-[0.1em]">
+        {enterable && replay ? (
+          <>
+            <span className="border border-success/35 bg-success/[0.045] px-1.5 py-0.5 text-[0.5625rem] tracking-[0.08em] text-success">
+              live
+            </span>
+            <span className="text-muted-foreground">
+              {replay.scenarios.length} strategies · {new Set(replay.scenarios.map((item) => item.defaultAgent)).size} agents
+            </span>
+            <span className="text-foreground">
+              Open <span aria-hidden="true">↗</span>
+            </span>
+          </>
         ) : (
-          <div className="grid h-8 place-items-center border border-dashed border-border font-mono text-[0.5625rem] uppercase tracking-[0.1em] text-muted-foreground">
-            in production
-          </div>
+          <>
+            <span className="border border-border bg-background/80 px-1.5 py-0.5 text-[0.5625rem] tracking-[0.08em] text-muted-foreground">
+              soon
+            </span>
+            <span className="text-muted-foreground">awaiting TxLINE feed</span>
+          </>
         )}
       </div>
-    </article>
+    </>
+  );
+  const cardClass = "flex min-w-0 flex-col gap-3 border border-border bg-card/60 p-4";
+  if (enterable) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn(cardClass, "text-left transition-colors hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+      >
+        {body}
+      </button>
+    );
+  }
+  return <div className={cn(cardClass, "opacity-80")}>{body}</div>;
+}
+
+/* A settled fixture: final score in place of the book, nothing to launch. */
+function PastFixtureCard({ fixture }: { fixture: PastFixture }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-3 border border-border bg-card/40 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <TeamBadge team={fixture.home} align="left" />
+        <div className="flex flex-col items-center pt-0.5 text-center">
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">{fixture.date}</span>
+          <span className="font-mono text-lg font-semibold tabular-nums">
+            {fixture.score.home} – {fixture.score.away}
+          </span>
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">full time</span>
+        </div>
+        <TeamBadge team={fixture.away} align="right" />
+      </div>
+      <div className="flex items-center justify-between gap-3 font-mono text-[0.625rem] uppercase tracking-[0.1em]">
+        <span className="border border-border bg-background/80 px-1.5 py-0.5 text-[0.5625rem] tracking-[0.08em] text-muted-foreground">
+          settled
+        </span>
+        <span className="text-muted-foreground">no active agents</span>
+      </div>
+    </div>
   );
 }
 
@@ -328,7 +770,7 @@ function MathRow({ label, value, tone }: { label: string; value: string; tone?: 
 
 function ExecutionPanel({ execution }: { execution: BundleExecution | null }) {
   if (!execution) {
-    return <p className="text-sm leading-6 text-muted-foreground">No simulated orders have been submitted at this tape position.</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">No orders have been submitted at this point.</p>;
   }
   return (
     <div className="space-y-3">
@@ -351,10 +793,58 @@ function ExecutionPanel({ execution }: { execution: BundleExecution | null }) {
   );
 }
 
-export type ConsoleView = "roster" | "desk" | "controls";
+/* RUN RELAY
+ * Narrates the anatomy of every run as a four-stage handoff: signal (TxLINE
+ * trigger) → scan (venue books) → gate (cost math) → evidence (simulated
+ * result). Each cell derives from the same pipeline values the instruments
+ * below render, so the relay can never disagree with them.
+ */
+type RelayTone = "idle" | "live" | "pass" | "warn" | "risk";
 
-export function TxBetConsole({ initialView = "roster" }: { initialView?: ConsoleView }) {
+type RelayStage = { role: string; state: string; tone: RelayTone };
+
+function relayToneClass(tone: RelayTone): string {
+  switch (tone) {
+    case "live":
+      return "border-signal/40 bg-signal/8 text-signal";
+    case "pass":
+      return "border-success/40 bg-success/8 text-success";
+    case "warn":
+      return "border-warning/40 bg-warning/8 text-warning";
+    case "risk":
+      return "border-danger/45 bg-danger/8 text-danger";
+    default:
+      return "border-border bg-background/45 text-muted-foreground";
+  }
+}
+
+function DeskRelay({ stages }: { stages: readonly RelayStage[] }) {
+  return (
+    <section aria-label="Run relay" className="mb-4 grid grid-cols-2 gap-2 md:flex md:items-center">
+      {stages.map((stage, index) => (
+        <Fragment key={stage.role}>
+          {index > 0 && (
+            <span aria-hidden="true" className="hidden shrink-0 font-mono text-xs text-muted-foreground md:block">
+              →
+            </span>
+          )}
+          <div className={cn("flex min-w-0 flex-1 items-center justify-between gap-3 border px-3 py-2", relayToneClass(stage.tone))}>
+            <span className="font-mono text-[0.625rem] uppercase tracking-[0.14em]">{stage.role}</span>
+            <span className="truncate font-mono text-[0.6875rem] font-semibold uppercase tracking-wider">{stage.state}</span>
+          </div>
+        </Fragment>
+      ))}
+    </section>
+  );
+}
+
+// "matches" is the home surface; "roster" is scoped inside the chosen match.
+export type ConsoleView = "matches" | "roster" | "desk" | "controls";
+
+export function TxBetConsole({ initialView = "matches" }: { initialView?: ConsoleView }) {
   const [view, setView] = useState<ConsoleView>(initialView);
+  const [matchTab, setMatchTab] = useState<MatchTab>("market");
+  const [selectedRailAgent, setSelectedRailAgent] = useState<AgentId>("red-card");
   const [scenarioId, setScenarioId] = useState<DemoScenarioId>("red-card-profit");
   const [agentId, setAgentId] = useState<AgentId>("red-card");
   const [step, setStep] = useState(0);
@@ -373,6 +863,10 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
   const scenario = getDemoScenario(scenarioId);
   const frame = scenario.frames[step] ?? scenario.frames[0]!;
   const selectedAgent = getAgent(agentId);
+  // Match-hub header data: board entry for flags/kickoff, opening score tiles.
+  const matchBoard = WORLD_CUP_BOARD.find((entry) => entry.id === scenario.fixture.id);
+  // Tape scores use an en dash; accept both dash flavors.
+  const scoreParts = (scenario.frames[0]?.score ?? "0-0").split(/[–-]/).map((part) => part.trim());
   const settings = {
     allocatedCapitalMicros: dollarsToMicros(allocatedCapital),
     maxExposureMicros: dollarsToMicros(maxExposure),
@@ -405,6 +899,34 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
   const backtest = runBacktest(SYNTHETIC_BACKTEST_WINDOWS, settings);
   const fastTrace = backtest.traces.find((trace) => trace.id === "red-card-fast");
   const delayedTrace = backtest.traces.find((trace) => trace.id === "red-card-delayed");
+
+  // Agent dossier: projected P&L runs the real pipeline on the selected
+  // agent's tape action frame under the CURRENT guardrails; history filters
+  // the backtest windows owned by that agent. Everything stays synthetic.
+  const railAgent = getAgent(selectedRailAgent);
+  const railLine = AGENT_MARKET_LINES[selectedRailAgent];
+  const railTape = AGENT_TAPES[selectedRailAgent];
+  const railScenario = railTape ? getDemoScenario(railTape) : null;
+  // Last actionable frame: the tape's decision moment (post-reprice books),
+  // not the raw event frame where books have not moved yet.
+  const railActionFrame = [...(railScenario?.frames ?? [])].reverse().find((item) => item.event && item.quotes.length > 0) ?? null;
+  const railPipeline = railActionFrame
+    ? runPipeline({
+        agentId: selectedRailAgent,
+        event: railActionFrame.event,
+        quotes: railActionFrame.quotes,
+        settings,
+        now: railActionFrame.now,
+      })
+    : null;
+  const railCandidate = railPipeline?.scan.candidate ?? null;
+  const railRefusal =
+    railPipeline && !railCandidate && railPipeline.trigger.active ? railPipeline.scan.reasons[0] ?? null : null;
+  const railWindows = backtest.traces.filter((trace) => WINDOW_AGENT_BY_ID.get(trace.id) === selectedRailAgent);
+  const railHistoryMicros = railWindows.reduce(
+    (sum, trace) => sum + (trace.execution?.state === "MATCHED" ? trace.scan.candidate?.netProfitMicros ?? 0 : 0),
+    0,
+  );
 
   useEffect(() => {
     if (!playing || step >= scenario.frames.length - 1) return;
@@ -465,15 +987,56 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
     { label: `Net return ≥ ${formatBps(minimumReturnBps)}`, pass: Boolean(candidate) },
   ];
 
+  // Relay narration for the active tape frame; mirrors trigger/scan/gate state.
+  const scanReached = pipeline.trigger.active;
+  const booksOpen = frame.quotes.length > 0;
+  const relayStages: readonly RelayStage[] = [
+    {
+      role: "signal",
+      state: scanReached ? "event caught" : "watching",
+      tone: scanReached ? "live" : "idle",
+    },
+    {
+      role: "scan",
+      state: !scanReached ? "idle" : booksOpen ? `${frame.quotes.length} books` : "requesting",
+      tone: !scanReached ? "idle" : "live",
+    },
+    {
+      role: "gate",
+      state: candidate ? "pass" : scanReached && booksOpen ? "refused" : "waiting",
+      tone: candidate ? "pass" : scanReached && booksOpen ? "warn" : "idle",
+    },
+    {
+      role: "evidence",
+      state: execution
+        ? execution.state.toLowerCase()
+        : candidate
+          ? "ready"
+          : scanReached && booksOpen
+            ? "refusal logged"
+            : "pending",
+      tone: execution
+        ? execution.state === "MATCHED"
+          ? "pass"
+          : "risk"
+        : candidate
+          ? "live"
+          : scanReached && booksOpen
+            ? "warn"
+            : "idle",
+    },
+  ];
+
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="relative isolate min-h-screen text-foreground">
+      <ConsoleBackdrop />
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.5rem] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6">
           <Link href="/" aria-label="Back to txBet landing page" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <TxBetLockup compact />
           </Link>
           <nav aria-label="Console sections" className="hidden items-stretch self-stretch md:flex">
-            <HeaderTab label="Agents" active={view === "roster"} onSelect={() => selectView("roster")} />
+            <HeaderTab label="Matches" active={view === "matches" || view === "roster"} onSelect={() => selectView("matches")} />
             <HeaderTab label="Desk" active={view === "desk"} onSelect={() => selectView("desk")} />
             <HeaderTab label="Controls" active={view === "controls"} onSelect={() => selectView("controls")} />
             <HeaderTab label="Markets" soon />
@@ -484,23 +1047,329 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
       </header>
 
       <main className="mx-auto max-w-[1600px] px-3 py-4 sm:px-6 sm:py-6">
-        {view === "roster" ? (
+        {view === "matches" ? (
           <>
             <section className="mb-5 px-1 pt-1 sm:pt-2">
               <p className="mb-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-primary">
-                Choose your agent
+                World Cup
               </p>
               <h1 className="font-serif text-3xl font-normal leading-none tracking-[-0.03em] sm:text-4xl">
-                Pick your agent. <span className="text-muted-foreground">It watches the match.</span>
+                Pick the match. <span className="text-muted-foreground">Agents work inside.</span>
               </h1>
             </section>
 
-            <section aria-label="Agent roster" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-              {AGENTS.map((agent) => (
-                <AgentRosterCard key={agent.id} agent={agent} onLaunch={launchAgent} />
-              ))}
+            <section aria-label="World Cup fixtures" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {WORLD_CUP_BOARD.map((fixture) => {
+                const replay = REPLAY_MATCHES.find((match) => match.fixture.id === fixture.id);
+                return (
+                  <FixtureCard
+                    key={fixture.id}
+                    fixture={fixture}
+                    replay={replay}
+                    onOpen={replay ? () => { setMatchTab("market"); selectView("roster"); } : undefined}
+                  />
+                );
+              })}
+              {/* Honest placeholder: live fixtures list only once the feed is configured. */}
+              <div className="flex min-h-40 flex-col items-center justify-center gap-2 border border-dashed border-border p-4 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+                <span>live fixture slot</span>
+                <span className="border border-border bg-background/80 px-1.5 py-0.5 text-[0.5625rem] tracking-[0.08em]">soon</span>
+              </div>
             </section>
 
+            <section aria-label="Past matches" className="mt-8">
+              <p className="mb-2 px-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
+                Past matches
+              </p>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {PAST_WORLD_CUP.map((fixture) => (
+                  <PastFixtureCard key={fixture.id} fixture={fixture} />
+                ))}
+              </div>
+            </section>
+          </>
+        ) : view === "roster" ? (
+          <>
+            <section className="mb-5 px-1 pt-1 sm:pt-2">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => selectView("matches")}
+                  className="rounded-md font-mono text-[0.6875rem] uppercase tracking-wider"
+                >
+                  <ArrowLeft data-icon="inline-start" /> Matches
+                </Button>
+                <span className="border border-border bg-card/60 px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span className="text-foreground">{scenario.fixture.home}</span>
+                  <span aria-hidden="true"> v </span>
+                  <span className="text-foreground">{scenario.fixture.away}</span>
+                  <span> / live</span>
+                </span>
+              </div>
+            </section>
+
+            <section aria-label="Match summary" className="mb-4 border border-border bg-card/60 px-4 py-5">
+              <div className="text-center font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+                {matchBoard ? `${matchBoard.kickoffDate} · ${matchBoard.kickoffTime} · ` : ""}agents ready
+              </div>
+              <div className="mt-4 flex items-start justify-center gap-8 sm:gap-14">
+                <div className="flex w-24 flex-col items-center gap-2">
+                  {matchBoard && (
+                    <Image src={matchBoard.home.flag} alt={`${scenario.fixture.home} flag`} width={56} height={38} className="h-9 w-14 border border-border object-cover" />
+                  )}
+                  <span className="text-sm font-semibold">{scenario.fixture.home}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  {scoreParts.map((part, index) => (
+                    <span
+                      key={index}
+                      className="grid size-11 place-items-center border border-border bg-background/60 font-mono text-2xl font-semibold tabular-nums"
+                    >
+                      {part}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex w-24 flex-col items-center gap-2">
+                  {matchBoard && (
+                    <Image src={matchBoard.away.flag} alt={`${scenario.fixture.away} flag`} width={56} height={38} className="h-9 w-14 border border-border object-cover" />
+                  )}
+                  <span className="text-sm font-semibold">{scenario.fixture.away}</span>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="min-w-0 space-y-4">
+              <div role="tablist" aria-label="Match sections" className="flex flex-wrap gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em]">
+                {MATCH_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setMatchTab(tab.id)}
+                    aria-pressed={matchTab === tab.id}
+                    className={cn(
+                      "border px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      matchTab === tab.id
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-card/60 text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {matchTab === "market" && <MarketChartCard />}
+              {matchTab === "odds" && <VenueOddsCard homeName={scenario.fixture.home} awayName={scenario.fixture.away} />}
+              {matchTab === "details" && (
+                <MatchDetailsCards
+                  homeName={scenario.fixture.home}
+                  awayName={scenario.fixture.away}
+                  kickoffISO={matchBoard?.kickoffISO ?? null}
+                />
+              )}
+
+              <Card className="gap-0 self-start bg-card/85 py-0">
+                <PanelHeading index="AG" title="Agent markets" aside="one agent per market" />
+                <CardContent className="space-y-2 px-3 py-3">
+                  {AGENTS.map((agent) => {
+                    const line = AGENT_MARKET_LINES[agent.id];
+                    const ready = Boolean(AGENT_TAPES[agent.id]);
+                    const selected = selectedRailAgent === agent.id;
+                    return (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        onClick={() => setSelectedRailAgent(agent.id)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "block w-full border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          selected ? "border-primary/45 bg-primary/[0.05]" : "border-border/60 bg-background/40 hover:bg-card",
+                        )}
+                      >
+                        <span className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <AgentGlyph agent={agent.id} className="size-3.5 shrink-0 text-primary" />
+                            <span className="truncate font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.06em]">{agent.shortName}</span>
+                            <span className="truncate text-[0.625rem] text-muted-foreground">/ {line.market}</span>
+                          </span>
+                          <span
+                            className={cn(
+                              "shrink-0 border px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.08em]",
+                              ready
+                                ? "border-success/35 bg-success/[0.045] text-success"
+                                : "border-border bg-background/80 text-muted-foreground",
+                            )}
+                          >
+                            {ready ? "live" : "roadmap"}
+                          </span>
+                        </span>
+                        <span className="block divide-y divide-border/40">
+                          {line.outcomes.map((outcome) => (
+                            <span key={outcome.label} className="flex items-center justify-between gap-3 px-3 py-1.5">
+                              <span className="flex min-w-0 items-center gap-2 text-xs">
+                                {outcome.flag ? (
+                                  <Image
+                                    src={outcome.flag}
+                                    alt=""
+                                    width={20}
+                                    height={14}
+                                    className="h-3.5 w-5 shrink-0 border border-border/70 object-cover"
+                                  />
+                                ) : null}
+                                <span className="truncate">{outcome.label}</span>
+                              </span>
+                              <span
+                                className={cn(
+                                  "min-w-14 shrink-0 border px-2.5 py-1 text-center font-mono text-xs tabular-nums",
+                                  ready && outcome.lead
+                                    ? "border-primary bg-primary font-semibold text-primary-foreground"
+                                    : "border-border bg-background/70 text-foreground",
+                                )}
+                              >
+                                {outcome.price}¢
+                              </span>
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <div className="pt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                    tape asks / yes price per outcome
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+              <aside aria-label="Agent detail" className="min-w-0 self-start border border-border bg-card/60 xl:sticky xl:top-24">
+                <div className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="grid size-8 shrink-0 place-items-center border border-border bg-background/60">
+                      <AgentGlyph agent={railAgent.id} className="size-4 text-primary" />
+                    </div>
+                    <span className="truncate font-mono text-xs font-semibold uppercase tracking-[0.06em]">{railAgent.shortName}</span>
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 border px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.08em]",
+                      railTape
+                        ? "border-success/35 bg-success/[0.045] text-success"
+                        : "border-border bg-background/80 text-muted-foreground",
+                    )}
+                  >
+                    {railTape ? "live" : "roadmap"}
+                  </span>
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  <AgentTraceStrip agent={railAgent.id} />
+                  <p className="text-[0.6875rem] leading-4 text-muted-foreground">{railAgent.description}</p>
+                  <div className="flex items-center justify-between gap-3 border border-border bg-background/45 px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.1em]">
+                    <span className="truncate text-muted-foreground">{railLine.market}</span>
+                    <span className="shrink-0 tabular-nums text-foreground">
+                      {railLine.outcomes.map((outcome) => `${outcome.label} ${outcome.price}¢`).join(" · ")}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="mb-1.5 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+                      Projected P&L / current guardrails
+                    </div>
+                    {railCandidate ? (
+                      <div className="border border-success/35 bg-success/[0.045] px-3 py-2.5">
+                        <div className="font-mono text-lg font-semibold tabular-nums text-success">
+                          +{formatUsd(railCandidate.netProfitMicros)}
+                        </div>
+                        <div className="mt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                          {formatBps(railCandidate.netReturnBps)} net · modeled on the {railScenario?.name} tape
+                        </div>
+                      </div>
+                    ) : railRefusal ? (
+                      <div className="border border-warning/35 bg-warning/[0.045] px-3 py-2.5 text-[0.6875rem] leading-4 text-muted-foreground">
+                        Refuses at these guardrails: {reasonCopy[railRefusal]}
+                      </div>
+                    ) : (
+                      <div className="grid min-h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                        tape in production
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="mb-1.5 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+                      Historical P&L / replay windows
+                    </div>
+                    {railWindows.length > 0 ? (
+                      <div className="border border-border">
+                        {railWindows.map((trace) => {
+                          const outcome = trace.execution ? trace.execution.state : trace.scan.candidate ? "READY" : "NO TRADE";
+                          const pnl =
+                            trace.execution?.state === "MATCHED"
+                              ? `+${formatUsd(trace.scan.candidate?.netProfitMicros ?? 0)}`
+                              : trace.execution?.state === "UNHEDGED"
+                                ? "exposed"
+                                : "$0.00";
+                          return (
+                            <div
+                              key={trace.id}
+                              className="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2 text-[0.6875rem] last:border-b-0"
+                            >
+                              <span className="truncate text-muted-foreground">{trace.label}</span>
+                              <span className="flex shrink-0 items-center gap-2 font-mono text-[0.625rem] uppercase">
+                                <span
+                                  className={cn(
+                                    outcome === "MATCHED"
+                                      ? "text-success"
+                                      : outcome === "UNHEDGED"
+                                        ? "text-danger"
+                                        : "text-muted-foreground",
+                                  )}
+                                >
+                                  {outcome.toLowerCase()}
+                                </span>
+                                <span className={cn("tabular-nums", trace.execution?.state === "MATCHED" ? "text-success" : "text-foreground")}>
+                                  {pnl}
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center justify-between gap-3 bg-background/45 px-3 py-2 font-mono text-[0.625rem] uppercase tracking-[0.1em]">
+                          <span className="text-muted-foreground">locked total</span>
+                          <span className={cn("tabular-nums", railHistoryMicros > 0 ? "text-success" : "text-foreground")}>
+                            {railHistoryMicros > 0 ? "+" : ""}
+                            {formatUsd(railHistoryMicros)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid min-h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                        no replay windows yet
+                      </div>
+                    )}
+                    <p className="mt-1.5 text-[0.625rem] leading-4 text-muted-foreground">
+                      Synthetic replay evidence only; not a prediction of real returns.
+                    </p>
+                  </div>
+
+                  {railTape ? (
+                    <Button
+                      type="button"
+                      onClick={() => launchAgent(railAgent.id)}
+                      className="h-10 w-full rounded-md font-mono text-xs font-semibold uppercase tracking-[0.12em]"
+                    >
+                      Start agent <span aria-hidden="true">↗</span>
+                    </Button>
+                  ) : (
+                    <div className="grid h-10 place-items-center border border-dashed border-border font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                      tape in production
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </div>
           </>
         ) : view === "controls" ? (
           <>
@@ -551,10 +1420,12 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
               </div>
             </section>
 
+            <DeskRelay stages={relayStages} />
+
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
               <div className="min-w-0 space-y-4">
                 <Card className="gap-0 bg-card/85 py-0">
-                  <PanelHeading index="01" title="TxLINE action tape" aside={`${step + 1} / ${scenario.frames.length}`} />
+                  <PanelHeading index="01" title="TxLINE action feed" aside={`${step + 1} / ${scenario.frames.length}`} />
                   <CardContent className="px-0 py-0">
                     <ScrollArea className="h-[150px]">
                       <div className="space-y-0 px-4 py-2">
@@ -648,12 +1519,12 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                   </CardContent>
                 </Card>
 
-                <DeskDrawer index="04" title="Operator settings" aside="simulation">
+                <DeskDrawer index="04" title="Operator settings" aside="execution">
                   <CardContent className="space-y-5 px-4 py-4">
                     <div>
-                      <ControlLabel label="Demo tape" />
+                      <ControlLabel label="Strategy" />
                       <Select value={scenarioId} onValueChange={changeScenario}>
-                        <SelectTrigger aria-label="Demo tape" className="h-10 w-full border-border bg-background/60">
+                        <SelectTrigger aria-label="Strategy" className="h-10 w-full border-border bg-background/60">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent alignItemWithTrigger={false} className="border border-border">
@@ -696,15 +1567,15 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                     </div>
                     <div className="flex items-center justify-between gap-3 border border-border bg-background/40 px-3 py-2.5">
                       <div>
-                        <div className="text-xs font-semibold">Automatic simulated execution</div>
+                        <div className="text-xs font-semibold">Automatic execution</div>
                         <div className="mt-0.5 font-mono text-[0.6875rem] text-muted-foreground">off = scan only</div>
                       </div>
-                      <Switch aria-label="Automatic simulated execution" checked={automatic} onCheckedChange={setAutomatic} />
+                      <Switch aria-label="Automatic execution" checked={automatic} onCheckedChange={setAutomatic} />
                     </div>
                   </CardContent>
                 </DeskDrawer>
 
-                <DeskDrawer index="05" title="Synthetic replay report + latency lab" aside={`${backtest.windows} windows`}>
+                <DeskDrawer index="05" title="Execution report + latency lab" aside={`${backtest.windows} windows`}>
                   <CardContent className="px-4 py-4">
                     <div className="grid grid-cols-2 gap-px border border-border bg-border lg:grid-cols-4">
                       {[
@@ -728,7 +1599,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                         <div className="mt-2 font-mono text-xl font-semibold tabular-nums text-success">
                           {fastTrace?.scan.candidate ? formatBps(fastTrace.scan.candidate.netReturnBps) : "—"}
                         </div>
-                        <p className="mt-1 text-[0.6875rem] leading-5 text-muted-foreground">The replay bundle remains below payout after modeled costs.</p>
+                        <p className="mt-1 text-[0.6875rem] leading-5 text-muted-foreground">The bundle remains below payout after costs.</p>
                       </div>
                       <div className="rounded-md border border-warning/30 bg-warning/5 p-3">
                         <div className="flex items-center justify-between gap-3">
@@ -742,7 +1613,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                       </div>
                     </div>
                     <p className="mt-3 border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
-                      Synthetic replay evidence only. Modeled matched P&amp;L excludes the intentionally unhedged window and does not predict real-world returns.
+                      Strategy-run evidence only. Modeled matched P&amp;L excludes the intentionally unhedged window and does not predict real-world returns.
                     </p>
                   </CardContent>
                 </DeskDrawer>
@@ -750,7 +1621,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
 
               <aside className="space-y-4">
                 <Card className="gap-0 bg-card/85 py-0">
-                  <PanelHeading index="06" title="Decision gate" aside={automatic ? "sim auto" : "scan only"} />
+                  <PanelHeading index="06" title="Decision gate" aside={automatic ? "auto" : "scan only"} />
                   <CardContent className="px-4 py-4">
                     <div className={cn(
                       "mb-4 flex items-center justify-between gap-4 border px-3 py-3",
@@ -811,7 +1682,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                             </p>
                           </div>
                         ) : (
-                          <p className="text-sm leading-6 text-muted-foreground">Settlement branches appear after a fully matched simulated bundle.</p>
+                          <p className="text-sm leading-6 text-muted-foreground">Settlement branches appear after a fully matched bundle.</p>
                         )}
                       </TabsContent>
                     </Tabs>
@@ -823,7 +1694,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                     <CardTitle className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-warning">Pitch-safe disclosure</CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 text-xs leading-5 text-muted-foreground">
-                    {scenario.disclosure}. In this replay, modeled profit appears matched only after equal simulated fills and compatible settlement rules.
+                    {scenario.disclosure}. In this run, modeled profit appears matched only after equal fills and compatible settlement rules.
                   </CardContent>
                 </Card>
               </aside>
@@ -833,7 +1704,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
               <Button
                 variant="outline"
                 size="icon"
-                title="Reset replay"
+                title="Reset run"
                 onClick={() => { setStep(0); setPlaying(false); }}
                 className="rounded-md"
               >
@@ -851,7 +1722,7 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
                 className="h-9 flex-1 rounded-md bg-primary px-4 font-mono text-xs font-semibold uppercase tracking-wider text-primary-foreground"
               >
                 {playing ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
-                {playing ? "Pause tape" : step >= scenario.frames.length - 1 ? "Replay tape" : "Play tape"}
+                {playing ? "Pause run" : step >= scenario.frames.length - 1 ? "Restart run" : "Play run"}
               </Button>
               <Button
                 variant="outline"
@@ -879,10 +1750,6 @@ export function TxBetConsole({ initialView = "roster" }: { initialView?: Console
           </>
         )}
       </main>
-
-      <footer className="border-t border-border px-4 py-5 text-center font-mono text-[0.6875rem] uppercase tracking-[0.11em] text-muted-foreground">
-        txBet / authenticated arming is fail-closed / deterministic replay below remains simulated
-      </footer>
     </div>
   );
 }

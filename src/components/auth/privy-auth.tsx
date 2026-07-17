@@ -14,7 +14,7 @@ import {
 } from "react";
 import { isAddress } from "viem";
 
-import { AccountMenu } from "@/components/auth/account-menu";
+import { AccountMenu, DepositMenu, HeaderBalance } from "@/components/auth/account-menu";
 import { Button } from "@/components/ui/button";
 
 export const PRIVY_MVP_CONFIG = Object.freeze({
@@ -186,14 +186,19 @@ function ConfiguredAuthWalletControl() {
     );
   }
 
-  // Identity, balance availability, and sign-out live in the account dropdown.
+  // Signed-in header cluster: deposit picker, available balance, then the
+  // account dropdown (identity, balance availability, sign-out).
   const wallets = summarizeEmbeddedWallets(user.linkedAccounts);
   return (
-    <AccountMenu
-      email={user.google?.email ?? user.email?.address ?? null}
-      wallets={wallets}
-      onSignOut={() => void logout()}
-    />
+    <div className="flex items-center gap-3">
+      <DepositMenu wallets={wallets} />
+      <HeaderBalance />
+      <AccountMenu
+        email={user.google?.email ?? user.email?.address ?? null}
+        wallets={wallets}
+        onSignOut={() => void logout()}
+      />
+    </div>
   );
 }
 

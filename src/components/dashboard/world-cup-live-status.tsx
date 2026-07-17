@@ -115,7 +115,7 @@ function LoadingStatus() {
         TXLINE STATUS CHECKING
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Deterministic replay remains available while the read completes.
+        Agents remain available while the read completes.
       </p>
     </div>
   );
@@ -127,10 +127,10 @@ function UnconfiguredStatus() {
       <RotateCcw className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
       <div>
         <p className="font-mono text-xs font-semibold tracking-[0.12em] text-primary">
-          DETERMINISTIC REPLAY
+          AGENTS READY
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          TxLINE not configured. The World Cup demo remains synthetic.
+          TxLINE not configured. Live fixtures attach when the feed is wired.
         </p>
       </div>
     </div>
@@ -146,7 +146,7 @@ function UnavailableStatus() {
           LIVE DATA UNAVAILABLE
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Replay fallback remains active. No live observation is being used.
+          Fallback event stream remains active. No live observation is being used.
         </p>
       </div>
     </div>
@@ -228,7 +228,7 @@ export function WorldCupLiveStatus() {
         <LiveStatus status={status} />
       )}
       <p className="mt-3 border-t border-border/60 pt-2 font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground">
-        REPLAY-ONLY STRATEGY · SIMULATED EXECUTION · TxLINE REST status is not Solana/on-chain verified.
+        LIVE-EXECUTABLE STRATEGY · OPERATOR-GATED EXECUTION · TxLINE REST status is not Solana/on-chain verified.
       </p>
     </section>
   );

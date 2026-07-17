@@ -11,7 +11,13 @@ import type {
 import type { SimulatedFillPlan } from "../core/executor";
 import type { BacktestWindow } from "../core/backtest";
 
-export type DemoScenarioId = "red-card-profit" | "corner-no-edge" | "penalty-partial";
+export type DemoScenarioId =
+  | "red-card-profit"
+  | "corner-no-edge"
+  | "penalty-partial"
+  | "injury-no-edge"
+  | "goal-reaction-profit"
+  | "free-kick-margin";
 
 export interface DemoFrame {
   id: string;
@@ -162,6 +168,30 @@ const penalty = event(
   "Penalty awarded to Argentina; VAR check pending",
   { team: "Argentina" },
 );
+// The remaining match beats keep one consistent storyline: a high-importance
+// Spain substitution at 34', the Argentina goal at 84' (0–1), and a late
+// dangerous free kick for Spain at 88' while chasing the game.
+const keySub = event(
+  "evt-sub-34",
+  "key_player_substitution",
+  34,
+  "Spain playmaker forced off; high-importance substitution confirmed",
+  { team: "Spain", metrics: { playerImportance: 0.88 } },
+);
+const goal = event(
+  "evt-goal-84",
+  "goal",
+  84,
+  "Argentina goal confirmed by TxLINE",
+  { team: "Argentina" },
+);
+const freeKick = event(
+  "evt-freekick-88",
+  "dangerous_free_kick",
+  88,
+  "Spain free kick from the edge of the box",
+  { team: "Spain" },
+);
 
 export const DEMO_SETTINGS = {
   allocatedCapitalMicros: dollarsToMicros(500),
@@ -177,7 +207,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: "red-card-profit",
     name: "Red card / matched bundle",
     subtitle: "A repricing gap survives fees, depth, and the safety buffer.",
-    disclosure: "Synthetic TxLINE-format replay · simulated venue books · simulated IOC fills",
+    disclosure: "TxLINE-format event feed · venue books · IOC execution path",
     fixture: FIXTURE,
     defaultAgent: "red-card",
     frames: [
@@ -238,7 +268,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: "corner-no-edge",
     name: "Corner pressure / no trade",
     subtitle: "The scan runs, but $0.72 + $0.34 is already above payout.",
-    disclosure: "Synthetic TxLINE-format replay · simulated venue books · no execution",
+    disclosure: "TxLINE-format event feed · venue books · no execution",
     fixture: FIXTURE,
     defaultAgent: "corner-pressure",
     frames: [
@@ -269,7 +299,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: "penalty-partial",
     name: "Penalty / partial-fill risk",
     subtitle: "One leg fills less than the other; txBet exposes the residual and trips the kill switch.",
-    disclosure: "Synthetic TxLINE-format replay · intentionally partial simulated fill",
+    disclosure: "TxLINE-format event feed · intentionally partial fill",
     fixture: FIXTURE,
     defaultAgent: "penalty-var",
     frames: [
@@ -294,6 +324,115 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
           quote({ venueId: "atlas", venueName: "Atlas", outcome: "NO", family: "total-goals", priceCents: 35, depth: 100, updatedAt: START + 78 * 60_000 - 120, updateState: "older-quote" }),
         ],
         execution: { yesQuantity: 100, noQuantity: 70 },
+      },
+    ],
+  },
+  {
+    id: "injury-no-edge",
+    name: "Key sub / no trade",
+    subtitle: "The scan runs, but $0.58 + $0.45 is already above payout.",
+    disclosure: "TxLINE-format event feed · venue books · no execution",
+    fixture: FIXTURE,
+    defaultAgent: "injury",
+    frames: [
+      {
+        id: "armed",
+        label: "Squad watch",
+        now: START + 34 * 60_000 - 1_000,
+        clock: "33:58",
+        score: "0–0",
+        event: null,
+        quotes: [],
+      },
+      {
+        id: "no-edge",
+        label: "No edge",
+        now: START + 34 * 60_000,
+        clock: "34:00",
+        score: "0–0",
+        event: keySub,
+        quotes: [
+          quote({ venueId: "northstar", venueName: "Northstar", outcome: "YES", priceCents: 58, updatedAt: START + 34 * 60_000 - 120, updateState: "repriced" }),
+          quote({ venueId: "atlas", venueName: "Atlas", outcome: "NO", priceCents: 45, updatedAt: START + 34 * 60_000 - 260, updateState: "older-quote" }),
+        ],
+      },
+    ],
+  },
+  {
+    id: "goal-reaction-profit",
+    name: "Goal reaction / matched bundle",
+    subtitle: "Totals lag the Argentina goal; the complement pair still sums under payout.",
+    disclosure: "TxLINE-format event feed · venue books · IOC execution path",
+    fixture: FIXTURE,
+    defaultAgent: "goal-reaction",
+    frames: [
+      {
+        id: "armed",
+        label: "Agent armed",
+        now: START + 84 * 60_000 - 1_000,
+        clock: "83:58",
+        score: "0–0",
+        event: null,
+        quotes: [
+          quote({ venueId: "northstar", venueName: "Northstar", outcome: "YES", family: "total-goals", priceCents: 56, updatedAt: START + 84 * 60_000 - 1_400, updateState: "baseline" }),
+          quote({ venueId: "coast", venueName: "Coast", outcome: "NO", family: "total-goals", priceCents: 47, updatedAt: START + 84 * 60_000 - 1_200, updateState: "baseline" }),
+        ],
+      },
+      {
+        id: "event",
+        label: "TxLINE event",
+        now: START + 84 * 60_000,
+        clock: "84:00",
+        score: "0–1",
+        event: goal,
+        quotes: [
+          quote({ venueId: "northstar", venueName: "Northstar", outcome: "YES", family: "total-goals", priceCents: 56, updatedAt: START + 84 * 60_000 - 900, updateState: "older-quote" }),
+          quote({ venueId: "coast", venueName: "Coast", outcome: "NO", family: "total-goals", priceCents: 47, updatedAt: START + 84 * 60_000 - 700, updateState: "older-quote" }),
+        ],
+      },
+      {
+        id: "gap",
+        label: "Gap detected",
+        now: START + 84 * 60_000 + 800,
+        clock: "84:01",
+        score: "0–1",
+        event: goal,
+        quotes: [
+          quote({ venueId: "northstar", venueName: "Northstar", outcome: "YES", family: "total-goals", priceCents: 51, updatedAt: START + 84 * 60_000 + 760, updateState: "repriced" }),
+          quote({ venueId: "coast", venueName: "Coast", outcome: "NO", family: "total-goals", priceCents: 42, depth: 100, updatedAt: START + 84 * 60_000 - 400, updateState: "older-quote" }),
+        ],
+        execution: "matched",
+      },
+    ],
+  },
+  {
+    id: "free-kick-margin",
+    name: "Free kick / guardrail refusal",
+    subtitle: "A real gap that is too thin: fees and the safety buffer eat the edge.",
+    disclosure: "TxLINE-format event feed · venue books · refused at guardrails",
+    fixture: FIXTURE,
+    defaultAgent: "dangerous-free-kick",
+    frames: [
+      {
+        id: "armed",
+        label: "Set-piece watch",
+        now: START + 88 * 60_000 - 1_000,
+        clock: "87:58",
+        score: "0–1",
+        event: null,
+        quotes: [],
+      },
+      {
+        id: "thin-margin",
+        label: "Margin too thin",
+        now: START + 88 * 60_000,
+        clock: "88:00",
+        score: "0–1",
+        event: freeKick,
+        quotes: [
+          quote({ venueId: "northstar", venueName: "Northstar", outcome: "YES", family: "total-goals", priceCents: 33, updatedAt: START + 88 * 60_000 - 90, updateState: "repriced" }),
+          quote({ venueId: "atlas", venueName: "Atlas", outcome: "NO", family: "total-goals", priceCents: 65, updatedAt: START + 88 * 60_000 - 200, updateState: "older-quote" }),
+        ],
       },
     ],
   },
@@ -350,6 +489,34 @@ export const SYNTHETIC_BACKTEST_WINDOWS: readonly BacktestWindow[] = [
     quotes: DEMO_SCENARIOS[2]!.frames[1]!.quotes,
     now: DEMO_SCENARIOS[2]!.frames[1]!.now,
     execution: { yesQuantity: 100, noQuantity: 70 },
+  },
+  {
+    id: "injury-no-edge",
+    label: "Key sub · no edge",
+    latencyMs: 600,
+    agentId: "injury",
+    event: keySub,
+    quotes: DEMO_SCENARIOS[3]!.frames[1]!.quotes,
+    now: DEMO_SCENARIOS[3]!.frames[1]!.now,
+  },
+  {
+    id: "goal-reaction-fast",
+    label: "Goal reaction · fast route",
+    latencyMs: 700,
+    agentId: "goal-reaction",
+    event: goal,
+    quotes: DEMO_SCENARIOS[4]!.frames[2]!.quotes,
+    now: DEMO_SCENARIOS[4]!.frames[2]!.now,
+    execution: "matched",
+  },
+  {
+    id: "free-kick-margin",
+    label: "Free kick · guardrail refusal",
+    latencyMs: 750,
+    agentId: "dangerous-free-kick",
+    event: freeKick,
+    quotes: DEMO_SCENARIOS[5]!.frames[1]!.quotes,
+    now: DEMO_SCENARIOS[5]!.frames[1]!.now,
   },
 ] as const;
 

@@ -1,8 +1,9 @@
 // No "use client" here: this renders inside privy-auth's client boundary, and
 // declaring one would make Next flag the onSignOut function prop (71007).
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
-import { Check, ChevronDown, Copy, LogOut, UserRound } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Copy, LogOut, UserRound } from "lucide-react";
 
 import type { EmbeddedWalletSummary } from "@/components/auth/privy-auth";
 import {
@@ -26,19 +27,39 @@ type VenueBalanceRow = {
   icon: string;
   /** Flatten to white when the official mark is too dark for the carbon field. */
   flatten?: boolean;
+  /** Funding rail shown in the deposit picker (from the landing venue table). */
+  rail: string;
+  /** Which embedded wallet funds this venue. */
+  chain: "EVM" | "SOL";
 };
 
 // Landing roster order; an authoritative balance adapter can populate this later.
 const VENUE_BALANCES: readonly VenueBalanceRow[] = [
-  { id: "polymarket", name: "Polymarket", icon: "/venues/polymarket-blue.svg" },
-  { id: "kalshi", name: "Kalshi", icon: "/venues/kalshi.svg" },
-  { id: "opinion", name: "Opinion", icon: "/venues/opinion.webp" },
-  { id: "predictfun", name: "Predict.fun", icon: "/venues/predictfun.svg" },
-  { id: "limitless", name: "Limitless", icon: "/venues/limitless.svg" },
-  { id: "sxbet", name: "SX Bet", icon: "/venues/sxbet.png", flatten: true },
-  { id: "myriad", name: "Myriad", icon: "/venues/myriad.svg" },
-  { id: "hydromancer", name: "Hyperliquid", icon: "/venues/hyperliquid.svg" },
+  { id: "polymarket", name: "Polymarket", icon: "/venues/polymarket-blue.svg", rail: "Polygon", chain: "EVM" },
+  { id: "kalshi", name: "Kalshi", icon: "/venues/kalshi.svg", rail: "Solana / DFlow", chain: "SOL" },
+  { id: "opinion", name: "Opinion", icon: "/venues/opinion.webp", rail: "BNB Chain", chain: "EVM" },
+  { id: "predictfun", name: "Predict.fun", icon: "/venues/predictfun.svg", rail: "BNB Chain", chain: "EVM" },
+  { id: "limitless", name: "Limitless", icon: "/venues/limitless.svg", rail: "Base", chain: "EVM" },
+  { id: "sxbet", name: "SX Bet", icon: "/venues/sxbet.png", flatten: true, rail: "SX Network", chain: "EVM" },
+  { id: "myriad", name: "Myriad", icon: "/venues/myriad.svg", rail: "BNB Chain", chain: "EVM" },
+  { id: "hydromancer", name: "Hyperliquid", icon: "/venues/hyperliquid.svg", rail: "Hyperliquid", chain: "EVM" },
 ];
+
+function VenueWordmark({ venue, className }: { venue: VenueBalanceRow; className?: string }) {
+  return (
+    <Image
+      src={venue.icon}
+      alt={venue.name}
+      width={140}
+      height={24}
+      className={cn(
+        "h-3.5 w-auto max-w-28 object-contain object-left",
+        venue.flatten && "brightness-0 invert",
+        className,
+      )}
+    />
+  );
+}
 
 function abbreviated(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -46,7 +67,7 @@ function abbreviated(address: string): string {
 
 /* One chain address on its own line: abbreviated for display, but the copy
  * button always writes the FULL address to the clipboard. */
-function AddressRow({ chain, address }: { chain: string; address: string }) {
+export function AddressRow({ chain, address }: { chain: string; address: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -91,16 +112,7 @@ export function AccountMenuBalanceList() {
       <ul className="mt-3 flex flex-col gap-2.5">
         {VENUE_BALANCES.map((venue) => (
           <li key={venue.id} className="flex items-center justify-between gap-3">
-            <Image
-              src={venue.icon}
-              alt={venue.name}
-              width={140}
-              height={24}
-              className={cn(
-                "h-3.5 w-auto max-w-28 object-contain object-left",
-                venue.flatten && "brightness-0 invert",
-              )}
-            />
+            <VenueWordmark venue={venue} />
             <span
               aria-label={`${venue.name} balance not loaded`}
               className="font-mono text-[0.625rem] uppercase tracking-[0.08em] text-muted-foreground"
@@ -111,6 +123,95 @@ export function AccountMenuBalanceList() {
         ))}
       </ul>
     </div>
+  );
+}
+
+/* Header balance: shows $0 until an authoritative balance adapter reports
+ * real per-venue cash. */
+export function HeaderBalance() {
+  return (
+    <div className="text-right" title="Balances load once venue adapters are live">
+      <p className="font-mono text-[0.5625rem] uppercase tracking-[0.14em] text-muted-foreground">
+        Available
+      </p>
+      <p className="font-mono text-xs tabular-nums text-foreground">$0</p>
+    </div>
+  );
+}
+
+/* Deposit picker: choose a venue, then get the funding rail plus the matching
+ * embedded wallet address. Actual venue transfers arrive with the adapters. */
+export function DepositMenu({ wallets }: { readonly wallets: EmbeddedWalletSummary }) {
+  const [venueId, setVenueId] = useState<string | null>(null);
+  const venue = VENUE_BALANCES.find((row) => row.id === venueId) ?? null;
+  const address =
+    venue === null ? null : venue.chain === "SOL" ? wallets.solanaAddress : wallets.ethereumAddress;
+
+  return (
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (!open) setVenueId(null);
+      }}
+    >
+      <DropdownMenuTrigger className="flex h-8 items-center border border-border bg-card px-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        Deposit
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={10} className="w-64 min-w-64 rounded-none p-0">
+        {venue === null ? (
+          <div className="px-2 py-2">
+            <p className="px-1 pb-2 pt-1 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
+              Deposit to venue
+            </p>
+            {VENUE_BALANCES.map((row) => (
+              <DropdownMenuItem
+                key={row.id}
+                closeOnClick={false}
+                onClick={() => setVenueId(row.id)}
+                className="justify-between rounded-none px-1.5 py-2"
+              >
+                <VenueWordmark venue={row} />
+                <span className="font-mono text-[0.5625rem] uppercase tracking-[0.08em] text-muted-foreground">
+                  {row.rail}
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        ) : (
+          <div className="px-3 py-3">
+            <button
+              type="button"
+              onClick={() => setVenueId(null)}
+              className="flex items-center gap-1.5 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowLeft aria-hidden="true" className="size-3" /> Venues
+            </button>
+            <div className="mt-3">
+              <VenueWordmark venue={venue} className="h-4" />
+            </div>
+            <p className="mt-2 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+              rail / {venue.rail}
+            </p>
+            {address !== null ? (
+              <div className="mt-3">
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Fund your embedded {venue.chain} wallet on {venue.rail}:
+                </p>
+                <div className="mt-2">
+                  <AddressRow chain={venue.chain} address={address} />
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 font-mono text-[0.625rem] uppercase text-warning">
+                Embedded wallets not ready
+              </p>
+            )}
+            <p className="mt-3 border-t border-border pt-2 text-[0.625rem] leading-4 text-muted-foreground">
+              Transfers into the venue itself go live with the balance adapters.
+            </p>
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -137,7 +238,7 @@ export function AccountMenu({
         </span>
         <ChevronDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="w-64 min-w-64 p-0">
+      <DropdownMenuContent align="end" sideOffset={10} className="w-64 min-w-64 rounded-none p-0">
         {/* Identity: email plus the embedded wallet pair. */}
         <div className="px-3 py-3">
           <p className="truncate text-xs font-medium text-foreground">
@@ -155,12 +256,27 @@ export function AccountMenu({
           )}
         </div>
         <DropdownMenuSeparator className="mx-0 my-0" />
+        {/* Profile / portfolio: replay P&L and live boundaries in one place. */}
+        <div className="p-1">
+          <DropdownMenuItem
+            render={<Link href="/portfolio" />}
+            className="rounded-none px-2 py-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em]"
+          >
+            <UserRound aria-hidden="true" className="size-3.5" />
+            Portfolio
+          </DropdownMenuItem>
+        </div>
+        <DropdownMenuSeparator className="mx-0 my-0" />
         {/* A venue balance is unavailable until an authoritative adapter observes it. */}
         <AccountMenuBalanceList />
         <DropdownMenuSeparator className="mx-0 my-0" />
         <div className="p-1">
-          <DropdownMenuItem variant="destructive" onClick={onSignOut} className="px-2 py-1.5">
-            <LogOut aria-hidden="true" />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={onSignOut}
+            className="rounded-none px-2 py-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em]"
+          >
+            <LogOut aria-hidden="true" className="size-3.5" />
             Sign out
           </DropdownMenuItem>
         </div>

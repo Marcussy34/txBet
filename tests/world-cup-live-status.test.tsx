@@ -79,10 +79,10 @@ describe("WorldCupLiveStatus", () => {
 
     render(<WorldCupLiveStatus />);
 
-    expect(await screen.findByText("DETERMINISTIC REPLAY")).toBeInTheDocument();
+    expect(await screen.findByText("AGENTS READY")).toBeInTheDocument();
     expect(screen.getByText(/TxLINE not configured/i)).toBeInTheDocument();
-    expect(screen.getByText(/REPLAY-ONLY STRATEGY/i)).toBeInTheDocument();
-    expect(screen.getByText(/SIMULATED EXECUTION/i)).toBeInTheDocument();
+    expect(screen.getByText(/LIVE-EXECUTABLE STRATEGY/i)).toBeInTheDocument();
+    expect(screen.getByText(/OPERATOR-GATED EXECUTION/i)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/world-cup",
       expect.objectContaining({
@@ -103,8 +103,8 @@ describe("WorldCupLiveStatus", () => {
     render(<WorldCupLiveStatus />);
 
     expect(await screen.findByText("LIVE DATA UNAVAILABLE")).toBeInTheDocument();
-    expect(screen.getByText(/Replay fallback remains active/i)).toBeInTheDocument();
-    expect(screen.getByText(/SIMULATED EXECUTION/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fallback event stream remains active/i)).toBeInTheDocument();
+    expect(screen.getByText(/OPERATOR-GATED EXECUTION/i)).toBeInTheDocument();
     expect(screen.queryByText(/secret upstream error/i)).not.toBeInTheDocument();
   });
 
@@ -119,7 +119,7 @@ describe("WorldCupLiveStatus", () => {
     expect(screen.getByText("12s old")).toBeInTheDocument();
     expect(screen.getByText("Sequence 42")).toBeInTheDocument();
     expect(screen.getByText(/not Solana\/on-chain verified/i)).toBeInTheDocument();
-    expect(screen.getByText(/REPLAY-ONLY STRATEGY/i)).toBeInTheDocument();
-    expect(screen.getByText(/SIMULATED EXECUTION/i)).toBeInTheDocument();
+    expect(screen.getByText(/LIVE-EXECUTABLE STRATEGY/i)).toBeInTheDocument();
+    expect(screen.getByText(/OPERATOR-GATED EXECUTION/i)).toBeInTheDocument();
   });
 });

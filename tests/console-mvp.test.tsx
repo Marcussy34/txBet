@@ -6,13 +6,13 @@ import { TxBetConsole } from "@/components/dashboard/txbet-console";
 import { ExecutionControlStatus } from "@/components/dashboard/execution-control-panel";
 
 describe("quick MVP console disclosures", () => {
-  it("keeps replay and execution disclosures beside the live read-only boundaries", () => {
+  it("keeps strategy and execution disclosures beside the live read-only boundaries", () => {
     // The boundaries card lives under the header's Controls tab.
     const markup = renderToStaticMarkup(createElement(TxBetConsole, { initialView: "controls" }));
 
     expect(markup).toContain("MVP live boundaries");
-    expect(markup).toContain("REPLAY-ONLY STRATEGY");
-    expect(markup).toContain("SIMULATED EXECUTION");
+    expect(markup).toContain("LIVE-EXECUTABLE STRATEGY");
+    expect(markup).toContain("OPERATOR-GATED EXECUTION");
     expect(markup).toContain("TxLINE");
     expect(markup).toContain("Polymarket");
     expect(markup).toContain("Agent arming");
@@ -37,6 +37,10 @@ describe("quick MVP console disclosures", () => {
           mode: "shadow",
           executable: false,
           blocker: "DFLOW_EXACT_OUTPUT_AND_PRODUCTION_ELIGIBILITY_UNPROVEN",
+          manualExactInputCanary: {
+            candidate: true,
+            authorized: true,
+          },
         },
         pairedExecution: {
           executable: false,
