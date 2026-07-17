@@ -7,6 +7,25 @@ import {
 } from "@/execution/venues/dflow/documentation-gate";
 
 describe("DFlow prediction documentation gate", () => {
+  it("records the official metadata market/mint mapping as developer-only", () => {
+    expect(CURRENT_DFLOW_DOCUMENTATION_EVIDENCE.catalogContract).toBe(
+      "developer-only",
+    );
+
+    expect(
+      evaluateDflowDocumentationGate({
+        ...CURRENT_DFLOW_DOCUMENTATION_EVIDENCE,
+        catalogContract: "developer-only",
+      }),
+    ).toMatchObject({
+      executable: false,
+      reasons: expect.arrayContaining([
+        "DFLOW_OFFICIAL_DISCOVERY_UNAVAILABLE",
+        "DFLOW_OFFICIAL_MARKET_MINT_BINDING_UNAVAILABLE",
+      ]),
+    });
+  });
+
   it("returns every current fail-closed reason and no execution capability", () => {
     const decision = evaluateDflowDocumentationGate(
       CURRENT_DFLOW_DOCUMENTATION_EVIDENCE,
@@ -28,7 +47,7 @@ describe("DFlow prediction documentation gate", () => {
 
   it("requires every independent official contract before the gate can open", () => {
     const complete = {
-      catalogContract: true,
+      catalogContract: "production",
       immutableMarketMintBinding: true,
       delegatedUserEligibility: true,
       revisionAndExpirySemantics: true,
@@ -41,8 +60,10 @@ describe("DFlow prediction documentation gate", () => {
     });
 
     for (const key of Object.keys(complete) as Array<keyof typeof complete>) {
+      const unavailable = key === "catalogContract" ? "unavailable" : false;
       expect(
-        evaluateDflowDocumentationGate({ ...complete, [key]: false }).executable,
+        evaluateDflowDocumentationGate({ ...complete, [key]: unavailable })
+          .executable,
         key,
       ).toBe(false);
     }

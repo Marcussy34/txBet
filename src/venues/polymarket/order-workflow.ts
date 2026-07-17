@@ -220,6 +220,62 @@ export interface PolymarketOrderWorkflowBoundary {
   next(...args: [] | [string]): Promise<WorkflowResult>;
 }
 
+export interface BeginExactInventorySellSigningInput {
+  readonly expected: ExactInventorySellWorkflowExpectation;
+  readonly workflow: PolymarketOrderWorkflowBoundary;
+}
+
+export interface PendingExactInventorySellSigning {
+  readonly typedPayload: unknown;
+  readonly evidence: ExactInventorySellTypedEvidence;
+}
+
+/** Advances only to the SDK signing boundary so evidence can be durably persisted first. */
+export async function beginExactInventorySellSigning(
+  input: BeginExactInventorySellSigningInput,
+): Promise<PendingExactInventorySellSigning> {
+  const preparedStep = await input.workflow.next();
+  if (preparedStep.done === true) {
+    throw new Error("Polymarket order workflow ended before its signing boundary");
+  }
+  const signRequest = z
+    .strictObject({ kind: z.literal("signOrder"), payload: z.unknown() })
+    .parse(preparedStep.value);
+  return Object.freeze({
+    typedPayload: signRequest.payload,
+    evidence: extractExactInventorySellTypedData(
+      signRequest.payload,
+      input.expected,
+    ),
+  });
+}
+
+export interface CompleteExactInventorySellSigningInput {
+  readonly expected: ExactInventorySellWorkflowExpectation;
+  readonly workflow: PolymarketOrderWorkflowBoundary;
+  readonly evidence: ExactInventorySellTypedEvidence;
+  readonly rawSignature: string;
+}
+
+/** Resumes the same SDK workflow and proves its wrapped order matches persisted evidence. */
+export async function completeExactInventorySellSigning(
+  input: CompleteExactInventorySellSigningInput,
+): Promise<unknown> {
+  if (!/^0x[a-fA-F0-9]{130}$/.test(input.rawSignature)) {
+    throw new Error("Polymarket owner signature must be exactly 65 bytes");
+  }
+  const signedStep = await input.workflow.next(input.rawSignature);
+  if (signedStep.done !== true) {
+    throw new Error("Polymarket order workflow yielded an unexpected second mutation");
+  }
+  assertSignedMatchesTypedEvidence(
+    signedStep.value,
+    input.expected,
+    input.evidence,
+  );
+  return signedStep.value;
+}
+
 export interface DriveExactInventorySellSigningInput {
   readonly expected: ExactInventorySellWorkflowExpectation;
   readonly workflow: PolymarketOrderWorkflowBoundary;
@@ -237,29 +293,16 @@ export interface DriveExactInventorySellSigningInput {
 export async function driveExactInventorySellSigning(
   input: DriveExactInventorySellSigningInput,
 ): Promise<unknown> {
-  const preparedStep = await input.workflow.next();
-  if (preparedStep.done === true) {
-    throw new Error("Polymarket order workflow ended before its signing boundary");
-  }
-  const signRequest = z
-    .strictObject({ kind: z.literal("signOrder"), payload: z.unknown() })
-    .parse(preparedStep.value);
-  const evidence = extractExactInventorySellTypedData(
-    signRequest.payload,
-    input.expected,
-  );
+  const prepared = await beginExactInventorySellSigning(input);
 
-  await input.persistPrepared(evidence);
-  const rawSignature = await input.signTypedData(signRequest.payload);
-  if (!/^0x[a-fA-F0-9]{130}$/.test(rawSignature)) {
-    throw new Error("Polymarket owner signature must be exactly 65 bytes");
-  }
-
-  const signedStep = await input.workflow.next(rawSignature);
-  if (signedStep.done !== true) {
-    throw new Error("Polymarket order workflow yielded an unexpected second mutation");
-  }
-  assertSignedMatchesTypedEvidence(signedStep.value, input.expected, evidence);
-  await input.persistSigned(signedStep.value, evidence);
-  return signedStep.value;
+  await input.persistPrepared(prepared.evidence);
+  const rawSignature = await input.signTypedData(prepared.typedPayload);
+  const signedOrder = await completeExactInventorySellSigning({
+    expected: input.expected,
+    workflow: input.workflow,
+    evidence: prepared.evidence,
+    rawSignature,
+  });
+  await input.persistSigned(signedOrder, prepared.evidence);
+  return signedOrder;
 }

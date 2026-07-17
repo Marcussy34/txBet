@@ -57,7 +57,7 @@ The quick MVP is complete only when all of these are true:
 - [x] Scanner output is shown in the console as `SHADOW_ONLY` with explicit
       reason codes and no money-mutation capability.
 - [x] The permanent replay/simulated-execution disclosure remains visible.
-- [x] `pnpm verify` passes: production audit threshold, lint, typecheck, all 877
+- [x] `pnpm verify` passes: production audit threshold, lint, typecheck, all 878
       tests, and the optimized Next.js build.
 - [x] Credential-free production browser QA passes for landing, console,
       deterministic fallback, matched/no-trade replay paths, reduced-motion,
@@ -217,6 +217,7 @@ structurally shadow-only until that gate passes.
 | 2026-07-17 | Final independent cross-cutting and targeted re-reviews | PASS: no remaining P0/P1/P2 finding; no approve/sign/submit/cancel/settle route found |
 | 2026-07-17 | Final verification after review fixes | PASS: production audit threshold (0 high/critical; 2 moderate transitive paths), lint, typecheck, 79 files / 877 tests, optimized build and route generation |
 | 2026-07-17 | Final sanitized production smoke | PASS: console disclosures present; both read-only APIs return 200, `no-store`, and explicit unconfigured/non-executable states |
+| 2026-07-17 | Honest-boundary panel sync | PASS: 79 files / 878 tests, optimized build, desktop and 390 px browser checks, and zero console errors or warnings |
 
 The two moderate production-audit paths are the same transitive `uuid`
 `GHSA-w5hq-g745-h8pq` advisory (installed 8.3.2 and 9.0.1, patched at 11.1.1)
@@ -323,3 +324,4 @@ pnpm test:db
 - 2026-07-17: Closed final-review TxLINE fan-out, deadline, stale-row, and unconfirmed-row P2 findings with RED-first regression tests.
 - 2026-07-17: Closed post-I/O freshness, strict browser age, and cache-clock rollback findings; targeted re-review returned clean.
 - 2026-07-17: Passed the final post-review release command: 79 files, 877 tests, lint, typecheck, audit threshold, optimized build, and sanitized production smoke.
+- 2026-07-17: Synced the landing-page honest-boundary panel to the M1 delivery ledger without exposing live-money controls.

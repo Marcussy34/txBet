@@ -75,6 +75,12 @@ const webSchema = z.strictObject({
   SUPABASE_WEB_DATABASE_URL: databaseUrl,
 });
 
+const vercelWebSchema = webSchema
+  .omit({ SUPABASE_WEB_DATABASE_URL: true })
+  .extend({
+    BLOB_READ_WRITE_TOKEN: requiredString,
+  });
+
 const marketSchema = z.strictObject({
   SUPABASE_MARKET_DATABASE_URL: databaseUrl,
   TXLINE_BASE_URL: httpsUrl,
@@ -132,6 +138,13 @@ const executionSchema = z.strictObject({
     .default("disabled"),
   RECOVERY_ACTION_MODE: z.enum(["enabled", "frozen"]).default("frozen"),
 });
+
+const vercelExecutionSchema = executionSchema
+  .omit({ SUPABASE_EXECUTION_DATABASE_URL: true })
+  .extend({
+    BLOB_READ_WRITE_TOKEN: requiredString,
+    CRON_SECRET: z.string().min(32),
+  });
 
 const envelopeKeySchema = z.strictObject({
   id: requiredString.regex(/^[A-Za-z0-9._:-]{1,128}$/),
@@ -239,6 +252,11 @@ export type WebEnv = Readonly<
     operatorEmails: readonly string[];
   }
 >;
+export type VercelWebEnv = Readonly<
+  Omit<z.infer<typeof vercelWebSchema>, "OPERATOR_EMAILS"> & {
+    operatorEmails: readonly string[];
+  }
+>;
 export type AssetValuePolicy = Readonly<
   z.infer<typeof assetValuePolicySchema>
 >;
@@ -260,6 +278,15 @@ export type MarketWorkerEnv = Readonly<
 
 export type ExecutionWorkerEnv = Readonly<
   Omit<z.infer<typeof executionSchema>, "ASSET_VALUE_POLICIES_JSON" | "TXBET_ENVELOPE_KEYRING_JSON"> & {
+    envelopeKeyring: ParsedEnvelopeKeyring;
+    assetValuePolicies: readonly AssetValuePolicy[];
+  }
+>;
+export type VercelExecutionEnv = Readonly<
+  Omit<
+    z.infer<typeof vercelExecutionSchema>,
+    "ASSET_VALUE_POLICIES_JSON" | "TXBET_ENVELOPE_KEYRING_JSON"
+  > & {
     envelopeKeyring: ParsedEnvelopeKeyring;
     assetValuePolicies: readonly AssetValuePolicy[];
   }
@@ -357,6 +384,26 @@ export function loadWebEnv(source: EnvSource = process.env): WebEnv {
   });
 }
 
+/** Next.js/Vercel MVP auth configuration with private Blob state and no SQL dependency. */
+export function loadVercelWebEnv(
+  source: EnvSource = process.env,
+): VercelWebEnv {
+  const raw = vercelWebSchema.parse({
+    NEXT_PUBLIC_SITE_URL: source.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_PRIVY_APP_ID: source.NEXT_PUBLIC_PRIVY_APP_ID,
+    PRIVY_APP_ID: source.PRIVY_APP_ID,
+    PRIVY_APP_SECRET: source.PRIVY_APP_SECRET,
+    PRIVY_VERIFICATION_KEY: source.PRIVY_VERIFICATION_KEY,
+    OPERATOR_EMAILS: source.OPERATOR_EMAILS,
+    BLOB_READ_WRITE_TOKEN: source.BLOB_READ_WRITE_TOKEN,
+  });
+  const { OPERATOR_EMAILS, ...safeRaw } = raw;
+  return Object.freeze({
+    ...safeRaw,
+    operatorEmails: parseOperatorEmails(OPERATOR_EMAILS),
+  });
+}
+
 export function loadMarketWorkerEnv(
   source: EnvSource = process.env,
 ): MarketWorkerEnv {
@@ -424,6 +471,66 @@ export function loadExecutionWorkerEnv(
     CANARY_MAX_TOTAL_MICROS: source.CANARY_MAX_TOTAL_MICROS,
     EXECUTION_MODE: source.EXECUTION_MODE,
     RECOVERY_ACTION_MODE: source.RECOVERY_ACTION_MODE,
+  });
+  const {
+    ASSET_VALUE_POLICIES_JSON,
+    TXBET_ENVELOPE_KEYRING_JSON,
+    ...safeRaw
+  } = raw;
+
+  return Object.freeze({
+    ...safeRaw,
+    envelopeKeyring: parseEnvelopeKeyring(
+      TXBET_ENVELOPE_KEYRING_JSON,
+      raw.TXBET_ENVELOPE_ACTIVE_KEY_ID,
+    ),
+    assetValuePolicies: parseAssetValuePolicies(ASSET_VALUE_POLICIES_JSON),
+  });
+}
+
+/** Single-deployment Vercel execution configuration. Blob replaces the MVP SQL journal. */
+export function loadVercelExecutionEnv(
+  source: EnvSource = process.env,
+): VercelExecutionEnv {
+  const raw = vercelExecutionSchema.parse({
+    PRIVY_APP_ID: source.PRIVY_APP_ID,
+    PRIVY_APP_SECRET: source.PRIVY_APP_SECRET,
+    PRIVY_AUTHORIZATION_PRIVATE_KEY: source.PRIVY_AUTHORIZATION_PRIVATE_KEY,
+    PRIVY_KEY_QUORUM_ID: source.PRIVY_KEY_QUORUM_ID,
+    PRIVY_POLYMARKET_POLICY_ID: source.PRIVY_POLYMARKET_POLICY_ID,
+    PRIVY_DFLOW_POLICY_ID: source.PRIVY_DFLOW_POLICY_ID,
+    TXBET_ENVELOPE_ACTIVE_KEY_ID: source.TXBET_ENVELOPE_ACTIVE_KEY_ID,
+    TXBET_ENVELOPE_KEYRING_JSON: source.TXBET_ENVELOPE_KEYRING_JSON,
+    ASSET_VALUE_POLICIES_JSON: source.ASSET_VALUE_POLICIES_JSON,
+    POLYMARKET_CLOB_URL: source.POLYMARKET_CLOB_URL,
+    POLYMARKET_MARKET_WS_URL: source.POLYMARKET_MARKET_WS_URL,
+    POLYMARKET_USER_WS_URL: source.POLYMARKET_USER_WS_URL,
+    POLYMARKET_RELAYER_URL: source.POLYMARKET_RELAYER_URL,
+    POLYMARKET_CHAIN_ID: source.POLYMARKET_CHAIN_ID,
+    POLYMARKET_COLLATERAL_ADDRESS: source.POLYMARKET_COLLATERAL_ADDRESS,
+    POLYMARKET_CTF_ADDRESS: source.POLYMARKET_CTF_ADDRESS,
+    POLYMARKET_EXCHANGE_ALLOWLIST: source.POLYMARKET_EXCHANGE_ALLOWLIST,
+    POLYMARKET_RELAYER_API_KEY: source.POLYMARKET_RELAYER_API_KEY,
+    POLYMARKET_RELAYER_API_KEY_ADDRESS:
+      source.POLYMARKET_RELAYER_API_KEY_ADDRESS,
+    POLYGON_RPC_URL: source.POLYGON_RPC_URL,
+    DFLOW_API_BASE_URL: source.DFLOW_API_BASE_URL,
+    DFLOW_WS_URL: source.DFLOW_WS_URL,
+    DFLOW_API_KEY: source.DFLOW_API_KEY,
+    SOLANA_RPC_URL: source.SOLANA_RPC_URL,
+    POLYGON_NATIVE_USD_UPPER_BOUND_MICROS:
+      source.POLYGON_NATIVE_USD_UPPER_BOUND_MICROS,
+    SOLANA_NATIVE_USD_UPPER_BOUND_MICROS:
+      source.SOLANA_NATIVE_USD_UPPER_BOUND_MICROS,
+    POLYGON_NETWORK_COST_POLICY_VALID_UNTIL:
+      source.POLYGON_NETWORK_COST_POLICY_VALID_UNTIL,
+    SOLANA_NETWORK_COST_POLICY_VALID_UNTIL:
+      source.SOLANA_NETWORK_COST_POLICY_VALID_UNTIL,
+    CANARY_MAX_TOTAL_MICROS: source.CANARY_MAX_TOTAL_MICROS,
+    EXECUTION_MODE: source.EXECUTION_MODE,
+    RECOVERY_ACTION_MODE: source.RECOVERY_ACTION_MODE,
+    BLOB_READ_WRITE_TOKEN: source.BLOB_READ_WRITE_TOKEN,
+    CRON_SECRET: source.CRON_SECRET,
   });
   const {
     ASSET_VALUE_POLICIES_JSON,

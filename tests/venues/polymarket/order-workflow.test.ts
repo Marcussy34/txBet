@@ -2,6 +2,8 @@ import { OrderSide, OrderType, SignatureType } from "@polymarket/client";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  beginExactInventorySellSigning,
+  completeExactInventorySellSigning,
   driveExactInventorySellSigning,
   extractExactInventorySellTypedData,
 } from "@/venues/polymarket/order-workflow";
@@ -93,6 +95,34 @@ const signedOrder = {
 };
 
 describe("manual Polymarket signing boundary", () => {
+  it("can persist the typed boundary before a later signing phase", async () => {
+    async function* workflow(): AsyncGenerator<unknown, typeof signedOrder, string> {
+      const rawSignature = yield { kind: "signOrder" as const, payload: typedData };
+      expect(rawSignature).toBe(RAW_SIGNATURE);
+      return signedOrder;
+    }
+    const pending = workflow();
+
+    const prepared = await beginExactInventorySellSigning({
+      expected,
+      workflow: pending,
+    });
+
+    expect(prepared.evidence).toMatchObject({
+      makerAmount: "1250000",
+      takerAmount: "487500",
+      tokenId: "123456789",
+    });
+    await expect(
+      completeExactInventorySellSigning({
+        expected,
+        workflow: pending,
+        evidence: prepared.evidence,
+        rawSignature: RAW_SIGNATURE,
+      }),
+    ).resolves.toEqual(signedOrder);
+  });
+
   it("normalizes the complete deposit-wallet typed payload before signing", () => {
     expect(extractExactInventorySellTypedData(typedData, expected)).toEqual({
       schemaVersion: "polymarket-typed-inventory-sell-v1",

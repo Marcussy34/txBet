@@ -1,5 +1,10 @@
+export type DflowCatalogContractAvailability =
+  | "unavailable"
+  | "developer-only"
+  | "production";
+
 export interface DflowDocumentationEvidence {
-  readonly catalogContract: boolean;
+  readonly catalogContract: DflowCatalogContractAvailability;
   readonly immutableMarketMintBinding: boolean;
   readonly delegatedUserEligibility: boolean;
   readonly revisionAndExpirySemantics: boolean;
@@ -20,10 +25,10 @@ export interface DflowDocumentationDecision {
   readonly reasons: readonly DflowDocumentationRefusal[];
 }
 
-/** Current official docs have none of the prediction-specific live contracts. */
+/** The official metadata schema is developer-only; live contracts remain absent. */
 export const CURRENT_DFLOW_DOCUMENTATION_EVIDENCE: DflowDocumentationEvidence =
   Object.freeze({
-    catalogContract: false,
+    catalogContract: "developer-only",
     immutableMarketMintBinding: false,
     delegatedUserEligibility: false,
     revisionAndExpirySemantics: false,
@@ -35,7 +40,8 @@ export function evaluateDflowDocumentationGate(
   evidence: DflowDocumentationEvidence,
 ): DflowDocumentationDecision {
   const reasons: DflowDocumentationRefusal[] = [];
-  if (!evidence.catalogContract) {
+  // Keep the stable reason code: it denotes executable production discovery.
+  if (evidence.catalogContract !== "production") {
     reasons.push("DFLOW_OFFICIAL_DISCOVERY_UNAVAILABLE");
   }
   if (!evidence.immutableMarketMintBinding) {
