@@ -24,6 +24,14 @@ import type {
   VenueReadContext,
 } from "@/execution/types";
 import {
+  createPreparedArtifact,
+  createSignedArtifact,
+  verifyPreparedArtifact,
+  verifySignedArtifact,
+} from "@/execution/artifact-hash";
+import { deriveSubmissionKey } from "@/execution/idempotency";
+import { createLiveOrderIntent } from "@/execution/order-intent";
+import {
   beginExactInventorySellSigning,
   completeExactInventorySellSigning,
   type ExactInventorySellTypedEvidence,
@@ -297,7 +305,19 @@ function minimumProceedsAtomic(intent: LiveOrderIntent): string {
   return proceeds.toString();
 }
 
-function buildIntentBinding(intent: LiveOrderIntent): IntentBinding {
+function canonicalOrderIntent(input: LiveOrderIntent): LiveOrderIntent {
+  const canonical = createLiveOrderIntent(input);
+  if (
+    sha256Canonical(asJsonValue(canonical)) !==
+    sha256Canonical(asJsonValue(input))
+  ) {
+    throw new Error("Polymarket live order intent must be exactly canonical");
+  }
+  return canonical;
+}
+
+function buildIntentBinding(input: LiveOrderIntent): IntentBinding {
+  const intent = canonicalOrderIntent(input);
   assertExactIntent(intent);
   return Object.freeze(intentBindingSchema.parse({
     contractVersionId: intent.contractVersionId,
@@ -354,41 +374,15 @@ function expectedSigning(
   });
 }
 
-function preparedHash(input: {
-  readonly payload: JsonValue;
-  readonly expiresAt: number | null;
-  readonly locatorSeed: JsonValue;
-}): string {
-  return sha256Canonical({
-    schemaVersion: "prepared-artifact-v1",
-    venue: "polymarket",
-    payload: input.payload,
-    nativeSpendAtomic: "0",
-    expiresAt: input.expiresAt,
-    locatorSeed: input.locatorSeed,
-  });
-}
-
-function signedHash(input: {
-  readonly artifactHash: string;
-  readonly signedPayload: JsonValue;
-  readonly signerAddress: string;
-  readonly submissionKey: string;
-}): string {
-  return sha256Canonical({
-    schemaVersion: "polymarket-signed-artifact-v1",
-    artifactHash: input.artifactHash,
-    signedPayload: input.signedPayload,
-    signerAddress: input.signerAddress,
-    submissionKey: input.submissionKey,
-  });
-}
-
-function parsePrepared(artifact: PreparedArtifact): PreparedPayload {
+function parsePrepared(
+  artifact: PreparedArtifact,
+  expectedAttemptKey: string,
+): PreparedPayload {
   if (
     artifact.schemaVersion !== "prepared-artifact-v1" ||
     artifact.venue !== "polymarket" ||
-    artifact.nativeSpendAtomic !== "0"
+    artifact.nativeSpendAtomic !== "0" ||
+    !verifyPreparedArtifact(artifact)
   ) {
     throw new Error("Invalid Polymarket prepared artifact");
   }
@@ -396,14 +390,11 @@ function parsePrepared(artifact: PreparedArtifact): PreparedPayload {
   const locatorSeed = locatorSeedSchema.parse(artifact.locatorSeed);
   if (
     artifact.expiresAt !== payload.intent.expiresAt ||
+    locatorSeed.attemptKey !== expectedAttemptKey ||
     locatorSeed.venueAccountRevision !== payload.market.venueAccountRevision ||
-    preparedHash({
-      payload: artifact.payload,
-      expiresAt: artifact.expiresAt,
-      locatorSeed: artifact.locatorSeed,
-    }) !== artifact.artifactHash
+    expectedAttemptKey.trim().length === 0
   ) {
-    throw new Error("Polymarket prepared artifact hash or binding changed");
+    throw new Error("Polymarket prepared artifact hash or attempt binding changed");
   }
   return payload;
 }
@@ -477,33 +468,40 @@ function baseContext(
   });
 }
 
+function assertSubmissionKey(
+  context: ArtifactExecutionContext<OrderExecutionContext>,
+  artifactHash: string,
+): void {
+  const expected = deriveSubmissionKey(context.attemptKey, artifactHash);
+  if (context.submissionKey !== expected) {
+    throw new Error("Polymarket submission key is not bound to this attempt and artifact");
+  }
+}
+
 function validateSignedArtifact(
   context: ArtifactExecutionContext<OrderExecutionContext>,
   artifact: SignedArtifact,
 ): PreparedPayload {
+  if (context.artifactHash !== artifact.artifactHash) {
+    throw new Error("Polymarket signed artifact locator is invalid");
+  }
+  assertSubmissionKey(context, artifact.artifactHash);
   if (
-    context.artifactHash !== artifact.artifactHash ||
     artifact.locator.venue !== "polymarket" ||
     artifact.locator.primaryId !== `pending:${context.submissionKey}` ||
     artifact.locator.clientId !== context.submissionKey
   ) {
     throw new Error("Polymarket signed artifact locator is invalid");
   }
-  const payload = parsePrepared(artifact);
+  const payload = parsePrepared(artifact, context.attemptKey);
   const expected = expectedSigning(payload.market, payload.intent);
   assertExactSignedInventorySell(artifact.signedPayload, expected);
   if (!sameAddress(artifact.signerAddress, payload.market.depositWalletAddress)) {
     throw new Error("Polymarket signed artifact signer is invalid");
   }
-  const expectedHash = signedHash({
-    artifactHash: artifact.artifactHash,
-    signedPayload: artifact.signedPayload,
-    signerAddress: artifact.signerAddress,
-    submissionKey: context.submissionKey,
-  });
   if (
-    artifact.signedArtifactHash !== expectedHash ||
-    artifact.locator.evidenceHash !== expectedHash
+    artifact.locator.evidenceHash !== artifact.artifactHash ||
+    !verifySignedArtifact(artifact)
   ) {
     throw new Error("Polymarket signed artifact hash changed");
   }
@@ -571,30 +569,25 @@ export function createPolymarketLiveAdapter(
       });
       const jsonPayload = asJsonValue(payload);
       const jsonLocatorSeed = asJsonValue(locatorSeed);
-      const artifactHash = preparedHash({
-        payload: jsonPayload,
-        expiresAt: intent.expiresAt,
-        locatorSeed: jsonLocatorSeed,
-      });
-      pending.set(artifactHash, Object.freeze({
-        workflow,
-        typedPayload: signing.typedPayload,
-        evidence: signing.evidence,
-        expected,
-      }));
-      return Object.freeze({
+      const prepared = createPreparedArtifact({
         schemaVersion: "prepared-artifact-v1",
         venue: "polymarket",
-        artifactHash,
         payload: jsonPayload,
         nativeSpendAtomic: "0",
         expiresAt: intent.expiresAt,
         locatorSeed: jsonLocatorSeed,
       });
+      pending.set(prepared.artifactHash, Object.freeze({
+        workflow,
+        typedPayload: signing.typedPayload,
+        evidence: signing.evidence,
+        expected,
+      }));
+      return prepared;
     },
 
     async validate(context, intent, artifact) {
-      const payload = parsePrepared(artifact);
+      const payload = parsePrepared(artifact, context.attemptKey);
       assertIntentBinding(payload, intent);
       await assertCurrentReadiness({
         boundary,
@@ -608,7 +601,8 @@ export function createPolymarketLiveAdapter(
       if (context.artifactHash !== artifact.artifactHash) {
         throw new Error("Polymarket signing context has the wrong artifact hash");
       }
-      const payload = parsePrepared(artifact);
+      assertSubmissionKey(context, artifact.artifactHash);
+      const payload = parsePrepared(artifact, context.attemptKey);
       assertIntentBinding(payload, intent);
       await assertCurrentReadiness({
         boundary,
@@ -639,17 +633,9 @@ export function createPolymarketLiveAdapter(
       pending.delete(artifact.artifactHash);
       const signedPayload = asJsonValue(signedOrder);
       const signerAddress = payload.market.depositWalletAddress;
-      const signedArtifactHash = signedHash({
-        artifactHash: artifact.artifactHash,
+      return createSignedArtifact(artifact, {
         signedPayload,
         signerAddress,
-        submissionKey: context.submissionKey,
-      });
-      return Object.freeze({
-        ...artifact,
-        signedPayload,
-        signerAddress,
-        signedArtifactHash,
         locator: Object.freeze({
           schemaVersion: "venue-locator-v1",
           venue: "polymarket",
@@ -658,7 +644,7 @@ export function createPolymarketLiveAdapter(
           transactionSignature: null,
           createdAt: context.nowMs,
           expiresAt: artifact.expiresAt,
-          evidenceHash: signedArtifactHash,
+          evidenceHash: artifact.artifactHash,
         }),
       });
     },

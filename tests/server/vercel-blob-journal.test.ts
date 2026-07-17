@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   BlobJournalConflictError,
+  BLOB_JOURNAL_EVENT_LIMIT,
   appendBlobJournalEvent,
   readBlobJournal,
   type BlobJournalObjectStore,
 } from "@/server/execution/blob-journal";
+import { blobJournalFixture } from "../fixtures/blob-journal";
 
 const PROFILE_ID = "did:privy:user-1";
 
@@ -159,5 +161,33 @@ describe("Vercel Blob execution journal", () => {
     });
 
     await expect(readBlobJournal(store, PROFILE_ID)).rejects.toThrow(/journal/i);
+  });
+
+  it("fails closed at the hard monolithic-journal event limit", async () => {
+    const store = memoryStore();
+    const pathname = "txbet/execution/did%3Aprivy%3Auser-1/journal.json";
+    store.objects.set(pathname, {
+      etag: "at-capacity",
+      body: blobJournalFixture(
+        PROFILE_ID,
+        Array.from({ length: BLOB_JOURNAL_EVENT_LIMIT }, (_, index) => ({
+          id: `seed:${index}`,
+          kind: "READINESS_OBSERVED",
+          occurredAtMs: index,
+          payload: { ready: false },
+        })),
+      ),
+    });
+
+    await expect(appendBlobJournalEvent({
+      store,
+      profileId: PROFILE_ID,
+      event: {
+        id: "over-capacity",
+        kind: "READINESS_OBSERVED",
+        occurredAtMs: BLOB_JOURNAL_EVENT_LIMIT,
+        payload: { ready: false },
+      },
+    })).rejects.toThrow(/bounded event capacity/i);
   });
 });

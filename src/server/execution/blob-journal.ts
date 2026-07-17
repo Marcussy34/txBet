@@ -9,6 +9,7 @@ const EVENT_ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const EVENT_KIND = /^[A-Z][A-Z0-9_]{0,99}$/;
 const EVENT_HASH = /^sha256:[a-f0-9]{64}$/;
 const MAX_CAS_ATTEMPTS = 6;
+export const BLOB_JOURNAL_EVENT_LIMIT = 2_048;
 
 export interface BlobJournalObject {
   readonly body: string;
@@ -245,6 +246,9 @@ function appendEvent(
       throw new Error("Execution journal event ID was reused with different evidence");
     }
     return journal;
+  }
+  if (journal.events.length >= BLOB_JOURNAL_EVENT_LIMIT) {
+    throw new Error("Execution journal reached its bounded event capacity");
   }
   const payload = normalizePayload(event.payload);
   const previousHash = journal.events.at(-1)?.eventHash ?? null;

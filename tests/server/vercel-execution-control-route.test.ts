@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthenticationError } from "@/server/auth/privy-session";
 import {
   BlobJournalConflictError,
+  readBlobJournal,
   type BlobJournalObjectStore,
 } from "@/server/execution/blob-journal";
 
@@ -92,6 +93,8 @@ describe("Vercel execution control route", () => {
   });
 
   it("accepts a same-origin, versioned user control update", async () => {
+    const store = memoryStore();
+    vi.mocked(createVercelBlobJournalStore).mockReturnValue(store);
     const response = await PUT(
       request("PUT", {
         expectedVersion: 0,
@@ -106,6 +109,11 @@ describe("Vercel execution control route", () => {
     await expect(response.json()).resolves.toMatchObject({
       ok: true,
       control: { version: 1, requestedMode: "shadow" },
+    });
+    const journal = await readBlobJournal(store, "did:privy:user-1");
+    expect(journal.events.at(-1)?.payload).toMatchObject({
+      idempotencyKey: "control-v1",
+      requestHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
     });
   });
 

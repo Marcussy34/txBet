@@ -10,7 +10,7 @@ It proceeds only when it can pair exact opposite outcomes for less than their co
 
 **No edge. No trade.**
 
-> The strategy walkthrough remains a deterministic synthetic replay with simulated books and fills. The console can also show a credential-safe TxLINE REST observation as **live-unverified** and feed one explicitly reviewed Polymarket public book into a **shadow-only** scan. Those read-only panels do not feed the replay strategy or expose an order action. The repository does not place real-money orders.
+> The strategy walkthrough remains a deterministic synthetic replay with simulated books and fills. The console can also show a credential-safe TxLINE REST observation as **live-unverified**, feed one explicitly reviewed Polymarket public book into a **shadow-only** scan, and persist authenticated agent controls. The repository contains an isolated, tested Polymarket order adapter, but it is not registered into the deployed Cron path. The current app does not place real-money orders.
 
 Detailed delivery status, blockers, and later milestones are tracked in [`currentstate.md`](currentstate.md).
 
@@ -62,8 +62,12 @@ This is not a directional prediction about Argentina. If both complementary legs
 | Browser and terminal walkthroughs | Deterministic synthetic replay |
 | Synthetic replay report and latency comparison | Synthetic demonstration data |
 | Polymarket public World Cup scan | One explicitly reviewed pair at a time; public read and shadow evidence only |
+| Deployment topology | One Next.js project on Vercel, with project-attached private Blob and Vercel Cron; no deployed Supabase or separate worker |
+| Authenticated execution controls | Versioned disabled/shadow/canary request and $1-$10 cap in a private hash-chained Blob journal; effective mode remains shadow |
+| Polymarket exact-inventory adapter | Exact FOK SELL and one-POST ambiguity handling implemented/tested; not registered while durable phase persistence, approval, delegated signer, SDK peer, and reconciliation blockers remain |
+| DFlow/Kalshi | Developer metadata can map markets/mints; production exact-output, eligibility, and redemption contracts remain unproven, so no live adapter exists |
 | Replay venue books and order fills | Simulated |
-| Live prediction-market order placement | Disabled; no MVP browser or API route can approve, sign, submit, or cancel |
+| Live prediction-market order placement | Disabled; no MVP browser, control route, or Cron route can approve, sign, submit, or cancel |
 
 The [`VenueAdapter`](src/adapters/venue.ts) contract defines the future `discover → quote → preflight → IOC → reconcile` integration boundary without pretending separate platforms provide atomic execution.
 
@@ -105,6 +109,26 @@ Run the complete verification gate:
 ```bash
 pnpm verify
 ```
+
+## Deploy the one-app Vercel MVP
+
+Import this repository as one Vercel Next.js project, attach a **private** Vercel
+Blob store, and configure the values documented in `.env.example`. At minimum,
+the authenticated control/Cron lane needs `NEXT_PUBLIC_SITE_URL`, the Privy
+browser/server values, `OPERATOR_EMAILS`, `BLOB_READ_WRITE_TOKEN`, and a
+32-character-or-longer `CRON_SECRET`.
+
+`vercel.json` invokes `/api/cron/execution` every minute. That frequency requires
+a Vercel plan that supports per-minute Cron; otherwise invoke the protected route
+manually for the demo or reduce the schedule to the plan's supported frequency.
+The Cron route lists private user journals, runs the World Cup shadow scan, and
+records each newly seen control-version/shadow-status state once. It rotates
+bounded profile batches, isolates profile failures, and has no live-order
+dispatch callback. Control mutations carry a durable idempotency key/request
+hash, are throttled, and retain an immediate final-disable path.
+
+Supabase scripts remain as deferred foundation work, but no Supabase project,
+database URL, or separately deployed worker is used by this Vercel MVP.
 
 ## Selectable agents
 

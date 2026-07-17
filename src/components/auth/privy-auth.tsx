@@ -1,7 +1,7 @@
 "use client";
 
 import bs58 from "bs58";
-import { LogIn, LogOut, WalletCards } from "lucide-react";
+import { LogIn, WalletCards } from "lucide-react";
 import {
   PrivyProvider,
   usePrivy,
@@ -14,6 +14,7 @@ import {
 } from "react";
 import { isAddress } from "viem";
 
+import { AccountMenu } from "@/components/auth/account-menu";
 import { Button } from "@/components/ui/button";
 
 export const PRIVY_MVP_CONFIG = Object.freeze({
@@ -162,10 +163,6 @@ export function TxBetPrivyProvider({
   );
 }
 
-function abbreviated(address: string): string {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
 function ConfiguredAuthWalletControl() {
   const { ready, authenticated, user, login, logout } = usePrivy();
   if (!ready) {
@@ -189,35 +186,14 @@ function ConfiguredAuthWalletControl() {
     );
   }
 
+  // Identity, balance availability, and sign-out live in the account dropdown.
   const wallets = summarizeEmbeddedWallets(user.linkedAccounts);
   return (
-    <div className="flex items-center gap-2">
-      <div className="hidden min-w-0 text-right lg:block">
-        <p className="truncate text-xs font-medium text-foreground">
-          {user.google?.email ?? user.email?.address ?? "Signed in"}
-        </p>
-        {wallets.status === "ready" ? (
-          <p className="font-mono text-[0.625rem] text-muted-foreground">
-            EVM {abbreviated(wallets.ethereumAddress)} · SOL {abbreviated(wallets.solanaAddress)}
-          </p>
-        ) : (
-          <p className="font-mono text-[0.625rem] uppercase text-warning">
-            {wallets.status === "pending"
-              ? "Creating embedded wallets"
-              : "Wallet identity ambiguous"}
-          </p>
-        )}
-      </div>
-      <Button
-        type="button"
-        size="icon-sm"
-        variant="outline"
-        aria-label="Sign out of txBet"
-        onClick={() => void logout()}
-      >
-        <LogOut aria-hidden="true" />
-      </Button>
-    </div>
+    <AccountMenu
+      email={user.google?.email ?? user.email?.address ?? null}
+      wallets={wallets}
+      onSignOut={() => void logout()}
+    />
   );
 }
 

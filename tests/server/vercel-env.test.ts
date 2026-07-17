@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { describe, expect, it } from "vitest";
 
 import {
+  loadVercelCronEnv,
   loadVercelExecutionEnv,
   loadVercelWebEnv,
 } from "@/server/config/env";
@@ -99,12 +100,28 @@ describe("Vercel-only MVP configuration", () => {
     expect(env).not.toHaveProperty("SUPABASE_EXECUTION_DATABASE_URL");
   });
 
+  it("loads the cron wakeup with only Blob and cron credentials", () => {
+    expect(loadVercelCronEnv({
+      BLOB_READ_WRITE_TOKEN: web.BLOB_READ_WRITE_TOKEN,
+      CRON_SECRET: execution.CRON_SECRET,
+    })).toEqual({
+      BLOB_READ_WRITE_TOKEN: web.BLOB_READ_WRITE_TOKEN,
+      CRON_SECRET: execution.CRON_SECRET,
+    });
+  });
+
   it("requires private Blob and cron credentials", () => {
     expect(() =>
       loadVercelWebEnv({ ...web, BLOB_READ_WRITE_TOKEN: undefined }),
     ).toThrow(/BLOB_READ_WRITE_TOKEN/i);
     expect(() =>
       loadVercelExecutionEnv({ ...execution, CRON_SECRET: "short" }),
+    ).toThrow(/CRON_SECRET/i);
+    expect(() =>
+      loadVercelCronEnv({
+        BLOB_READ_WRITE_TOKEN: web.BLOB_READ_WRITE_TOKEN,
+        CRON_SECRET: "short",
+      }),
     ).toThrow(/CRON_SECRET/i);
   });
 });

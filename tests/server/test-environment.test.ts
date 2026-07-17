@@ -16,6 +16,8 @@ describe("Playwright server environment", () => {
       "PRIVY_KEY_QUORUM_ID",
       "PRIVY_POLYMARKET_POLICY_ID",
       "PRIVY_DFLOW_POLICY_ID",
+      "BLOB_READ_WRITE_TOKEN",
+      "CRON_SECRET",
       "SUPABASE_WEB_DATABASE_URL",
       "SUPABASE_MARKET_DATABASE_URL",
       "SUPABASE_EXECUTION_DATABASE_URL",

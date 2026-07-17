@@ -81,6 +81,11 @@ const vercelWebSchema = webSchema
     BLOB_READ_WRITE_TOKEN: requiredString,
   });
 
+const vercelCronSchema = z.strictObject({
+  BLOB_READ_WRITE_TOKEN: requiredString,
+  CRON_SECRET: z.string().min(32),
+});
+
 const marketSchema = z.strictObject({
   SUPABASE_MARKET_DATABASE_URL: databaseUrl,
   TXLINE_BASE_URL: httpsUrl,
@@ -257,6 +262,7 @@ export type VercelWebEnv = Readonly<
     operatorEmails: readonly string[];
   }
 >;
+export type VercelCronEnv = Readonly<z.infer<typeof vercelCronSchema>>;
 export type AssetValuePolicy = Readonly<
   z.infer<typeof assetValuePolicySchema>
 >;
@@ -402,6 +408,16 @@ export function loadVercelWebEnv(
     ...safeRaw,
     operatorEmails: parseOperatorEmails(OPERATOR_EMAILS),
   });
+}
+
+/** Minimal Vercel Cron boundary; unrelated execution secrets are not loaded. */
+export function loadVercelCronEnv(
+  source: EnvSource = process.env,
+): VercelCronEnv {
+  return Object.freeze(vercelCronSchema.parse({
+    BLOB_READ_WRITE_TOKEN: source.BLOB_READ_WRITE_TOKEN,
+    CRON_SECRET: source.CRON_SECRET,
+  }));
 }
 
 export function loadMarketWorkerEnv(

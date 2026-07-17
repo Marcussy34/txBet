@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { BlobJournalConflictError } from "@/server/execution/blob-journal";
 import {
   createVercelBlobJournalStore,
+  listVercelExecutionProfileIds,
+  type VercelBlobListSdkBoundary,
   type VercelBlobSdkBoundary,
 } from "@/server/execution/vercel-blob-store";
 
@@ -83,5 +85,41 @@ describe("Vercel Blob journal store", () => {
     await expect(store.replace("journal.json", "body", "etag-1")).rejects.toBeInstanceOf(
       BlobJournalConflictError,
     );
+  });
+
+  it("paginates only exact execution journals into unique Privy profile IDs", async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({
+        blobs: [
+          { pathname: "txbet/execution/did%3Aprivy%3Auser-2/journal.json" },
+          { pathname: "txbet/execution/not-a-profile/journal.json" },
+          { pathname: "txbet/other.json" },
+        ],
+        cursor: "page-2",
+        hasMore: true,
+      })
+      .mockResolvedValueOnce({
+        blobs: [
+          { pathname: "txbet/execution/did%3Aprivy%3Auser-1/journal.json" },
+          { pathname: "txbet/execution/did%3Aprivy%3Auser-2/journal.json" },
+        ],
+        hasMore: false,
+      });
+    const sdk: VercelBlobListSdkBoundary = { list };
+
+    await expect(listVercelExecutionProfileIds(sdk)).resolves.toEqual([
+      "did:privy:user-1",
+      "did:privy:user-2",
+    ]);
+    expect(list).toHaveBeenNthCalledWith(1, {
+      prefix: "txbet/execution/",
+      limit: 1_000,
+    });
+    expect(list).toHaveBeenNthCalledWith(2, {
+      prefix: "txbet/execution/",
+      limit: 1_000,
+      cursor: "page-2",
+    });
   });
 });

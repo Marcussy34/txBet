@@ -1,8 +1,9 @@
 import { z } from "zod";
 
-import type { JsonValue } from "@/core/canonical-json";
+import { sha256Canonical, type JsonValue } from "@/core/canonical-json";
 import {
   appendBlobJournalEvent,
+  BlobJournalConflictError,
   readBlobJournal,
   type BlobExecutionJournal,
   type BlobJournalObjectStore,
@@ -10,8 +11,12 @@ import {
 
 const PLATFORM_CANARY_CEILING_MICROS = 10_000_000;
 const MAX_GRANT_DURATION_MS = 7 * 24 * 60 * 60 * 1_000;
+const MIN_NON_DISABLE_UPDATE_INTERVAL_MS = 5_000;
+export const VERCEL_CONTROL_UPDATE_LIMIT = 256;
 const DFLOW_BLOCKER =
   "DFLOW_EXACT_OUTPUT_AND_PRODUCTION_ELIGIBILITY_UNPROVEN" as const;
+const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{1,128}$/;
+const REQUEST_HASH = /^sha256:[a-f0-9]{64}$/;
 
 export const executionControlInputSchema = z.strictObject({
   expectedVersion: z.number().int().nonnegative().safe(),
@@ -29,6 +34,9 @@ const storedControlSchema = z.strictObject({
   expiresAtMs: z.number().int().nonnegative().safe().nullable(),
   updatedAtMs: z.number().int().nonnegative().safe(),
   worldCupOnly: z.literal(true),
+  // Optional fields preserve read compatibility with pre-idempotency journals.
+  idempotencyKey: z.string().regex(IDEMPOTENCY_KEY).optional(),
+  requestHash: z.string().regex(REQUEST_HASH).optional(),
 });
 
 type StoredExecutionControl = Readonly<z.infer<typeof storedControlSchema>>;
@@ -69,27 +77,54 @@ export class ExecutionControlConflictError extends Error {
   }
 }
 
+export class ExecutionControlRateLimitError extends Error {
+  constructor() {
+    super("Wait before changing execution authority again");
+    this.name = "ExecutionControlRateLimitError";
+  }
+}
+
+export class ExecutionControlHistoryLimitError extends Error {
+  constructor() {
+    super("Execution control history reached its bounded MVP limit");
+    this.name = "ExecutionControlHistoryLimitError";
+  }
+}
+
 function storedControls(
   journal: BlobExecutionJournal,
 ): readonly StoredExecutionControl[] {
-  return Object.freeze(
+  const controls =
     journal.events
       .filter((event) => event.kind === "CONTROL_UPDATED")
-      .map((event) => storedControlSchema.parse(event.payload)),
-  );
+      .map((event) => storedControlSchema.parse(event.payload));
+  const idempotencyKeys = new Set<string>();
+  let expectedVersion = 1;
+  for (const control of controls) {
+    if (control.version !== expectedVersion) {
+      throw new Error("Execution control history has a version gap");
+    }
+    if ((control.idempotencyKey === undefined) !== (control.requestHash === undefined)) {
+      throw new Error("Execution control idempotency evidence is incomplete");
+    }
+    if (
+      control.idempotencyKey !== undefined &&
+      idempotencyKeys.has(control.idempotencyKey)
+    ) {
+      throw new Error("Execution control idempotency key is duplicated");
+    }
+    if (control.idempotencyKey !== undefined) {
+      idempotencyKeys.add(control.idempotencyKey);
+    }
+    expectedVersion += 1;
+  }
+  return Object.freeze(controls);
 }
 
 function latestStoredControl(
   journal: BlobExecutionJournal,
 ): StoredExecutionControl | null {
   const controls = storedControls(journal);
-  let expectedVersion = 1;
-  for (const control of controls) {
-    if (control.version !== expectedVersion) {
-      throw new Error("Execution control history has a version gap");
-    }
-    expectedVersion += 1;
-  }
   return controls.at(-1) ?? null;
 }
 
@@ -163,15 +198,25 @@ function assertUpdate(
   }
 }
 
-function sameRequestedControl(
-  stored: StoredExecutionControl,
-  input: ExecutionControlInput,
-): boolean {
-  return (
-    stored.mode === input.mode &&
-    stored.maxTotalMicros === input.maxTotalMicros &&
-    stored.expiresAtMs === input.expiresAtMs
-  );
+function controlRequestHash(input: ExecutionControlInput): string {
+  return `sha256:${sha256Canonical({
+    expectedVersion: input.expectedVersion,
+    mode: input.mode,
+    maxTotalMicros: input.maxTotalMicros,
+    expiresAtMs: input.expiresAtMs,
+    confirmRealMoney: input.confirmRealMoney,
+  })}`;
+}
+
+function normalizedIdempotencyKey(
+  supplied: string | null | undefined,
+  expectedVersion: number,
+): string {
+  const value = supplied ?? `internal:control:${expectedVersion + 1}`;
+  if (!IDEMPOTENCY_KEY.test(value)) {
+    throw new Error("Execution control idempotency key is invalid");
+  }
+  return value;
 }
 
 export async function readVercelExecutionControl(
@@ -183,6 +228,17 @@ export async function readVercelExecutionControl(
     throw new Error("Execution control read time is invalid");
   }
   const journal = await readBlobJournal(store, profileId);
+  return vercelExecutionControlViewFromJournal(journal, nowMs);
+}
+
+/** Reuses an already verified journal so Cron does not read it twice per tick. */
+export function vercelExecutionControlViewFromJournal(
+  journal: BlobExecutionJournal,
+  nowMs: number,
+): VercelExecutionControlView {
+  if (!Number.isSafeInteger(nowMs) || nowMs < 0) {
+    throw new Error("Execution control read time is invalid");
+  }
   return viewFromStored(latestStoredControl(journal), nowMs);
 }
 
@@ -192,26 +248,65 @@ export async function updateVercelExecutionControl(input: {
   readonly profileId: string;
   readonly nowMs: number;
   readonly input: unknown;
+  readonly idempotencyKey?: string | null;
 }): Promise<VercelExecutionControlView> {
   if (!Number.isSafeInteger(input.nowMs) || input.nowMs < 0) {
     throw new Error("Execution control update time is invalid");
   }
   const update = executionControlInputSchema.parse(input.input);
   assertUpdate(update, input.nowMs);
+  const idempotencyKey = normalizedIdempotencyKey(
+    input.idempotencyKey,
+    update.expectedVersion,
+  );
+  const requestHash = controlRequestHash(update);
 
   const journal = await readBlobJournal(input.store, input.profileId);
-  const current = latestStoredControl(journal);
+  const controls = storedControls(journal);
+  const current = controls.at(-1) ?? null;
   const currentVersion = current?.version ?? 0;
-  if (currentVersion !== update.expectedVersion) {
-    // An HTTP retry of the exact same versioned command is safe and idempotent.
+  const replay = controls.find(
+    (control) => control.idempotencyKey === idempotencyKey,
+  );
+  if (replay !== undefined) {
     if (
-      currentVersion === update.expectedVersion + 1 &&
-      current !== null &&
-      sameRequestedControl(current, update)
+      replay.requestHash !== requestHash ||
+      replay.version !== currentVersion
     ) {
-      return viewFromStored(current, input.nowMs);
+      throw new ExecutionControlConflictError();
     }
+    return viewFromStored(replay, input.nowMs);
+  }
+  if (currentVersion !== update.expectedVersion) {
+    // Legacy records have no durable key/hash evidence, so even a matching
+    // body cannot be replayed safely under a newly supplied key.
     throw new ExecutionControlConflictError();
+  }
+
+  // A default/already-disabled profile has no authority to revoke. Return the
+  // current view without consuming durable history; active -> disabled still
+  // appends immediately and remains exempt from throttling.
+  if (
+    update.mode === "disabled" &&
+    (current === null || current.mode === "disabled")
+  ) {
+    return viewFromStored(current, input.nowMs);
+  }
+
+  const finalDisable =
+    currentVersion === VERCEL_CONTROL_UPDATE_LIMIT - 1 &&
+    current?.mode !== "disabled" &&
+    update.mode === "disabled";
+  if (currentVersion >= VERCEL_CONTROL_UPDATE_LIMIT ||
+    (currentVersion === VERCEL_CONTROL_UPDATE_LIMIT - 1 && !finalDisable)) {
+    throw new ExecutionControlHistoryLimitError();
+  }
+  if (
+    update.mode !== "disabled" &&
+    current !== null &&
+    input.nowMs - current.updatedAtMs < MIN_NON_DISABLE_UPDATE_INTERVAL_MS
+  ) {
+    throw new ExecutionControlRateLimitError();
   }
 
   const next: StoredExecutionControl = Object.freeze({
@@ -222,6 +317,8 @@ export async function updateVercelExecutionControl(input: {
     expiresAtMs: update.expiresAtMs,
     updatedAtMs: input.nowMs,
     worldCupOnly: true,
+    idempotencyKey,
+    requestHash,
   });
 
   let appended: BlobExecutionJournal;
@@ -237,7 +334,25 @@ export async function updateVercelExecutionControl(input: {
       },
     });
   } catch (error) {
-    if (/event ID/i.test(String(error))) {
+    // A racing retry can use a different server timestamp. Recover through
+    // the durable key/hash record instead of comparing timestamped payloads.
+    const recovered = await readBlobJournal(input.store, input.profileId);
+    const recoveredControls = storedControls(recovered);
+    const recoveredControl = recoveredControls.find(
+      (control) => control.idempotencyKey === idempotencyKey,
+    );
+    const recoveredLatest = recoveredControls.at(-1);
+    if (
+      recoveredControl?.requestHash === requestHash &&
+      recoveredControl.version === next.version &&
+      recoveredLatest?.version === recoveredControl.version
+    ) {
+      return viewFromStored(recoveredControl, input.nowMs);
+    }
+    if (
+      error instanceof BlobJournalConflictError ||
+      /event ID/i.test(String(error))
+    ) {
       throw new ExecutionControlConflictError();
     }
     throw error;

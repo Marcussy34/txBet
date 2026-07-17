@@ -17,12 +17,21 @@ inventory, permissions, and execution evidence agree exactly.
 landing page displays that venue as **Hyperliquid**; the UI alias does not rename
 backend policy, environment, adapter, or persistence contracts.
 
-The immediate target is a working hackathon MVP. Its code surface, automated
-verification, and credential-free browser QA are complete. Operator-owned
-service configuration is still required to exercise the configured Privy and
-TxLINE paths. Real-money canary execution is a later milestone and remains
-disabled until every live-money review blocker is closed with adapter-level
-tests.
+The hackathon deployment target is now **one Next.js application on Vercel**.
+Next.js route handlers own auth, control, public-data reads, and the scheduled
+agent wakeup. Private Vercel Blob is attached to that project for the
+hash-chained control/execution journal; there is no deployed Supabase service,
+standalone database, or separate worker in the quick MVP.
+
+The exact-inventory Polymarket adapter and its one-POST ambiguity normalizer are
+now implemented and tested, but they are not registered into the Cron cycle. A
+future durable orchestrator must persist the prepared/signed artifacts and the
+`submit_started` claim between adapter phases before registration. The
+cycle remains structurally shadow-only because the second DFlow leg lacks
+official production exact-output/eligibility contracts, and the Polymarket
+outcome-token route still needs an explicitly authorized operator-wide CTF
+approval plus a supported unattended Privy signing configuration. No current
+route can place a real-money order.
 
 ## Status legend
 
@@ -56,8 +65,15 @@ The quick MVP is complete only when all of these are true:
       Cup pair at a time through a read-only path with market-identity bindings.
 - [x] Scanner output is shown in the console as `SHADOW_ONLY` with explicit
       reason codes and no money-mutation capability.
+- [x] Authenticated users can persist a versioned disabled/shadow/canary request
+      and a user-selected $1-$10 cap in a private, ETag-CAS Vercel Blob journal.
+- [x] Vercel Cron can discover those private journals, run the World Cup shadow
+      scan, and append one tamper-evident observation for each newly seen
+      control-version/shadow-status state.
+- [x] The scheduled cycle has no live submission callback and records zero
+      Polymarket submissions and zero DFlow mutations.
 - [x] The permanent replay/simulated-execution disclosure remains visible.
-- [x] `pnpm verify` passes: production audit threshold, lint, typecheck, all 878
+- [x] `pnpm verify` passes: production audit threshold, lint, typecheck, all 909
       tests, and the optimized Next.js build.
 - [x] Credential-free production browser QA passes for landing, console,
       deterministic fallback, matched/no-trade replay paths, reduced-motion,
@@ -66,8 +82,10 @@ The quick MVP is complete only when all of these are true:
       and Solana wallet addresses, and a configured TxLINE observation. BLOCKED
       until operator-owned txBet credentials and allowed origins are supplied.
 
-The MVP does **not** place, approve, cancel, or settle a real-money order.
-Shipping the demo without those mutations is intentional, not a hidden fallback.
+The MVP does **not** place, approve, cancel, or settle a real-money order. It now
+contains a tested Polymarket mutation adapter, but that adapter remains
+unregistered and unreachable from the deployed Cron/control routes. Shipping
+the demo without those mutations is intentional, not a hidden fallback.
 
 ## Current implementation inventory
 
@@ -88,9 +106,11 @@ Shipping the demo without those mutations is intentional, not a hidden fallback.
 | Polymarket pUSD allowance planning | DONE for revoke/bounded ERC-20 | 34 focused tests pass | New operator-wide CTF approvals are forbidden |
 | Polymarket CTF `setApprovalForAll` | BLOCKED | On-chain permission is operator-wide, not token-bounded | Requires explicit isolated-wallet design before M3 |
 | Polymarket cancellation | DONE at artifact layer / BLOCKED for canary | Atomic claim and authenticated-request tests pass; no database repository exists | Implement database claim only in M2 |
-| Polymarket gasless signing | BLOCKED | Typed data is not yet bound to an immutable semantic artifact | Shadow-only until M3 adapter tests |
-| DFlow/Kalshi | SHADOW ONLY | Structural no-live registry tests | Remains shadow-only for MVP |
-| Database migrations/RLS | BLOCKED | Local Docker/Supabase backend requires macOS admin approval | Do not create untested migrations |
+| Polymarket exact-inventory live adapter | DONE at isolated adapter boundary / BLOCKED for production | Runtime intent canonicalization, attempt/prepared-artifact submission-key binding, shared artifact verification, exact FOK SELL, tamper, ambiguity, and one-POST-per-invocation tests pass | Add durable prepared/signed/submit-started orchestration, then close approval, supported SDK/Privy, delegated signer, production factory, and reconcile blockers before registration |
+| DFlow/Kalshi | SHADOW ONLY | Official developer Metadata API now exposes market/mint mapping, but production discovery, immutable bindings, eligibility, exact output, and redemption remain absent; structural no-live tests pass | Remains shadow-only for MVP |
+| Vercel private execution journal | DONE | Private Blob reads, ETag CAS writes, hash-chain validation, durable request-key/hash replay, mutation throttling, final-disable reserve, and hard event/history bounds pass focused tests | Configure the project Blob store and run the first-write collision smoke check |
+| Vercel scheduled agent | DONE for shadow | Bearer-only Cron route, rotating 100-profile batches, per-profile failure isolation, state-change-only observation writes, and zero-mutation cycle tests pass | Vercel Pro is required for the checked-in one-minute schedule |
+| Supabase/database deployment | DEFERRED | Legacy foundation scaffolding remains in-repo but is outside the deployed path | Do not provision for the hackathon MVP |
 
 ## Safety-review ledger
 
@@ -120,6 +140,13 @@ Shipping the demo without those mutations is intentional, not a hidden fallback.
 - Redact encrypted envelopes and ciphertext in logs.
 - Require an explicit user-approved isolated-wallet policy before any
   operator-wide CTF permission can be created.
+- Resolve the installed Polymarket beta SDK's declared Privy peer range or pin a
+  combination officially supported by both projects.
+- Provision unattended Privy delegated authorization/key-quorum policy without
+  persisting an expiring browser JWT.
+- Compose the tested adapter with production market binding, allowance,
+  inventory, position, and unique-order reconciliation readers before registry
+  registration.
 
 ### M1 read-only surface review
 
@@ -137,19 +164,31 @@ Independent re-review reported no remaining prioritized finding in the M1
 Polymarket surface. The final cross-cutting and targeted TxLINE re-reviews report
 no remaining P0, P1, or P2 finding.
 
+### One-app Vercel review
+
+| Finding | State | Closure evidence |
+|---|---|---|
+| More than 100 historical profiles could stop the whole Cron cycle | DONE | Deterministic rotating batches process at most 100 profiles and report discovered, processed, deferred, and failed counts |
+| One corrupt or unavailable profile could starve every peer | DONE | Per-profile reads and observation writes fail that profile closed while the cycle continues |
+| Per-minute Cron rewrote an ever-growing monolithic journal | DONE | Cron reads each selected journal once and writes only the first observation for a new control-version/shadow-status state; the journal is hard-capped |
+| Control idempotency header was discarded or could be reused ambiguously | DONE | The durable key and canonical request hash bind the resulting version; matching races replay, stale/different reuse returns conflict |
+| Loaded UI understated an existing cap or expiry | DONE | Current persisted maximum and UTC expiry render separately from the proposed next 24-hour grant |
+| Unqueried venue balances appeared as observed `$0.00` | DONE | The account menu renders `Not loaded` until an authoritative balance adapter supplies evidence |
+
 ## Milestones
 
 ### M1 — quick hackathon MVP
 
-Goal: a coherent, real-data-capable World Cup demo with Google login, automatic
-embedded wallets, one explicitly reviewed Polymarket pair, deterministic shadow
-execution, and honest TxLINE/Solana provenance.
+Goal: one Vercel-hosted, real-data-capable World Cup demo with Google login,
+automatic embedded wallets, one explicitly reviewed Polymarket pair,
+versioned user controls, scheduled deterministic shadow execution, and honest
+TxLINE/Solana provenance.
 
 Exit gate:
 
 1. Every code-owned checkbox in **Quick MVP definition** is complete; the
    configured-origin checkbox stays visibly blocked until credentials exist.
-2. No route or registered adapter can move funds.
+2. No route or registered Cron adapter can move funds.
 3. Live-data failure falls back only to a clearly labeled deterministic replay.
 4. `pnpm verify` and browser QA pass.
 
@@ -181,7 +220,9 @@ exposure, explicit user limits, no hidden retry, and crash-safe reconciliation.
 Required before enablement:
 
 - All deferred live-canary blockers above are closed.
-- Database migrations and pgTAP/RLS tests pass locally and in CI.
+- Private Blob journal recovery, conflict, replay, and unique-submit claims pass
+  destructive and concurrency tests; a database is not required for the
+  hackathon deployment.
 - Operator-wide CTF authority has an explicit, reviewed isolated-wallet policy.
 - Signing and broadcast gates re-read fresh balances, permissions, books, fees,
   gas, health, and account deployment evidence.
@@ -218,6 +259,7 @@ structurally shadow-only until that gate passes.
 | 2026-07-17 | Final verification after review fixes | PASS: production audit threshold (0 high/critical; 2 moderate transitive paths), lint, typecheck, 79 files / 877 tests, optimized build and route generation |
 | 2026-07-17 | Final sanitized production smoke | PASS: console disclosures present; both read-only APIs return 200, `no-store`, and explicit unconfigured/non-executable states |
 | 2026-07-17 | Honest-boundary panel sync | PASS: 79 files / 878 tests, optimized build, desktop and 390 px browser checks, and zero console errors or warnings |
+| 2026-07-17 | One-app Vercel execution MVP | PASS: production audit threshold, lint, typecheck, 87 files / 909 tests, and optimized build with dynamic control/Cron routes |
 
 The two moderate production-audit paths are the same transitive `uuid`
 `GHSA-w5hq-g745-h8pq` advisory (installed 8.3.2 and 9.0.1, patched at 11.1.1)
@@ -229,19 +271,23 @@ enforcement.
 
 ## External blockers and required user actions
 
-1. Docker Desktop is waiting for macOS privileged networking approval. Until it
-   starts successfully, Supabase migrations and pgTAP tests remain blocked.
-2. Real TxLINE browser data requires a valid activated `TXLINE_API_TOKEN` and a
+1. Real TxLINE browser data requires a valid activated `TXLINE_API_TOKEN` and a
    World Cup fixture/competition selection. Secrets must stay in local/deployment
    environment storage and must never be copied into this file.
-3. Privy login requires valid app configuration, allowed origins, Google login,
+2. Privy login requires valid app configuration, allowed origins, Google login,
    and embedded EVM/Solana wallet creation enabled for the same app.
-4. The current workspace has no `.env` or `.env.local`, and the relevant shell
-   variables are blank. Configured TxLINE and Privy browser flows therefore
-   cannot be exercised until operator-owned txBet credentials are supplied.
-5. The Polymarket MVP accepts exactly one versioned reviewed pair through
+3. Vercel requires a private Blob store, `BLOB_READ_WRITE_TOKEN`, and a
+   32-character-or-longer `CRON_SECRET`. The checked-in every-minute Cron
+   schedule requires a Vercel plan that supports that frequency. Before the
+   demo, run one real-Blob concurrent first-write smoke check because the
+   official SDK documents ETag precondition failures more clearly than
+   duplicate create-only failures.
+4. The Polymarket MVP accepts exactly one versioned reviewed pair through
    `POLYMARKET_WORLD_CUP_SHADOW_REVIEW_JSON`. Blank means intentionally
    unconfigured. The comparison quote must remain integrity-bound and fresh.
+5. A real Polymarket canary additionally requires the isolated CTF approval,
+   supported SDK/Privy pairing, delegated signer policy, funded inventory, and
+   production reconciliation listed above. Supplying secrets alone does not arm it.
 6. The final codebase-memory graph refresh is tooling-blocked because the MCP
    transport closed before indexing began. This does not affect source, tests,
    browser QA, or the production build; refresh the generated graph when that
@@ -261,6 +307,11 @@ deployment environment storage.
   and [web CSP requirements](https://docs.privy.io/security/implementation-guide/content-security-policy).
 - Polymarket: [official market discovery](https://docs.polymarket.com/market-data/fetching-markets)
   and [public CLOB order-book API](https://docs.polymarket.com/api-reference/market-data/get-order-book).
+- Vercel: [Cron Jobs](https://vercel.com/docs/cron-jobs),
+  [managing Cron Jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs), and
+  [private Blob downloads](https://vercel.com/docs/vercel-blob/private-storage).
+- DFlow: the official developer Metadata OpenAPI and production Quote API
+  evidence are pinned in `docs/references/dflow-api-baseline.md`.
 - Node.js 24: official [`AbortSignal.timeout()`](https://nodejs.org/docs/latest-v24.x/api/globals.html#static-method-abortsignaltimeoutdelay)
   contract used to bound the complete TxLINE REST read.
 
@@ -279,12 +330,14 @@ pnpm vitest run tests/venues/polymarket/cancellation.test.ts
 pnpm vitest run tests/server/world-cup-status.test.ts tests/server/world-cup-route.test.ts
 pnpm vitest run tests/server/polymarket-world-cup-shadow.test.ts tests/server/polymarket-world-cup-shadow-route.test.ts
 pnpm vitest run tests/world-cup-live-status.test.tsx tests/polymarket-shadow-status.test.tsx tests/console-mvp.test.tsx
+pnpm vitest run tests/execution/polymarket-live-adapter.test.ts tests/venues/polymarket/order-workflow.test.ts
+pnpm vitest run tests/server/vercel-blob-journal.test.ts tests/server/vercel-blob-store.test.ts tests/server/vercel-execution-control.test.ts tests/server/vercel-execution-control-route.test.ts tests/server/vercel-execution-cycle.test.ts tests/server/vercel-cron-route.test.ts
 pnpm typecheck
 pnpm lint
 pnpm verify
 ```
 
-Database checks, once Docker is available:
+Legacy database checks are optional and are not part of the Vercel MVP:
 
 ```bash
 pnpm db:start
@@ -300,6 +353,9 @@ pnpm test:db
 - A TxLINE REST/SSE observation is not called Solana-verified until the matching
   proof has been checked against the official on-chain program/root.
 - Polymarket public reads may be live in M1. All Polymarket mutations remain off.
+- The deployed M1 topology is one Next.js project plus its attached private
+  Vercel Blob store and Vercel Cron; there is no Supabase deployment or
+  separately operated worker.
 - M1 scans one reviewed pair at a time. “All World Cup markets” is the tracked M2
   catalog-expansion milestone, not an implicit title-matching shortcut.
 - ERC-1155 `setApprovalForAll` is operator-wide. Metadata cannot make it bounded.
@@ -325,3 +381,6 @@ pnpm test:db
 - 2026-07-17: Closed post-I/O freshness, strict browser age, and cache-clock rollback findings; targeted re-review returned clean.
 - 2026-07-17: Passed the final post-review release command: 79 files, 877 tests, lint, typecheck, audit threshold, optimized build, and sanitized production smoke.
 - 2026-07-17: Synced the landing-page honest-boundary panel to the M1 delivery ledger without exposing live-money controls.
+- 2026-07-17: Added the one-app Vercel lane: private Blob journal, authenticated versioned user controls, bounded Cron discovery, and a zero-mutation scheduled shadow cycle.
+- 2026-07-17: Added the exact-inventory Polymarket adapter with normalized typed evidence, Privy signing boundary, FOK SELL validation, and ambiguous one-POST handling; kept it unregistered until durable phase persistence and the other production blockers are closed.
+- 2026-07-17: Updated the DFlow gate for the official developer-only Metadata market/mint mapping while retaining the production shadow-only decision.

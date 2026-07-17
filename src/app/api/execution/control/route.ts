@@ -5,6 +5,8 @@ import { verifyVercelPrivyRequest } from "@/server/auth/vercel-request";
 import { AuthenticationError } from "@/server/auth/privy-session";
 import {
   ExecutionControlConflictError,
+  ExecutionControlHistoryLimitError,
+  ExecutionControlRateLimitError,
   executionControlInputSchema,
   readVercelExecutionControl,
   updateVercelExecutionControl,
@@ -37,6 +39,18 @@ function errorResponse(error: unknown): NextResponse {
   if (error instanceof ExecutionControlConflictError) {
     return NextResponse.json(
       { ok: false, error: { code: "CONTROL_CONFLICT" } },
+      { status: 409 },
+    );
+  }
+  if (error instanceof ExecutionControlRateLimitError) {
+    return NextResponse.json(
+      { ok: false, error: { code: "CONTROL_RATE_LIMITED" } },
+      { status: 429 },
+    );
+  }
+  if (error instanceof ExecutionControlHistoryLimitError) {
+    return NextResponse.json(
+      { ok: false, error: { code: "CONTROL_HISTORY_LIMIT" } },
       { status: 409 },
     );
   }
@@ -76,6 +90,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
       profileId: context.session.privyDid,
       nowMs: Date.now(),
       input: mutation.body,
+      idempotencyKey: mutation.idempotencyKey,
     });
     return NextResponse.json({ ok: true, control }, {
       status: 200,

@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createExactShares, venueQuantity } from "@/core/live-money";
 import {
+  verifyPreparedArtifact,
+  verifySignedArtifact,
+} from "@/execution/artifact-hash";
+import { deriveSubmissionKey } from "@/execution/idempotency";
+import {
   createPolymarketLiveAdapter,
   type PolymarketLiveAdapterBoundary,
   type PolymarketLiveMarketBinding,
@@ -22,6 +27,8 @@ const WRAPPED_SIGNATURE = `0x${"22".repeat(317)}`;
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
 const HASH_C = "c".repeat(64);
+const ATTEMPT_KEY = "d".repeat(64);
+const OTHER_ATTEMPT_KEY = "e".repeat(64);
 
 const market: PolymarketLiveMarketBinding = Object.freeze({
   schemaVersion: "polymarket-live-market-binding-v1",
@@ -47,7 +54,7 @@ const context: OrderExecutionContext = Object.freeze({
   nowMs: 1_000,
   operationKind: "entry",
   operationAttemptId: "attempt-1",
-  attemptKey: "attempt-key-1",
+  attemptKey: ATTEMPT_KEY,
   subject: Object.freeze({
     bundleHash: HASH_A,
     bundleId: "bundle-1",
@@ -188,7 +195,7 @@ function signingContext(
   return Object.freeze({
     ...context,
     artifactHash,
-    submissionKey: "submission-1",
+    submissionKey: deriveSubmissionKey(context.attemptKey, artifactHash),
   });
 }
 
@@ -204,6 +211,7 @@ describe("Polymarket live adapter", () => {
       nativeSpendAtomic: "0",
       expiresAt: 60_000,
     });
+    expect(verifyPreparedArtifact(prepared)).toBe(true);
     expect(boundary.prepareMarketOrder).toHaveBeenCalledWith(
       context,
       {
@@ -221,18 +229,28 @@ describe("Polymarket live adapter", () => {
       intent,
       prepared,
     );
+    expect(verifySignedArtifact(signed)).toBe(true);
+    expect(signed.locator).toMatchObject({
+      primaryId: `pending:${signingContext(prepared.artifactHash).submissionKey}`,
+      clientId: signingContext(prepared.artifactHash).submissionKey,
+    });
     expect(boundary.signTypedData).toHaveBeenCalledWith(
       context,
       typedData,
     );
+    const promotedContext = signingContext(prepared.artifactHash);
     await expect(
-      adapter.simulate(signingContext(prepared.artifactHash), signed),
+      adapter.simulate(promotedContext, signed),
     ).resolves.toBeUndefined();
     await expect(
-      adapter.submitOnce(signingContext(prepared.artifactHash), signed),
+      adapter.submitOnce(promotedContext, signed),
     ).resolves.toMatchObject({
       kind: "acked",
-      locator: { venue: "polymarket", primaryId: "order-1" },
+      locator: {
+        venue: "polymarket",
+        primaryId: "order-1",
+        clientId: promotedContext.submissionKey,
+      },
     });
     expect(boundary.postOrder).toHaveBeenCalledTimes(1);
     expect(boundary.assertReady).toHaveBeenCalledWith(
@@ -262,6 +280,37 @@ describe("Polymarket live adapter", () => {
     expect(boundary.prepareMarketOrder).not.toHaveBeenCalled();
   });
 
+  it("rejects forged typed intents that are not exactly canonical", async () => {
+    const boundary = createBoundary();
+    const adapter = createPolymarketLiveAdapter(boundary);
+    const forgedQuantity = Object.freeze({
+      ...intent.grossVenueQuantity,
+      exactShares: Object.freeze({ numerator: "100", denominator: "1" }),
+      conversionEvidenceHash: HASH_A,
+    });
+    const forgedIntents: readonly LiveOrderIntent[] = [
+      Object.freeze({
+        ...intent,
+        exactNetShares: Object.freeze({ numerator: "10", denominator: "8" }),
+      }),
+      Object.freeze({
+        ...intent,
+        exactNetShares: forgedQuantity.exactShares,
+        grossVenueQuantity: forgedQuantity,
+        minimumNetVenueQuantity: forgedQuantity,
+        maximumNetVenueQuantity: forgedQuantity,
+      }),
+    ];
+
+    for (const forged of forgedIntents) {
+      await expect(adapter.prepare(context, forged)).rejects.toThrow(
+        /canonical|conversion evidence/i,
+      );
+    }
+    expect(boundary.resolveMarket).not.toHaveBeenCalled();
+    expect(boundary.prepareMarketOrder).not.toHaveBeenCalled();
+  });
+
   it("rejects a changed prepared artifact before Privy signing", async () => {
     const boundary = createBoundary();
     const adapter = createPolymarketLiveAdapter(boundary);
@@ -275,6 +324,62 @@ describe("Polymarket live adapter", () => {
       adapter.sign(signingContext(prepared.artifactHash), intent, changed),
     ).rejects.toThrow(/artifact/i);
     expect(boundary.signTypedData).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-attempt reuse of a valid prepared artifact", async () => {
+    const boundary = createBoundary();
+    const adapter = createPolymarketLiveAdapter(boundary);
+    const prepared = await adapter.prepare(context, intent);
+    const otherAttempt = Object.freeze({
+      ...context,
+      attemptKey: OTHER_ATTEMPT_KEY,
+    });
+
+    await expect(
+      adapter.validate(otherAttempt, intent, prepared),
+    ).rejects.toThrow(/attempt binding/i);
+    await expect(
+      adapter.sign(
+        Object.freeze({
+          ...otherAttempt,
+          artifactHash: prepared.artifactHash,
+          submissionKey: deriveSubmissionKey(
+            otherAttempt.attemptKey,
+            prepared.artifactHash,
+          ),
+        }),
+        intent,
+        prepared,
+      ),
+    ).rejects.toThrow(/attempt binding/i);
+    expect(boundary.signTypedData).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-domain-derived submission key before promotion or POST", async () => {
+    const boundary = createBoundary();
+    const adapter = createPolymarketLiveAdapter(boundary);
+    const prepared = await adapter.prepare(context, intent);
+    const wrongContext = Object.freeze({
+      ...signingContext(prepared.artifactHash),
+      submissionKey: deriveSubmissionKey(context.attemptKey, HASH_B),
+    });
+
+    await expect(adapter.sign(wrongContext, intent, prepared)).rejects.toThrow(
+      /submission key/i,
+    );
+    expect(boundary.signTypedData).not.toHaveBeenCalled();
+    const signed = await adapter.sign(
+      signingContext(prepared.artifactHash),
+      intent,
+      prepared,
+    );
+    await expect(adapter.simulate(wrongContext, signed)).rejects.toThrow(
+      /submission key/i,
+    );
+    await expect(adapter.submitOnce(wrongContext, signed)).rejects.toThrow(
+      /submission key/i,
+    );
+    expect(boundary.postOrder).not.toHaveBeenCalled();
   });
 
   it("returns no guessed venue locator when the one POST is ambiguous", async () => {
