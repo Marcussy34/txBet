@@ -27,11 +27,14 @@ The exact-inventory Polymarket adapter and its one-POST ambiguity normalizer are
 now implemented and tested, but they are not registered into the Cron cycle. A
 future durable orchestrator must persist the prepared/signed artifacts and the
 `submit_started` claim between adapter phases before registration. The
-cycle remains structurally shadow-only because the second DFlow leg lacks
+paired cycle remains structurally shadow-only because the second DFlow leg lacks
 official production exact-output/eligibility contracts, and the Polymarket
 outcome-token route still needs an explicitly authorized operator-wide CTF
-approval plus a supported unattended Privy signing configuration. No current
-route can place a real-money order.
+approval plus a supported unattended Privy signing configuration. A separate
+authenticated `POST /api/execution/dflow/order` manual canary can now submit one
+reviewed World Cup exact-input order after delegated-wallet, signed-response,
+simulation, atomic budget, and submit-once checks. It is not called by Cron or
+the paired strategy.
 
 ## Status legend
 
@@ -72,9 +75,13 @@ The quick MVP is complete only when all of these are true:
       control-version/shadow-status state.
 - [x] The scheduled cycle has no live submission callback and records zero
       Polymarket submissions and zero DFlow mutations.
+- [x] An authenticated, same-origin, explicitly confirmed DFlow route can submit
+      one reviewed World Cup exact-input canary under the persisted $10 ceiling.
 - [x] The permanent replay/simulated-execution disclosure remains visible.
-- [x] `pnpm verify` passes: production audit threshold, lint, typecheck, all 909
-      tests, and the optimized Next.js build.
+- [ ] The latest full `pnpm verify` rerun is blocked by unrelated worktree parse
+      errors in `txbet-console.tsx` and `tasks/reference-stadium-pitch/score-types.ts`.
+      The last clean baseline passed 924 tests and an optimized build; the new
+      DFlow boundary passes its focused tests, lint, and scoped typecheck.
 - [x] Credential-free production browser QA passes for landing, console,
       deterministic fallback, matched/no-trade replay paths, reduced-motion,
       and a 390 x 844 mobile viewport.
@@ -82,10 +89,11 @@ The quick MVP is complete only when all of these are true:
       and Solana wallet addresses, and a configured TxLINE observation. BLOCKED
       until operator-owned txBet credentials and allowed origins are supplied.
 
-The MVP does **not** place, approve, cancel, or settle a real-money order. It now
-contains a tested Polymarket mutation adapter, but that adapter remains
-unregistered and unreachable from the deployed Cron/control routes. Shipping
-the demo without those mutations is intentional, not a hidden fallback.
+The replay demo and scheduled agent do **not** place, approve, cancel, or settle
+real-money orders. The manual DFlow route is the one exception: it can submit a
+configured exact-input canary, returns only `submitted` or `unknown`, and never
+claims a synchronous fill. Polymarket remains unregistered and unreachable from
+the deployed Cron/control routes.
 
 ## Current implementation inventory
 
@@ -107,7 +115,7 @@ the demo without those mutations is intentional, not a hidden fallback.
 | Polymarket CTF `setApprovalForAll` | BLOCKED | On-chain permission is operator-wide, not token-bounded | Requires explicit isolated-wallet design before M3 |
 | Polymarket cancellation | DONE at artifact layer / BLOCKED for canary | Atomic claim and authenticated-request tests pass; no database repository exists | Implement database claim only in M2 |
 | Polymarket exact-inventory live adapter | DONE at isolated adapter boundary / BLOCKED for production | Runtime intent canonicalization, attempt/prepared-artifact submission-key binding, shared artifact verification, exact FOK SELL, tamper, ambiguity, and one-POST-per-invocation tests pass | Add durable prepared/signed/submit-started orchestration, then close approval, supported SDK/Privy, delegated signer, production factory, and reconcile blockers before registration |
-| DFlow/Kalshi | SHADOW ONLY | Official developer Metadata API now exposes market/mint mapping, but production discovery, immutable bindings, eligibility, exact output, and redemption remain absent; structural no-live tests pass | Remains shadow-only for MVP |
+| DFlow/Kalshi | MANUAL CANARY / AGENT SHADOW | Reviewed World Cup binding allowlist, signed DFlow response verification, delegated Privy signing, lookup-free transaction checks, simulation, Blob CAS claim, $10 cumulative cap, and one Solana send are tested; exact output and redemption remain absent | Configure reviewed bindings/programs and delegated signer policy; keep Cron/paired execution shadow-only |
 | Vercel private execution journal | DONE | Private Blob reads, ETag CAS writes, hash-chain validation, durable request-key/hash replay, mutation throttling, final-disable reserve, and hard event/history bounds pass focused tests | Configure the project Blob store and run the first-write collision smoke check |
 | Vercel scheduled agent | DONE for shadow | Bearer-only Cron route, rotating 100-profile batches, per-profile failure isolation, state-change-only observation writes, and zero-mutation cycle tests pass | Vercel Pro is required for the checked-in one-minute schedule |
 | Supabase/database deployment | DEFERRED | Legacy foundation scaffolding remains in-repo but is outside the deployed path | Do not provision for the hackathon MVP |
@@ -233,8 +241,9 @@ Required before enablement:
 
 Goal: promote another venue beyond M2 shadow use only when official documentation and adapter-level
 evidence cover discovery, quote, order semantics, authentication, cancellation,
-fill reconciliation, settlement, and legal availability. DFlow/Kalshi remains
-structurally shadow-only until that gate passes.
+fill reconciliation, settlement, and legal availability. DFlow/Kalshi paired
+automation remains structurally shadow-only until that gate passes; the manual
+exact-input canary is intentionally narrower.
 
 ## Verification ledger
 
@@ -260,6 +269,9 @@ structurally shadow-only until that gate passes.
 | 2026-07-17 | Final sanitized production smoke | PASS: console disclosures present; both read-only APIs return 200, `no-store`, and explicit unconfigured/non-executable states |
 | 2026-07-17 | Honest-boundary panel sync | PASS: 79 files / 878 tests, optimized build, desktop and 390 px browser checks, and zero console errors or warnings |
 | 2026-07-17 | One-app Vercel execution MVP | PASS: production audit threshold, lint, typecheck, 87 files / 909 tests, and optimized build with dynamic control/Cron routes |
+| 2026-07-17 | Final one-app Vercel review fixes | PASS: production audit threshold (0 high/critical; 2 moderate transitive paths), lint, typecheck, 88 files / 924 tests, and optimized build with dynamic control/Cron routes |
+| 2026-07-17 | Manual DFlow live-canary boundary | PASS: 25 files / 171 focused tests, scoped ESLint, scoped TypeScript, clean diff check, and independent security review after wallet-debit and freshness fixes |
+| 2026-07-17 | Latest full `pnpm verify` attempt | BLOCKED before the DFlow gates by unrelated unclosed syntax in `src/components/dashboard/txbet-console.tsx` and `tasks/reference-stadium-pitch/score-types.ts`; those concurrent files were left untouched |
 
 The two moderate production-audit paths are the same transitive `uuid`
 `GHSA-w5hq-g745-h8pq` advisory (installed 8.3.2 and 9.0.1, patched at 11.1.1)
@@ -332,6 +344,7 @@ pnpm vitest run tests/server/polymarket-world-cup-shadow.test.ts tests/server/po
 pnpm vitest run tests/world-cup-live-status.test.tsx tests/polymarket-shadow-status.test.tsx tests/console-mvp.test.tsx
 pnpm vitest run tests/execution/polymarket-live-adapter.test.ts tests/venues/polymarket/order-workflow.test.ts
 pnpm vitest run tests/server/vercel-blob-journal.test.ts tests/server/vercel-blob-store.test.ts tests/server/vercel-execution-control.test.ts tests/server/vercel-execution-control-route.test.ts tests/server/vercel-execution-cycle.test.ts tests/server/vercel-cron-route.test.ts
+pnpm vitest run tests/execution/dflow tests/server/dflow-canary-budget.test.ts tests/server/dflow-canary-service.test.ts tests/server/dflow-live-order-route.test.ts tests/server/dflow-live-quote.test.ts tests/server/dflow-privy-signer.test.ts tests/server/dflow-signed-response.test.ts tests/server/dflow-solana-rpc.test.ts tests/server/vercel-blob-journal.test.ts tests/server/vercel-env.test.ts tests/server/vercel-execution-control.test.ts tests/server/vercel-execution-control-route.test.ts
 pnpm typecheck
 pnpm lint
 pnpm verify
@@ -359,7 +372,8 @@ pnpm test:db
 - M1 scans one reviewed pair at a time. “All World Cup markets” is the tracked M2
   catalog-expansion milestone, not an implicit title-matching shortcut.
 - ERC-1155 `setApprovalForAll` is operator-wide. Metadata cannot make it bounded.
-- DFlow/Kalshi remains shadow-only.
+- DFlow/Kalshi manual exact-input canaries are allowed only through the dedicated
+  authenticated route; Cron and paired execution remain shadow-only.
 - No secrets or infrastructure are copied from another repository.
 - No git commit or push is performed without explicit user authorization.
 
@@ -384,3 +398,4 @@ pnpm test:db
 - 2026-07-17: Added the one-app Vercel lane: private Blob journal, authenticated versioned user controls, bounded Cron discovery, and a zero-mutation scheduled shadow cycle.
 - 2026-07-17: Added the exact-inventory Polymarket adapter with normalized typed evidence, Privy signing boundary, FOK SELL validation, and ambiguous one-POST handling; kept it unregistered until durable phase persistence and the other production blockers are closed.
 - 2026-07-17: Updated the DFlow gate for the official developer-only Metadata market/mint mapping while retaining the production shadow-only decision.
+- 2026-07-17: Added the capped manual DFlow World Cup canary route with delegated Privy signing, simulation, atomic Blob claim, and submit-once Solana broadcast; paired automation remains shadow-only.

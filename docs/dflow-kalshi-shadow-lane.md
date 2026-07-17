@@ -1,13 +1,29 @@
-# DFlow/Kalshi shadow lane
+# DFlow/Kalshi lanes
 
-_Baseline accessed: 2026-07-17 · Runtime state: shadow-only_
+_Baseline accessed: 2026-07-17 · Runtime state: manual exact-input canary; paired agent shadow-only_
 
-txBet recognizes `kalshi-dflow` only as a read-only evidence source. It does not hold or
-request native Kalshi RSA credentials. It has no DFlow live adapter, user-profile quote,
-balance reservation, wallet signer, write-capable Solana RPC client, broadcast,
-compensation, redemption, or token-account cleanup path.
+txBet does not hold or request native Kalshi RSA credentials. The automated venue adapter
+remains read-only because DFlow does not guarantee the exact output needed for the second
+complementary leg. A separate authenticated manual route can submit one reviewed World Cup
+exact-input order through DFlow using the user's delegated Privy Solana wallet.
 
-## Why execution is blocked
+## Manual canary boundary
+
+`POST /api/execution/dflow/order` accepts only a server-owned binding ID, positive integer
+USDC microdollars, a minimum output, the current control version, and literal real-money
+confirmation. Raw wallet IDs, mints, programs, RPC URLs, and upstream hosts are never
+accepted from the browser. The route requires same-origin Privy bearer auth and an
+idempotency key.
+
+Before one RPC send, txBet verifies DFlow's pinned Ed25519 RFC 9421 response, validates a
+lookup-free user-bound transaction and reviewed programs, re-resolves the exact delegated
+Privy signer/policy, proves the signed message is unchanged, simulates with signature
+verification, rechecks block height/control/binding freshness, and atomically reserves the
+cumulative worst-case spend in private Blob. A durable `submit_started` claim always
+precedes the single `sendTransaction` call. Ambiguity returns `unknown` and never requotes
+or resubmits that operation.
+
+## Why paired execution is blocked
 
 The current official DFlow Trading API documents fixed production endpoints and
 exact-input `/order` plus `/order-status`. It does not currently publish all contracts
@@ -20,7 +36,7 @@ txBet needs to authorize a Kalshi-through-DFlow trade:
 - exact output, or a finite upper and lower net-output bound equal to the hedged quantity.
 
 `/order` exposes expected output and a minimum output. A minimum is not an exact hedge.
-The lane therefore always reports `DFLOW_OFFICIAL_DISCOVERY_UNAVAILABLE` and
+The paired lane therefore reports `DFLOW_OFFICIAL_DISCOVERY_UNAVAILABLE` and
 `DFLOW_OUTPUT_NOT_EXACT`. A `closed` order status is also insufficient proof without fills,
 reverts, exact atomic deltas, and Solana confirmation.
 
@@ -29,7 +45,7 @@ The former prediction-market pages and
 infer live markets, mints, KYC, geofencing, positions, or redemption from those pages or
 from another repository.
 
-## What the shadow lane does
+## What the automated shadow lane does
 
 - Builds only a fixed-host, exact-input `/order` request without `userPublicKey`,
   destination, revert wallet, or initialization payer. DFlow cannot return a user-bound
@@ -42,7 +58,7 @@ from another repository.
   initialization-payer, and priority-fee response fields remain forbidden.
 - Reports immutable read-only readiness for the exact REST/WebSocket hosts, official
   documentation gate, exact-output gate, and sanitized fixture validation.
-- Refuses every DFlow opportunity before reservation and exposes no execution methods.
+- Refuses every automated DFlow opportunity before reservation and exposes no paired-agent execution method.
 - Runs an offline smoke with no API key, wallet, user input, RPC, or network request.
 
 ## Offline Solana fixture validation
@@ -68,7 +84,7 @@ validator fails closed against its synthetic test contract.
 
 ## Promotion requirements
 
-Promotion requires a refreshed official baseline that closes every discovery, immutable
+Automated promotion requires a refreshed official baseline that closes every discovery, immutable
 mapping, delegated-user eligibility/KYC, expiry/revision, authoritative redemption, and exact-output
 gate. A separately reviewed transaction contract must then prove exact byte identity,
 wallet ownership, program/account/instruction allowlists, current block height, exact net
@@ -83,4 +99,7 @@ and tests. Mocked or fixture success cannot promote the lane.
 - [`GET /order`](https://pond.dflow.net/resources/trading-api/order/order)
 - [`GET /order-status`](https://pond.dflow.net/resources/trading-api/order/order-status)
 - [API-key authentication](https://pond.dflow.net/resources/recipes/api-keys)
+- [Signed HTTP responses](https://pond.dflow.net/resources/request-signing)
+- [Privy Solana `signTransaction`](https://docs.privy.io/api-reference/wallets/solana/sign-transaction)
+- [Solana `sendTransaction`](https://solana.com/docs/rpc/http/sendtransaction)
 - [Frozen txBet baseline](./references/dflow-api-baseline.md)

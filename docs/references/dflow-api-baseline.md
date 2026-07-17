@@ -1,13 +1,15 @@
 # DFlow API Baseline
 
-_Accessed: 2026-07-17 · Scope: current DFlow Trading API and Kalshi-through-DFlow shadow evidence_
+_Accessed: 2026-07-17 · Scope: current DFlow Trading API, manual canary, and paired-lane evidence_
 
 This baseline is intentionally fail-closed. The current official Trading API is sufficient
 to implement fixed-host, production-shaped quote/status parsing, but the current official
 Metadata API publishes market/outcome-mint fields only against a developer server. It does
 not provide the production catalog, immutable binding, and delegated-user eligibility/KYC
-contracts needed to authorize Kalshi-through-DFlow live execution. The lane therefore
-remains shadow-only: it cannot reserve funds, request a signature, or broadcast a transaction.
+contracts needed to authorize exact-complement paired execution. That automated lane remains
+shadow-only. A separately authorized manual exact-input canary may use a server-reviewed
+World Cup binding, delegated Privy signer, signed DFlow response, simulation, atomic spend
+claim, and one Solana broadcast; it does not claim exact output or automatic hedging.
 
 All checked-in fixtures must be sanitized and generated with public fake keys. They must not
 contain a real wallet, API key, quote, order, transaction signature, or funding record.
@@ -85,11 +87,11 @@ pages currently return 404:
 
 Those old pages and the former prediction-markets host are quarantined historical evidence,
 not an integration contract. txBet must not infer production routes, immutable bindings,
-eligibility, or redemption instructions from them or from Predictefy. Until DFlow publishes
-the missing production contracts, no DFlow market binding is executable and no live adapter
-is registered.
+eligibility, or redemption instructions from them or from Predictefy. A manual canary uses
+only an operator-reviewed, expiring server manifest and lets DFlow reject ineligible wallets;
+that manifest does not promote the automated venue adapter or prove redemption.
 
-## Shadow-only acceptance
+## Paired shadow acceptance and manual exception
 
 The current phase may implement and test:
 
@@ -99,8 +101,11 @@ The current phase may implement and test:
 - full offline decoding and hostile-mutation tests over sanitized transaction fixtures;
 - read-only Solana and DFlow reconciliation parsers.
 
-It must not create an executable opportunity, reserve a user's balance, call Privy signing,
-or broadcast. Mock success, fixture success, or a `closed` status cannot promote the lane.
+The automated lane must not create an executable opportunity, reserve a user's balance,
+call Privy signing, or broadcast. The dedicated manual route is the sole exception and is
+limited to an explicitly confirmed, cumulative-$10 exact-input order from a reviewed World
+Cup manifest. Mock success, fixture success, or a `closed` status cannot promote the paired
+lane.
 
 ## Official sources
 
