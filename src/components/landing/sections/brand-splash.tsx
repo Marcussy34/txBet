@@ -146,7 +146,7 @@ export function BrandSplash() {
               {/* Visually removed headline; sr-only keeps the page h1 and the section's aria-labelledby target. */}
               <h1 id="brand-splash-title" className="sr-only">txBet</h1>
               <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
-                It reads odds, dominance, and momentum — and trades every outcome, before kickoff and all match long.
+                Built for the gap between match events and venue price.
               </p>
               <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
                 <Link

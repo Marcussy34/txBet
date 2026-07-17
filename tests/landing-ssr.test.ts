@@ -23,7 +23,7 @@ describe("landing page resilience", () => {
   it("keeps core content visible before client hydration", () => {
     const markup = renderToStaticMarkup(createElement(TxBetLanding));
 
-    expect(markup).toContain("It reads odds, dominance, and momentum — and trades every outcome, before kickoff and all match long.");
+    expect(markup).toContain("Built for the gap between match events and venue price.");
     expect(markup).toContain("TxLINE smoke boundary");
     expect(markup).toContain("Model venue books");
     expect(markup).toContain("Operator-gated execution");
