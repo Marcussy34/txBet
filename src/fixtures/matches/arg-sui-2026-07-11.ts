@@ -11,8 +11,9 @@ export interface MatchTimelineEntry {
   label: string;
 }
 
-export interface DominanceTrade {
+export interface MomentumTrade {
   id: string;
+  agentId: string;
   enteredAt: number;
   minute: number;
   side: string;
@@ -6196,9 +6197,36 @@ export const ARG_SUI_WINDOWS: readonly BacktestWindow[] = [
   }
 ] as const;
 
-export const ARG_SUI_DOMINANCE_TRADES: readonly DominanceTrade[] = [
+export const ARG_SUI_MOMENTUM_TRADES: readonly MomentumTrade[] = [
   {
-    "id": "dom-1",
+    "id": "mom-1",
+    "agentId": "goal-reaction",
+    "enteredAt": 1783818619532,
+    "minute": 10,
+    "side": "Argentina",
+    "proposition": "argentina-advances",
+    "title": "Argentina advances to the semifinal",
+    "signal": "Argentina score — momentum entry on the scorer's path",
+    "entryPriceMicros": 845100,
+    "feePerShareMicros": 9163,
+    "won": true
+  },
+  {
+    "id": "mom-2",
+    "agentId": "goal-reaction",
+    "enteredAt": 1783823299482,
+    "minute": 88,
+    "side": "Switzerland",
+    "proposition": "switzerland-advances",
+    "title": "Switzerland advances to the semifinal",
+    "signal": "Switzerland equalize — momentum entry on the scorer's path",
+    "entryPriceMicros": 285800,
+    "feePerShareMicros": 14288,
+    "won": false
+  },
+  {
+    "id": "mom-5",
+    "agentId": "corner-pressure",
     "enteredAt": 1783823322435,
     "minute": 88,
     "side": "Argentina",
@@ -6207,6 +6235,32 @@ export const ARG_SUI_DOMINANCE_TRADES: readonly DominanceTrade[] = [
     "signal": "Argentina +2 corners in the trailing 10 minutes",
     "entryPriceMicros": 724100,
     "feePerShareMicros": 13985,
+    "won": true
+  },
+  {
+    "id": "mom-4",
+    "agentId": "penalty-var",
+    "enteredAt": 1783823561008,
+    "minute": 92,
+    "side": "Argentina",
+    "proposition": "argentina-advances",
+    "title": "Argentina advances to the semifinal",
+    "signal": "Review overturned against Switzerland — back the beneficiary",
+    "entryPriceMicros": 782500,
+    "feePerShareMicros": 11914,
+    "won": true
+  },
+  {
+    "id": "mom-3",
+    "agentId": "red-card",
+    "enteredAt": 1783823568543,
+    "minute": 92,
+    "side": "Argentina",
+    "proposition": "argentina-advances",
+    "title": "Argentina advances to the semifinal",
+    "signal": "Switzerland down to ten — back the eleven",
+    "entryPriceMicros": 782500,
+    "feePerShareMicros": 11914,
     "won": true
   }
 ] as const;

@@ -114,10 +114,10 @@ export function AccountMenuBalanceList() {
           <li key={venue.id} className="flex items-center justify-between gap-3">
             <VenueWordmark venue={venue} />
             <span
-              aria-label={`${venue.name} balance not loaded`}
-              className="font-mono text-[0.625rem] uppercase tracking-[0.08em] text-muted-foreground"
+              aria-label={`${venue.name} balance $0`}
+              className="font-mono text-[0.625rem] uppercase tracking-[0.08em] tabular-nums text-muted-foreground"
             >
-              Not loaded
+              $0
             </span>
           </li>
         ))}
@@ -267,7 +267,7 @@ export function AccountMenu({
           </DropdownMenuItem>
         </div>
         <DropdownMenuSeparator className="mx-0 my-0" />
-        {/* A venue balance is unavailable until an authoritative adapter observes it. */}
+        {/* Venue balances show $0 until an authoritative adapter observes real cash. */}
         <AccountMenuBalanceList />
         <DropdownMenuSeparator className="mx-0 my-0" />
         <div className="p-1">

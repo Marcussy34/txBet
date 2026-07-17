@@ -1,20 +1,20 @@
 // Past-match backtest surface: real TxLINE events + real venue books replayed
 // through the live pipeline, per-strategy $100 bankrolls, settled PnL.
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 
 import {
-  ARG_SUI_DOMINANCE_TRADES,
   ARG_SUI_FIXTURE,
+  ARG_SUI_MOMENTUM_TRADES,
   ARG_SUI_WINDOWS,
 } from "@/fixtures/matches/arg-sui-2026-07-11";
 import {
   MATCH_BANKROLL_MICROS,
   runAgentMatchBacktest,
-  settleDominance,
   type MatchAgentReport,
 } from "@/core/match-backtest";
 import { formatUsd } from "@/core/money";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 const timeUtc = (ms: number) =>
@@ -53,6 +53,10 @@ function DeltaHeadline({ endingMicros }: { endingMicros: number }) {
       {positive ? (
         <span className="font-mono text-xs font-semibold tabular-nums text-success">
           +{formatUsd(delta)} · +{((delta / MATCH_BANKROLL_MICROS) * 100).toFixed(1)}%
+        </span>
+      ) : delta < 0 ? (
+        <span className="font-mono text-xs font-semibold tabular-nums text-destructive">
+          −{formatUsd(-delta)} · −{((-delta / MATCH_BANKROLL_MICROS) * 100).toFixed(1)}%
         </span>
       ) : (
         <span className="font-mono text-xs tabular-nums text-muted-foreground">capital preserved</span>
@@ -101,31 +105,30 @@ function AgentCard({ report }: { report: MatchAgentReport }) {
 }
 
 export function MatchBacktestView() {
-  const reports = runAgentMatchBacktest(ARG_SUI_WINDOWS);
-  const dominance = settleDominance(ARG_SUI_DOMINANCE_TRADES);
+  // Momentum entries share each agent's $100 bankroll with its complement scans.
+  const reports = runAgentMatchBacktest(ARG_SUI_WINDOWS, ARG_SUI_MOMENTUM_TRADES);
   const sorted = [...reports].sort(
-    (a, b) => b.lockedProfitMicros - a.lockedProfitMicros || b.trades.length - a.trades.length,
+    (a, b) => b.settledPnlMicros - a.settledPnlMicros || b.trades.length - a.trades.length,
   );
 
-  const strategies = 1 + reports.length;
+  const strategies = reports.length;
   const allocatedMicros = strategies * MATCH_BANKROLL_MICROS;
-  const settledMicros =
-    dominance.pnlMicros + reports.reduce((sum, report) => sum + report.lockedProfitMicros, 0);
+  const settledMicros = reports.reduce((sum, report) => sum + report.settledPnlMicros, 0);
 
-  const executedRows = [
-    ...dominance.positions.map((position) => ({
-      key: position.id,
-      at: position.enteredAt,
-      strategy: "Match Dominance",
-      position: `${position.title} — YES`,
-      venues: "Kalshi",
-      contracts: position.contracts,
-      costMicros: position.costMicros,
-      pnlMicros: position.pnlMicros,
-      note: position.signal,
-    })),
-    ...reports.flatMap((report) =>
-      report.trades.map((trade) => ({
+  const executedRows = reports
+    .flatMap((report) => [
+      ...report.positions.map((position) => ({
+        key: position.id,
+        at: position.enteredAt,
+        strategy: report.agent.name,
+        position: `${position.title} — YES`,
+        venues: "Kalshi",
+        contracts: position.contracts,
+        costMicros: position.costMicros,
+        pnlMicros: position.pnlMicros,
+        note: position.signal,
+      })),
+      ...report.trades.map((trade) => ({
         key: trade.windowId,
         at: trade.at,
         strategy: report.agent.name,
@@ -136,8 +139,8 @@ export function MatchBacktestView() {
         pnlMicros: trade.lockedProfitMicros,
         note: "exact complement — payout locked at entry",
       })),
-    ),
-  ].sort((a, b) => a.at - b.at);
+    ])
+    .sort((a, b) => a.at - b.at);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 lg:px-8">
@@ -192,50 +195,28 @@ export function MatchBacktestView() {
         <h2 className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground">
           Official TxLINE timeline
         </h2>
-        <ol className="flex gap-2 overflow-x-auto pb-1">
-          {ARG_SUI_FIXTURE.timeline.map((entry) => (
-            <li
-              key={`${entry.at}-${entry.label}`}
-              className="flex shrink-0 flex-col gap-0.5 border border-border bg-card/30 px-2.5 py-1.5"
-            >
-              <span className="font-mono text-[0.625rem] tabular-nums text-muted-foreground">{timeUtc(entry.at)}</span>
-              <span className="whitespace-nowrap font-mono text-xs">{entry.label}</span>
-            </li>
-          ))}
-        </ol>
+        {/* Themed ScrollArea instead of overflow-x-auto: the native scrollbar
+         * clashes with the dark theme. pb-2.5 clears the overlaid thumb. */}
+        <ScrollArea orientation="horizontal" className="w-full">
+          <ol className="flex w-max gap-2 pb-2.5">
+            {ARG_SUI_FIXTURE.timeline.map((entry) => (
+              <li
+                key={`${entry.at}-${entry.label}`}
+                className="flex shrink-0 flex-col gap-0.5 border border-border bg-card/30 px-2.5 py-1.5"
+              >
+                <span className="font-mono text-[0.625rem] tabular-nums text-muted-foreground">{timeUtc(entry.at)}</span>
+                <span className="whitespace-nowrap font-mono text-xs">{entry.label}</span>
+              </li>
+            ))}
+          </ol>
+        </ScrollArea>
       </section>
 
-      {/* dominance headline strategy */}
-      <section aria-label="Match dominance strategy" className="flex flex-col gap-3">
+      {/* strategy results */}
+      <section aria-label="Strategy results" className="flex flex-col gap-3">
         <h2 className="font-mono text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground">
-          Strategy results · $100 per strategy
+          Strategy results · $100 per agent
         </h2>
-        <article className="flex flex-col gap-4 border border-success/40 bg-success/[0.04] p-5">
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-success" aria-hidden />
-              <h3 className="font-mono text-base font-semibold uppercase tracking-wide">Match Dominance Agent</h3>
-            </div>
-            <span className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground">
-              positions before the market finalizes
-            </span>
-          </header>
-          <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            Reads live pressure from the TxLINE feed — corner dominance inside the trailing ten minutes — and
-            takes tournament-path positions while the books still price the pre-pressure state. One signal fired
-            this match: {ARG_SUI_DOMINANCE_TRADES[0]?.signal}, two minutes before the equalizer
-            chaos, at {formatUsd(ARG_SUI_DOMINANCE_TRADES[0]?.entryPriceMicros ?? 0)} on a contract that settled
-            at $1.00.
-          </p>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <DeltaHeadline endingMicros={dominance.endingCapitalMicros} />
-            <div className="grid grid-cols-3 gap-6">
-              <StatCell label="signals" value={String(dominance.positions.length)} />
-              <StatCell label="deployed" value={formatUsd(dominance.deployedMicros)} />
-              <StatCell label="settled pnl" value={`+${formatUsd(dominance.pnlMicros)}`} />
-            </div>
-          </div>
-        </article>
         {/* agent grid */}
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {sorted.map((report) => (
@@ -271,7 +252,15 @@ export function MatchBacktestView() {
                   <td className="px-3 py-2 text-muted-foreground">{row.venues}</td>
                   <td className="px-3 py-2 text-right">{row.contracts}</td>
                   <td className="px-3 py-2 text-right">{formatUsd(row.costMicros)}</td>
-                  <td className="px-3 py-2 text-right font-semibold text-success">+{formatUsd(row.pnlMicros)}</td>
+                  <td
+                    className={cn(
+                      "px-3 py-2 text-right font-semibold",
+                      row.pnlMicros >= 0 ? "text-success" : "text-destructive",
+                    )}
+                  >
+                    {row.pnlMicros >= 0 ? "+" : "−"}
+                    {formatUsd(Math.abs(row.pnlMicros))}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -323,8 +312,8 @@ export function MatchBacktestView() {
           BACKTEST · Replayed from public data captured 2026-07-17: TxLINE fixture 18222446 (mainnet level-12
           World Cup feed), Kalshi 1-minute candlesticks, Polymarket 1-minute price history. Fills: Kalshi at the
           shock-window volume-weighted mean, Polymarket at the printed mid; fees at published venue schedules
-          (Kalshi 7% × p(1−p); Polymarket worst-case curve). Dominance rule fixed ex-ante: corners lead ≥ 2 in the
-          trailing 10 minutes, entry ≤ $0.80, 25% of free capital, hold to settlement. Complements lock payout at
+          (Kalshi 7% × p(1−p); Polymarket worst-case curve). Momentum rule fixed ex-ante: event-triggered entries
+          at the printed ask, 25% of free capital per signal, hold to settlement. Complements lock payout at
           entry; positions settle against the official result. Simulated executions — no live orders.
         </p>
       </footer>

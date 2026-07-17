@@ -1,15 +1,13 @@
-// Per-agent $100-bankroll backtest over real match windows, plus settlement for
-// the match-dominance strategy. Wraps the unchanged runPipeline/executor so every
-// scan passes the same gates as the live path.
+// Per-agent $100-bankroll backtest over real match windows. Every agent does two
+// things from its own slice of live TxLINE state: exact-complement scans through
+// the unchanged live pipeline (locked payout), and momentum entries that position
+// on the tournament-path book before it finalizes (directional, settled against
+// the official result). Both draw from the same bankroll in event order.
 import { AGENTS, type AgentDefinition } from "../agents/definitions";
 import { simulateBundleExecution } from "./executor";
 import { runPipeline } from "./pipeline";
 import type { BacktestWindow } from "./backtest";
-import type {
-  AgentId,
-  ArbitrageSettings,
-  ScanReason,
-} from "./types";
+import type { AgentId, ArbitrageSettings, ScanReason } from "./types";
 import type { Micros } from "./money";
 
 export const MATCH_BANKROLL_MICROS: Micros = 100_000_000; // $100 per agent
@@ -22,6 +20,9 @@ const BASE_SETTINGS: Omit<ArbitrageSettings, "allocatedCapitalMicros" | "maxExpo
   maxQuoteAgeMs: 90_000, // venue history is minute-bucketed; live mode uses 5s
   approvedVenues: new Set(["kalshi", "polymarket"]),
 };
+
+// Momentum sizing rule, fixed with the strategy: 25% of free capital per signal.
+const MOMENTUM_FRACTION = 4;
 
 export interface MatchTradeRow {
   windowId: string;
@@ -44,31 +45,91 @@ export interface MatchRefusalRow {
   triggerReason: string | null; // set when the trigger itself declined the event
 }
 
+export interface MomentumTradeInput {
+  id: string;
+  agentId: string;
+  enteredAt: number;
+  minute: number;
+  side: string;
+  proposition: string;
+  title: string;
+  signal: string;
+  entryPriceMicros: Micros;
+  feePerShareMicros: Micros;
+  won: boolean;
+}
+
+export interface MomentumPosition extends MomentumTradeInput {
+  contracts: number;
+  costMicros: Micros;
+  payoutMicros: Micros;
+  pnlMicros: Micros;
+}
+
 export interface MatchAgentReport {
   agent: AgentDefinition;
   windowsScanned: number;
   trades: readonly MatchTradeRow[];
+  positions: readonly MomentumPosition[];
   refusals: readonly MatchRefusalRow[];
   deployedMicros: Micros;
   lockedProfitMicros: Micros;
+  momentumPnlMicros: Micros;
+  settledPnlMicros: Micros;
   endingCapitalMicros: Micros;
 }
 
+type AgentItem =
+  | { kind: "window"; at: number; window: BacktestWindow }
+  | { kind: "momentum"; at: number; trade: MomentumTradeInput };
+
 export function runAgentMatchBacktest(
   windows: readonly BacktestWindow[],
+  momentum: readonly MomentumTradeInput[] = [],
 ): readonly MatchAgentReport[] {
   return AGENTS.map((agent) => {
-    const own = windows
-      .filter((window) => window.agentId === agent.id)
-      .sort((a, b) => a.now - b.now);
+    const items: AgentItem[] = [
+      ...windows
+        .filter((window) => window.agentId === agent.id)
+        .map((window): AgentItem => ({ kind: "window", at: window.now, window })),
+      ...momentum
+        .filter((trade) => trade.agentId === agent.id)
+        .map((trade): AgentItem => ({ kind: "momentum", at: trade.enteredAt, trade })),
+    ].sort((a, b) => a.at - b.at);
 
     let remaining = MATCH_BANKROLL_MICROS;
     let deployed = 0;
     let locked = 0;
+    let complementCost = 0;
+    let momentumPayout = 0;
+    let momentumCost = 0;
     const trades: MatchTradeRow[] = [];
+    const positions: MomentumPosition[] = [];
     const refusals: MatchRefusalRow[] = [];
 
-    for (const window of own) {
+    for (const item of items) {
+      if (item.kind === "momentum") {
+        const trade = item.trade;
+        const perShare = trade.entryPriceMicros + trade.feePerShareMicros;
+        const contracts = Math.floor(Math.floor(remaining / MOMENTUM_FRACTION) / perShare);
+        if (contracts <= 0) continue;
+        const cost = contracts * perShare;
+        const payout = trade.won ? contracts * 1_000_000 : 0;
+        remaining -= cost;
+        deployed += cost;
+        momentumCost += cost;
+        momentumPayout += payout;
+        positions.push({
+          ...trade,
+          contracts,
+          costMicros: cost,
+          payoutMicros: payout,
+          pnlMicros: payout - cost,
+        });
+        continue;
+      }
+
+      const window = item.window;
       const settings: ArbitrageSettings = {
         ...BASE_SETTINGS,
         allocatedCapitalMicros: remaining,
@@ -122,6 +183,7 @@ export function runAgentMatchBacktest(
       const profit = Math.round(candidate.netProfitMicros * scale);
       remaining -= cost;
       deployed += cost;
+      complementCost += cost;
       locked += profit;
       trades.push({
         windowId: window.id,
@@ -137,83 +199,23 @@ export function runAgentMatchBacktest(
       });
     }
 
-    // Exactly one leg of every matched complement pays $1 at settlement, so the
-    // full all-in cost returns plus the locked edge.
+    // Settlement: complements return their all-in cost plus the locked edge
+    // (exactly one leg pays $1); momentum positions pay out only when the
+    // proposition settled YES.
+    const momentumPnl = momentumPayout - momentumCost;
     return {
       agent,
-      windowsScanned: own.length,
+      windowsScanned: items.filter((item) => item.kind === "window").length,
       trades,
+      positions,
       refusals,
       deployedMicros: deployed,
       lockedProfitMicros: locked,
-      endingCapitalMicros: MATCH_BANKROLL_MICROS + locked,
+      momentumPnlMicros: momentumPnl,
+      settledPnlMicros: locked + momentumPnl,
+      endingCapitalMicros: remaining + complementCost + locked + momentumPayout,
     };
   });
-}
-
-// ---------- match-dominance strategy ----------
-
-export interface DominanceTradeInput {
-  id: string;
-  enteredAt: number;
-  minute: number;
-  side: string;
-  proposition: string;
-  title: string;
-  signal: string;
-  entryPriceMicros: Micros;
-  feePerShareMicros: Micros;
-  won: boolean;
-}
-
-export interface DominancePosition extends DominanceTradeInput {
-  contracts: number;
-  costMicros: Micros;
-  payoutMicros: Micros;
-  pnlMicros: Micros;
-}
-
-export interface DominanceReport {
-  positions: readonly DominancePosition[];
-  deployedMicros: Micros;
-  pnlMicros: Micros;
-  endingCapitalMicros: Micros;
-}
-
-// Sizing rule fixed with the strategy: 25% of remaining bankroll per signal.
-export function settleDominance(
-  trades: readonly DominanceTradeInput[],
-): DominanceReport {
-  let remaining = MATCH_BANKROLL_MICROS;
-  let deployed = 0;
-  let payoutTotal = 0;
-  const positions: DominancePosition[] = [];
-
-  for (const trade of [...trades].sort((a, b) => a.enteredAt - b.enteredAt)) {
-    const perShare = trade.entryPriceMicros + trade.feePerShareMicros;
-    const budget = Math.floor(remaining / 4);
-    const contracts = Math.floor(budget / perShare);
-    if (contracts <= 0) continue;
-    const cost = contracts * perShare;
-    const payout = trade.won ? contracts * 1_000_000 : 0;
-    remaining -= cost;
-    deployed += cost;
-    payoutTotal += payout;
-    positions.push({
-      ...trade,
-      contracts,
-      costMicros: cost,
-      payoutMicros: payout,
-      pnlMicros: payout - cost,
-    });
-  }
-
-  return {
-    positions,
-    deployedMicros: deployed,
-    pnlMicros: payoutTotal - deployed,
-    endingCapitalMicros: remaining + payoutTotal,
-  };
 }
 
 export function reportsByAgentId(

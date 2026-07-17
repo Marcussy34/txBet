@@ -130,49 +130,55 @@ function bookMultiplier(percent: number): string {
 // Each agent owns one watch market, rendered Predictefy-style: named outcomes
 // with one yes-ask each (no yes/no columns). Prices are the asks from each
 // agent's tape decision frame; `lead` marks the side the agent enters first
-// and gets the filled price pill.
-type AgentOutcome = { label: string; price: number; flag?: string; lead?: boolean };
+// and gets the filled price pill. Each leg carries the venue it is shopped
+// on; the market header shows the venues its bundle spans.
+type AgentVenue = "Polymarket" | "Kalshi";
+const AGENT_VENUE_MARKS: Record<AgentVenue, string> = {
+  Polymarket: "/venues/polymarket-blue.svg",
+  Kalshi: "/venues/kalshi.svg",
+};
+type AgentOutcome = { label: string; price: number; venue: AgentVenue; flag?: string; lead?: boolean };
 const AGENT_MARKET_LINES: Record<AgentId, { market: string; outcomes: readonly AgentOutcome[] }> = {
   "red-card": {
     market: "Match winner after dismissal",
     outcomes: [
-      { label: "Spain", price: 54, flag: "/flags/es.svg", lead: true },
-      { label: "Argentina", price: 40, flag: "/flags/ar.svg" },
+      { label: "Spain", price: 54, venue: "Polymarket", flag: "/flags/es.svg", lead: true },
+      { label: "Argentina", price: 40, venue: "Kalshi", flag: "/flags/ar.svg" },
     ],
   },
   "penalty-var": {
     market: "Next goal on penalty",
     outcomes: [
-      { label: "Goal", price: 58, lead: true },
-      { label: "No goal", price: 35 },
+      { label: "Goal", price: 58, venue: "Polymarket", lead: true },
+      { label: "No goal", price: 35, venue: "Kalshi" },
     ],
   },
   "corner-pressure": {
     market: "Next goal in pressure window",
     outcomes: [
-      { label: "Goal", price: 72, lead: true },
-      { label: "No goal", price: 34 },
+      { label: "Goal", price: 72, venue: "Kalshi", lead: true },
+      { label: "No goal", price: 34, venue: "Polymarket" },
     ],
   },
   "goal-reaction": {
     market: "Totals after a goal",
     outcomes: [
-      { label: "Over 2.5", price: 51, lead: true },
-      { label: "Under 2.5", price: 42 },
+      { label: "Over 2.5", price: 51, venue: "Polymarket", lead: true },
+      { label: "Under 2.5", price: 42, venue: "Kalshi" },
     ],
   },
   injury: {
     market: "Match winner after key sub",
     outcomes: [
-      { label: "Spain", price: 58, flag: "/flags/es.svg", lead: true },
-      { label: "Argentina", price: 45, flag: "/flags/ar.svg" },
+      { label: "Spain", price: 58, venue: "Kalshi", flag: "/flags/es.svg", lead: true },
+      { label: "Argentina", price: 45, venue: "Polymarket", flag: "/flags/ar.svg" },
     ],
   },
   "dangerous-free-kick": {
     market: "Next goal from set piece",
     outcomes: [
-      { label: "Goal", price: 33, lead: true },
-      { label: "No goal", price: 65 },
+      { label: "Goal", price: 33, venue: "Polymarket", lead: true },
+      { label: "No goal", price: 65, venue: "Kalshi" },
     ],
   },
 };
@@ -186,16 +192,20 @@ type PastFixture = {
   away: BoardTeam;
   date: string;
   score: { home: number; away: number };
+  scoreNote?: string;
+  href?: string; // settled matches with an agent backtest page link out to it
 };
 
-// Archive row: settled synthetic fixtures; no agents attach to finished matches.
+// Archive row: settled fixtures; ARG-SUI opens the real-data agent backtest.
 const PAST_WORLD_CUP: readonly PastFixture[] = [
   {
-    id: "wc-demo-000",
+    id: "txline-18222446",
     home: { name: "Argentina", flag: "/flags/ar.svg" },
     away: { name: "Switzerland", flag: "/flags/ch.svg" },
-    date: "Wed, Jul 15",
-    score: { home: 2, away: 1 },
+    date: "Sat, Jul 11",
+    score: { home: 3, away: 1 },
+    scoreNote: "aet",
+    href: "/matches",
   },
 ];
 
@@ -671,10 +681,11 @@ function FixtureCard({
   return <div className={cn(cardClass, "opacity-80")}>{body}</div>;
 }
 
-/* A settled fixture: final score in place of the book, nothing to launch. */
+/* A settled fixture: final score in place of the book. Fixtures with a backtest
+ * page link out to it; the rest stay inert. */
 function PastFixtureCard({ fixture }: { fixture: PastFixture }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-3 border border-border bg-card/40 p-4">
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <TeamBadge team={fixture.home} align="left" />
         <div className="flex flex-col items-center pt-0.5 text-center">
@@ -682,7 +693,9 @@ function PastFixtureCard({ fixture }: { fixture: PastFixture }) {
           <span className="font-mono text-lg font-semibold tabular-nums">
             {fixture.score.home} – {fixture.score.away}
           </span>
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">full time</span>
+          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">
+            full time{fixture.scoreNote ? ` · ${fixture.scoreNote}` : ""}
+          </span>
         </div>
         <TeamBadge team={fixture.away} align="right" />
       </div>
@@ -690,10 +703,26 @@ function PastFixtureCard({ fixture }: { fixture: PastFixture }) {
         <span className="border border-border bg-background/80 px-1.5 py-0.5 text-[0.5625rem] tracking-[0.08em] text-muted-foreground">
           settled
         </span>
-        <span className="text-muted-foreground">no active agents</span>
+        {fixture.href ? (
+          <span className="text-foreground">agent backtest ↗</span>
+        ) : (
+          <span className="text-muted-foreground">no active agents</span>
+        )}
       </div>
-    </div>
+    </>
   );
+  if (fixture.href) {
+    return (
+      <Link
+        href={fixture.href}
+        aria-label={`${fixture.home.name} vs ${fixture.away.name} agent backtest`}
+        className="flex min-w-0 flex-col gap-3 border border-border bg-card/40 p-4 transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {body}
+      </Link>
+    );
+  }
+  return <div className="flex min-w-0 flex-col gap-3 border border-border bg-card/40 p-4 opacity-80">{body}</div>;
 }
 
 function VenueMatrix({ frame }: { frame: DemoFrame }) {
@@ -1171,33 +1200,58 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                 />
               )}
 
-              <Card className="gap-0 self-start bg-card/85 py-0">
-                <PanelHeading index="AG" title="Agent markets" aside="one agent per market" />
-                <CardContent className="space-y-2 px-3 py-3">
-                  {AGENTS.map((agent) => {
-                    const line = AGENT_MARKET_LINES[agent.id];
-                    const ready = Boolean(AGENT_TAPES[agent.id]);
-                    const selected = selectedRailAgent === agent.id;
-                    return (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        onClick={() => setSelectedRailAgent(agent.id)}
-                        aria-pressed={selected}
-                        className={cn(
-                          "block w-full border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                          selected ? "border-primary/45 bg-primary/[0.05]" : "border-border/60 bg-background/40 hover:bg-card",
-                        )}
-                      >
-                        <span className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-                          <span className="flex min-w-0 items-center gap-2">
-                            <AgentGlyph agent={agent.id} className="size-3.5 shrink-0 text-primary" />
-                            <span className="truncate font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.06em]">{agent.shortName}</span>
-                            <span className="truncate text-[0.625rem] text-muted-foreground">/ {line.market}</span>
-                          </span>
+              {/* Each agent market stands as its own card — no shared container. */}
+              <div className="space-y-3 self-start">
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[0.6875rem] text-primary">AG</span>
+                    <h2 className="font-mono text-[0.6875rem] font-medium uppercase tracking-[0.15em] text-foreground">
+                      Agent markets
+                    </h2>
+                  </div>
+                  <span className="font-mono text-[0.6875rem] uppercase tracking-widest text-muted-foreground">
+                    one agent per market
+                  </span>
+                </div>
+                {AGENTS.map((agent) => {
+                  const line = AGENT_MARKET_LINES[agent.id];
+                  // Fixed display order: Polymarket first, then Kalshi.
+                  const venues = (["Polymarket", "Kalshi"] as const).filter((venue) =>
+                    line.outcomes.some((outcome) => outcome.venue === venue),
+                  );
+                  const ready = Boolean(AGENT_TAPES[agent.id]);
+                  const selected = selectedRailAgent === agent.id;
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => setSelectedRailAgent(agent.id)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "block w-full border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        selected ? "border-primary/45 bg-primary/[0.05]" : "border-border bg-card/85 hover:bg-card",
+                      )}
+                    >
+                      <span className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <AgentGlyph agent={agent.id} className="size-3.5 shrink-0 text-primary" />
+                          <span className="truncate font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.06em]">{agent.shortName}</span>
+                          <span className="truncate text-[0.625rem] text-muted-foreground">/ {line.market}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-3">
+                          {venues.map((venue) => (
+                            <Image
+                              key={venue}
+                              src={AGENT_VENUE_MARKS[venue]}
+                              alt={venue}
+                              width={96}
+                              height={16}
+                              className="h-3.5 w-auto object-contain opacity-90"
+                            />
+                          ))}
                           <span
                             className={cn(
-                              "shrink-0 border px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.08em]",
+                              "border px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-[0.08em]",
                               ready
                                 ? "border-success/35 bg-success/[0.045] text-success"
                                 : "border-border bg-background/80 text-muted-foreground",
@@ -1206,42 +1260,42 @@ export function TxBetConsole({ initialView = "matches" }: { initialView?: Consol
                             {ready ? "live" : "roadmap"}
                           </span>
                         </span>
-                        <span className="block divide-y divide-border/40">
-                          {line.outcomes.map((outcome) => (
-                            <span key={outcome.label} className="flex items-center justify-between gap-3 px-3 py-1.5">
-                              <span className="flex min-w-0 items-center gap-2 text-xs">
-                                {outcome.flag ? (
-                                  <Image
-                                    src={outcome.flag}
-                                    alt=""
-                                    width={20}
-                                    height={14}
-                                    className="h-3.5 w-5 shrink-0 border border-border/70 object-cover"
-                                  />
-                                ) : null}
-                                <span className="truncate">{outcome.label}</span>
-                              </span>
-                              <span
-                                className={cn(
-                                  "min-w-14 shrink-0 border px-2.5 py-1 text-center font-mono text-xs tabular-nums",
-                                  ready && outcome.lead
-                                    ? "border-primary bg-primary font-semibold text-primary-foreground"
-                                    : "border-border bg-background/70 text-foreground",
-                                )}
-                              >
-                                {outcome.price}¢
-                              </span>
+                      </span>
+                      <span className="block divide-y divide-border/40">
+                        {line.outcomes.map((outcome) => (
+                          <span key={outcome.label} className="flex items-center justify-between gap-3 px-3.5 py-2">
+                            <span className="flex min-w-0 items-center gap-2 text-xs">
+                              {outcome.flag ? (
+                                <Image
+                                  src={outcome.flag}
+                                  alt=""
+                                  width={20}
+                                  height={14}
+                                  className="h-3.5 w-5 shrink-0 border border-border/70 object-cover"
+                                />
+                              ) : null}
+                              <span className="truncate">{outcome.label}</span>
                             </span>
-                          ))}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  <div className="pt-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
-                    model asks / yes price per outcome
-                  </div>
-                </CardContent>
-              </Card>
+                            <span
+                              className={cn(
+                                "min-w-14 shrink-0 border px-2.5 py-1 text-center font-mono text-xs tabular-nums",
+                                ready && outcome.lead
+                                  ? "border-primary bg-primary font-semibold text-primary-foreground"
+                                  : "border-border bg-background/70 text-foreground",
+                              )}
+                            >
+                              {outcome.price}¢
+                            </span>
+                          </span>
+                        ))}
+                      </span>
+                    </button>
+                  );
+                })}
+                <div className="px-1 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground">
+                  model asks / yes price per outcome
+                </div>
+              </div>
             </div>
 
               <aside aria-label="Agent detail" className="min-w-0 self-start border border-border bg-card/60 xl:sticky xl:top-24">
