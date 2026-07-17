@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** One canonical registry prevents adapter and policy venue IDs from drifting. */
+/** One backend registry prevents adapter and policy venue IDs from drifting. */
 export const LIVE_VENUE_IDS = Object.freeze([
   "polymarket",
   "kalshi-dflow",
@@ -8,7 +8,7 @@ export const LIVE_VENUE_IDS = Object.freeze([
   "predict-fun",
   "limitless",
   "sx-bet",
-  "hyperliquid",
+  "hydromancer",
 ] as const);
 
 export type LiveVenueId = (typeof LIVE_VENUE_IDS)[number];

@@ -15,7 +15,7 @@ describe("live venue registry", () => {
       "predict-fun",
       "limitless",
       "sx-bet",
-      "hyperliquid",
+      "hydromancer",
     ]);
     expect(Object.isFrozen(LIVE_VENUE_IDS)).toBe(true);
   });
@@ -26,7 +26,7 @@ describe("live venue registry", () => {
       expect(liveVenueIdSchema.parse(venue)).toBe(venue);
     }
 
-    for (const value of ["kalshi", "Polymarket", "sxbet", "hydromancer", "", null]) {
+    for (const value of ["kalshi", "Polymarket", "sxbet", "hyperliquid", "", null]) {
       expect(isLiveVenueId(value)).toBe(false);
       expect(liveVenueIdSchema.safeParse(value).success).toBe(false);
     }

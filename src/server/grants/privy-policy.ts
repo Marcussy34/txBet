@@ -56,7 +56,7 @@ export function createVenuePolicyRegistry(input: {
         case "predict-fun":
         case "limitless":
         case "sx-bet":
-        case "hyperliquid":
+        case "hydromancer":
           throw new GrantPolicyRefusal("NO_POLICY_CONFIGURATION", venueId);
       }
     },

@@ -147,7 +147,7 @@ const networkSchema = z.enum([
   "bsc",
   "base",
   "sx",
-  "hyperliquid",
+  "hydromancer",
 ]);
 const assetSchema = z.enum(["pUSD", "USDC", "USDT"]);
 const allowedCollateral = new Set([
@@ -157,7 +157,7 @@ const allowedCollateral = new Set([
   "bsc:USDT",
   "base:USDC",
   "sx:USDC",
-  "hyperliquid:USDC",
+  "hydromancer:USDC",
 ]);
 const requiredFoundationCollateral = ["polygon:pUSD", "solana:USDC"] as const;
 const microsSchema = requiredString

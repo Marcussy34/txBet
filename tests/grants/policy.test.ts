@@ -30,7 +30,7 @@ describe("automation grant policy registry", () => {
     );
   });
 
-  it.each(["opinion", "predict-fun", "limitless", "sx-bet", "hyperliquid"] as const)(
+  it.each(["opinion", "predict-fun", "limitless", "sx-bet", "hydromancer"] as const)(
     "refuses %s until its exact policy is registered",
     (venueId) => {
       expect(() => registry.resolve(venueId)).toThrowError(
